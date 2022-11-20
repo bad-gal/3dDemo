@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { io } from 'socket.io-client';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
 camera.position.set( -5, 3, 10);
@@ -31,6 +32,22 @@ if (grid.material instanceof THREE.Material) {
 }
 scene.add( grid );
 
+//model
+let mixer: THREE.AnimationMixer;
+const rider = new GLTFLoader();
+rider.load( 'assets/test3.glb', function( gltf ) {
+    scene.add( gltf.scene );
+    mixer = new THREE.AnimationMixer( gltf.scene );
+    const clips = gltf.animations;
+    console.log('clips:', clips);
+    const action = mixer.clipAction( clips[15]);
+    action.play();
+    // clips.forEach( function( clip ) {
+    //   const action = mixer.clipAction( clip );
+    //   action.play();
+    // });
+});
+
 const renderer = new THREE.WebGLRenderer( { antialias: true } );
 renderer.setPixelRatio( window.devicePixelRatio );
 renderer.setSize( window.innerWidth, window.innerHeight );
@@ -53,14 +70,17 @@ socket.on( 'connect', function () {
 socket.on( 'disconnect', function (message: any) {
     console.log( 'disconnect ' + message );
 });
-
 socket.on( 'removeClient', ( id: string ) => {
     scene.remove( scene.getObjectByName(id) as THREE.Object3D );
 });
 
+const clock = new THREE.Clock();
 function animate() {
     requestAnimationFrame( animate );
-
+    if(mixer) {
+      mixer.update( clock.getDelta() );
+    }
+   
     render();
 }
 
