@@ -40,7 +40,7 @@ let mixer: THREE.AnimationMixer;
 const rider = new GLTFLoader();
 let clips: THREE.AnimationClip[];
 
-rider.load( 'assets/blue_rider.glb', function( gltf ) {
+rider.load( 'assets/blue_rider_quad.glb', function( gltf ) {
     scene.add( gltf.scene );
     mixer = new THREE.AnimationMixer( gltf.scene );
     clips = gltf.animations;
