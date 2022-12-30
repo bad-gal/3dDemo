@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { io } from 'socket.io-client';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { CharacterControls } from './characterControls';
+import { ThirdPersonCameraController } from './third_person_camera_controller';
 
 const socket = io();
 let players: any = [];
@@ -10,9 +11,11 @@ let players: any = [];
 const animationsMap = new Map();
 let mixer: THREE.AnimationMixer;
 
+// camera
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
 camera.position.set( -5, 3, 10);
 camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
+console.log('beginning camera', camera.position)
 
 const scene = new THREE.Scene();
 // background and fog
@@ -264,7 +267,8 @@ const animationsFrameLocations = [
   },
 ]
 
-var characterControls: CharacterControls;
+let characterControls: CharacterControls | undefined;
+let thirdPersonCamera: ThirdPersonCameraController | undefined;
 
 function LoadModels() {
   let clips: THREE.AnimationClip[];
@@ -283,6 +287,12 @@ function LoadModels() {
         animationsMap.set(clip.name, action);
     });
     characterControls = new CharacterControls( gltf.scene, mixer, animationsMap, camera, 'idle_02');
+    console.log('characterControls model', characterControls?.model)
+    console.log('characterControls camera', characterControls.camera.position)
+    thirdPersonCamera = new ThirdPersonCameraController({
+        // camera: camera,
+        target: characterControls,
+      });
   });
 };
 
@@ -305,40 +315,42 @@ function onWindowResize() {
 }
 
 const inputs = { up: false, down: false, left: false, right: false };
-const keysPressed: { [key: string]: boolean; } = {};
+let keysPressed: { [key: string]: boolean; } = {};
 
-// document.addEventListener( 'keydown', ( e ) => {
-//   if( characterControls ) { 
-//     console.log(e.key)
-//     if( e.key === 'w' ){
-//       inputs['up'] = true;
-//     } else if( e.key === 's' ){
-//       inputs['down'] = true;
-//     } else if( e.key === 'a' ){
-//       inputs['left'] = true;
-//     } else if( e.key === 'd' ){
-//       inputs['right'] = true;
-//     }
+document.addEventListener( 'keydown', ( e ) => {
+  if( characterControls ) { 
+    // console.log(e.key)
+    // if( e.key === 'w' ){
+    //   inputs['up'] = true;
+    // } else if( e.key === 's' ){
+    //   inputs['down'] = true;
+    // } else if( e.key === 'a' ){
+    //   inputs['left'] = true;
+    // } else if( e.key === 'd' ){
+    //   inputs['right'] = true;
+    // }
+    
+    keysPressed[e.key] = true;
+    console.log(keysPressed)
+    socket.emit( 'input', inputs);
+  }
+});
 
-//     socket.emit( 'input', inputs);
-//   }
-// });
-
-// document.addEventListener('keyup', ( e ) => {
-//   if( characterControls ) { 
-//     if( e.key === 'w' ){
-//       inputs['up'] = false;
-//     } else if( e.key === 's' ){
-//       inputs['down'] = false;
-//     } else if( e.key === 'a' ){
-//       inputs['left'] = false;
-//     } else if( e.key === 'd' ){
-//       inputs['right'] = false;
-//     }
-
-//     socket.emit( 'input', inputs);
-//   }
-// });
+document.addEventListener('keyup', ( e ) => {
+  if( characterControls ) { 
+    // if( e.key === 'w' ){
+    //   inputs['up'] = false;
+    // } else if( e.key === 's' ){
+    //   inputs['down'] = false;
+    // } else if( e.key === 'a' ){
+    //   inputs['left'] = false;
+    // } else if( e.key === 'd' ){
+    //   inputs['right'] = false;
+    // }
+    keysPressed[e.key] = false;
+    // socket.emit( 'input', inputs);
+  }
+});
 
 socket.on( 'connect', function () {
   console.log('connected');
@@ -359,21 +371,19 @@ socket.on( 'removeClient', ( id: string ) => {
   scene.remove( scene.getObjectByName(id) as THREE.Object3D );
 });
 
-let logged = false;
 const clock = new THREE.Clock();
+
 function animate() {
   let mixerUpdateDelta = clock.getDelta();
-  if ( characterControls ) {
+  if ( characterControls !== undefined ) {
     characterControls.update( mixerUpdateDelta, keysPressed );
-    if(!logged && Object.keys(keysPressed).length > 0) {
-      console.log(keysPressed)
-      logged = true;
-    }
   }
+
   requestAnimationFrame( animate );
-  // if(mixer) {
-  //   mixer.update( clock.getDelta() );
-  // }
+
+  if (thirdPersonCamera !== undefined) {
+    thirdPersonCamera.update(mixerUpdateDelta);    
+  }
   render();
 }
 
@@ -382,6 +392,7 @@ function render() {
 }
 
 animate();
+
 
 
 class BasicCharacterController {

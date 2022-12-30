@@ -32,7 +32,6 @@ const http_1 = __importDefault(require("http"));
 const socket_io_1 = require("socket.io");
 const path_1 = __importDefault(require("path"));
 const process_1 = __importDefault(require("process"));
-// import { io } from 'socket.io-client';
 dotenv.config();
 const port = process_1.default.env.PORT;
 const FPS = 30;

@@ -74,3 +74,4 @@ NOTE: You can click on the star on the track that you want to play to see the se
 
 In the "Active Strip" you can move the from start to 0 if you want
 
+https://gist.github.com/nickjanssen/666517984aff72eaf798
