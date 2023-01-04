@@ -32,11 +32,10 @@ const http_1 = __importDefault(require("http"));
 const socket_io_1 = require("socket.io");
 const path_1 = __importDefault(require("path"));
 const process_1 = __importDefault(require("process"));
+const node_util_1 = __importDefault(require("node:util"));
 dotenv.config();
 const port = process_1.default.env.PORT;
 const FPS = 30;
-const SPEED = 0.1;
-const inputsMap = {};
 class App {
     constructor() {
         this.clients = [];
@@ -47,23 +46,24 @@ class App {
         this.io = new socket_io_1.Server(this.server);
         this.io.on('connection', (socket) => {
             console.log(socket.constructor.name);
-            // inputsMap[socket.id] = {
-            //   up: false,
-            //   down: false,
-            //   left: false,
-            //   right: false
-            // };
-            this.clients.push({
+            const client = {
                 id: socket.id,
-                x: 0,
-                y: 0,
-            });
+                position: { x: 0, y: 0, z: 0 },
+                quaternion: { isQuaternion: true, _x: 0, _y: 0, _z: 0, _w: 0 },
+            };
+            this.clients.push(client);
             console.log(this.clients);
             console.log('connected with socket_id: ', socket.id);
             socket.emit('id', socket.id);
-            // socket.on( 'input', (inputs) => {
-            //   inputsMap[socket.id] = inputs;
-            // });
+            socket.on('updateClient', (data) => {
+                const client = this.clients.find(client => client.id === socket.id);
+                if (!node_util_1.default.isDeepStrictEqual(client.position, data.position) && !node_util_1.default.isDeepStrictEqual(client.quaternion, data.quaternion)) {
+                    client.position = data.position;
+                    client.quaternion = data.quaternion;
+                    // console.log('client update data: ' + JSON.stringify(data));
+                    console.log('client data', client);
+                }
+            });
             socket.on('disconnect', () => {
                 if (this.clients) {
                     // get index of client.id matching socket.id
@@ -80,23 +80,14 @@ class App {
         });
         // TODO: Adding and removing of client socket not working properly now that I am using array instead of object
         setInterval(() => {
-            this.io.emit('clients', this.clients);
+            // this.io.emit( 'clients', this.clients );
             this.tick();
         }, 1000 / FPS);
     }
     tick() {
         for (const player of this.clients) {
-            console.log(player, player.id);
-            console.log(player.x, player.y);
-            // const inputs = inputsMap[player.id];
-            // if(inputs.right){
-            //   player.x -= SPEED;
-            // }
-            // if(inputs.left){
-            //   player.x += SPEED;
-            // }
+            // console.log('player', player)// console.log(player, player.id)// console.log(player.x, player.y);// const inputs = inputsMap[player.id];
         }
-        // this.io.emit("players", players);
     }
     Start() {
         this.server.listen(port, function () {
