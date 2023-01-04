@@ -362,7 +362,7 @@ socket.on( 'disconnect', function (message: any) {
 socket.on('clients', (clients: any = []) => {
   // we only want to update players if different from clients given to us by the server
   if(JSON.stringify(clients) != JSON.stringify(players)) {
-    console.log('clients', clients)
+    console.log('clients.ts: clients', clients)
     players = clients;
   }
 });
@@ -382,8 +382,16 @@ function animate() {
   requestAnimationFrame( animate );
 
   if (thirdPersonCamera !== undefined) {
-    thirdPersonCamera.update(mixerUpdateDelta);    
+    thirdPersonCamera.update(mixerUpdateDelta);
+    if ( characterControls !== undefined) {
+      const userData = { 
+        position: characterControls.model.position, 
+        quaternion: characterControls.model.quaternion
+      }
+      socket.emit('updateClient', userData);  
+    }  
   }
+ 
   render();
 }
 
