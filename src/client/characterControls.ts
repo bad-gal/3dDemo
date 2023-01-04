@@ -22,6 +22,8 @@ export class CharacterControls {
   fadeDuration: number = 0.2;
   driveFastVelocity = 5;
   driveBasicVelocity = 2;
+  acceleration = new THREE.Vector3(1, 0.25, 20.0);
+  velocity = new THREE.Vector3();
 
   constructor( model: THREE.Group, mixer: THREE.AnimationMixer, animationsMap: Map<string, THREE.AnimationAction>, camera: THREE.Camera, currentAction: string) {
     this.model = model;
@@ -42,68 +44,95 @@ export class CharacterControls {
   };
 
   public update( delta: number, keysPressed: { [key: string]: boolean; } = {} ) {
-    let moveForward = false;
-    let moveBackward = false;
-    let moveLeft = false;
-    let moveRight = false;
+    let [moveForward, moveBackward, moveLeft, moveRight] = [false, false, false, false];
+    let play = '';
+    
+    const _Q = new THREE.Quaternion();
+    const _A = new THREE.Vector3();
+    const _R = this.model.quaternion.clone();
+    const acc = this.acceleration.clone();
+    let inputVector = new THREE.Vector3();
 
     // keyboard controls
     if (keysPressed['w'] || keysPressed['ArrowUp']) {
+      if (this.velocity.z > 0) {
+        this.velocity.setZ(0)
+      } else {
+        this.velocity.z -= acc.z * delta;
+      }
+      play = 'drive_fast';
       moveForward = true;
     }
 
     if (keysPressed['s'] || keysPressed['ArrowDown']) {
-        moveBackward = true;
+      if (this.velocity.z < 0) {
+        this.velocity.setZ(0)
+      } else {
+        this.velocity.z += acc.z * delta;
+      }
+      play = 'drive';
+      moveBackward = true;
     }
 
     if (keysPressed['a'] || keysPressed['ArrowLeft']) {
-        moveLeft = true;
+      _A.set(0, 1, 0);
+      _Q.setFromAxisAngle(_A, 4.0 * Math.PI * delta * this.acceleration.y);
+      _R.multiply(_Q);
+      if (this.velocity.z !== 0) {
+        this.velocity.setZ(0)
+      }
+      play = 'drive_turn_left';
+      moveLeft = true;
     }
 
     if (keysPressed['d'] || keysPressed['ArrowRight']) {
-        moveRight = true;
+      _A.set(0, 1, 0);
+      _Q.setFromAxisAngle(_A, 4.0 * -Math.PI * delta * this.acceleration.y);
+      _R.multiply(_Q);
+      if (this.velocity.z !== 0) {
+        this.velocity.setZ(0)
+      }
+      play = 'drive_turn_right';
+      moveRight = true;
     }
 
     // exit if no movement was instigated by player
     if (moveBackward === false && moveForward === false && moveLeft === false && moveRight === false) {
       return;
+    } else {
+      this.model.quaternion.copy(_R);
     }
-
-    let inputVector = new THREE.Vector3();
-
-    // react to changes
-    if (moveForward) {
-      inputVector.z -= 1;
-    }
-    if (moveBackward) {
-        inputVector.z += 1;
-    }
-    if (moveLeft) {
-        inputVector.x -= 1;
-    }
-    if (moveRight) {
-        inputVector.x += 1;
-    }
+    
     inputVector.applyQuaternion(this.camera.quaternion);
 
-    var velocity = new THREE.Vector3();
-    velocity.add(inputVector);
-    velocity.multiplyScalar(2);
-    velocity.multiplyScalar(delta);
-    velocity.y = 0;
+    const forward = new THREE.Vector3(0, 0, 1);
+    forward.applyQuaternion(this.model.quaternion);
+    forward.normalize();
+
+    const sideways = new THREE.Vector3(1, 0, 0);
+    sideways.applyQuaternion(this.model.quaternion);
+    sideways.normalize();
+
+    sideways.multiplyScalar(this.velocity.x * delta);
+    forward.multiplyScalar(this.velocity.z * delta);
+
+    this.model.position.add(forward);
+    this.model.position.add(sideways);
+
+    // this.velocity.add(inputVector);
+    // this.velocity.multiplyScalar(2);
+    // this.velocity.multiplyScalar(delta);
+    // this.velocity.y = 0;
 
     if (inputVector.lengthSq() > 0) {
 
     }
-    this.model.position.add(velocity);
+    // this.model.position.add(this.velocity);
+    console.log('position', this.model.position)
     
-    // if( keysPressed['a'] == true || keysPressed['w'] == true || keysPressed['s'] == true || keysPressed['d'] == true ) {
-    //   directionPressed = true;
-    //   // I haven't figured out speed and movement of the racer yet
-    // }
      
     // I think I need to use keyup also as it is not working properly when changing animations
-    let play = '';
+    
     if( keysPressed['t'] == true ) {
       play = 'drive_fast';
       console.log('I want to play drive fast');
@@ -122,7 +151,7 @@ export class CharacterControls {
     } else if( keysPressed['4'] == true ) {
       play = 'drive_trick_04';
       console.log('I want to play trick 4');
-    } else {
+    } else if (play === ''){
       play = 'idle_02';
     }
 
