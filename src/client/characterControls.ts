@@ -96,41 +96,28 @@ export class CharacterControls {
       moveRight = true;
     }
 
-    // exit if no movement was instigated by player
-    if (moveBackward === false && moveForward === false && moveLeft === false && moveRight === false) {
-      return;
-    } else {
+    
+    if (moveBackward !== false || moveForward !== false || moveLeft !== false || moveRight !== false) {
       this.model.quaternion.copy(_R);
+      inputVector.applyQuaternion(this.camera.quaternion);
+
+      const forward = new THREE.Vector3(0, 0, 1);
+      forward.applyQuaternion(this.model.quaternion);
+      forward.normalize();
+
+      const sideways = new THREE.Vector3(1, 0, 0);
+      sideways.applyQuaternion(this.model.quaternion);
+      sideways.normalize();
+
+      sideways.multiplyScalar(this.velocity.x * delta);
+      forward.multiplyScalar(this.velocity.z * delta);
+
+      this.model.position.add(forward);
+      this.model.position.add(sideways);
+
+      console.log('position', this.model.position)
     }
     
-    inputVector.applyQuaternion(this.camera.quaternion);
-
-    const forward = new THREE.Vector3(0, 0, 1);
-    forward.applyQuaternion(this.model.quaternion);
-    forward.normalize();
-
-    const sideways = new THREE.Vector3(1, 0, 0);
-    sideways.applyQuaternion(this.model.quaternion);
-    sideways.normalize();
-
-    sideways.multiplyScalar(this.velocity.x * delta);
-    forward.multiplyScalar(this.velocity.z * delta);
-
-    this.model.position.add(forward);
-    this.model.position.add(sideways);
-
-    // this.velocity.add(inputVector);
-    // this.velocity.multiplyScalar(2);
-    // this.velocity.multiplyScalar(delta);
-    // this.velocity.y = 0;
-
-    if (inputVector.lengthSq() > 0) {
-
-    }
-    // this.model.position.add(this.velocity);
-    console.log('position', this.model.position)
-    
-     
     // I think I need to use keyup also as it is not working properly when changing animations
     
     if( keysPressed['t'] == true ) {
@@ -154,16 +141,6 @@ export class CharacterControls {
     } else if (play === ''){
       play = 'idle_02';
     }
-
-    // if ( directionPressed && this.toggleDrive ) {
-    //   play = 'drive_fast';
-    //   console.log('drive_fast');
-    // } else if ( directionPressed ) {
-    //   play = 'drive';
-    //   console.log('drive');
-    // } else {
-    //   play = 'idle_02';
-    // }
 
     if ( this.currentAction != play ) {
       const toPlay = this.animationsMap.get( play );

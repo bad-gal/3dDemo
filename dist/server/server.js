@@ -50,6 +50,7 @@ class App {
                 id: socket.id,
                 position: { x: 0, y: 0, z: 0 },
                 quaternion: { isQuaternion: true, _x: 0, _y: 0, _z: 0, _w: 0 },
+                action: 'idle_02',
             };
             this.clients.push(client);
             console.log(this.clients);
@@ -57,9 +58,10 @@ class App {
             socket.emit('id', socket.id);
             socket.on('updateClient', (data) => {
                 const client = this.clients.find(client => client.id === socket.id);
-                if (!node_util_1.default.isDeepStrictEqual(client.position, data.position) && !node_util_1.default.isDeepStrictEqual(client.quaternion, data.quaternion)) {
+                if (!node_util_1.default.isDeepStrictEqual(client.position, data.position) || !node_util_1.default.isDeepStrictEqual(client.quaternion, data.quaternion) || client.action !== data.action) {
                     client.position = data.position;
                     client.quaternion = data.quaternion;
+                    client.action = data.action;
                     // console.log('client update data: ' + JSON.stringify(data));
                     console.log('client data', client);
                 }

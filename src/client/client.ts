@@ -386,7 +386,8 @@ function animate() {
     if ( characterControls !== undefined) {
       const userData = { 
         position: characterControls.model.position, 
-        quaternion: characterControls.model.quaternion
+        quaternion: characterControls.model.quaternion,
+        action: characterControls.currentAction,
       }
       socket.emit('updateClient', userData);  
     }  
@@ -400,25 +401,3 @@ function render() {
 }
 
 animate();
-
-
-
-class BasicCharacterController {
-  constructor() {
-    const input = new BasicCharacterControllerInput();
-    const stateMachine = new FiniteStateMachine();
-    LoadModels();
-  };
-};
-
-class BasicCharacterControllerInput {
-  constructor() {
-
-  };
-};
-
-class FiniteStateMachine {
-  constructor() {
-
-  };
-};
