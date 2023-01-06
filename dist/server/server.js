@@ -55,7 +55,7 @@ class App {
             this.clients.push(client);
             console.log(this.clients);
             console.log('connected with socket_id: ', socket.id);
-            socket.emit('id', socket.id);
+            socket.emit('newPlayer', client);
             socket.on('updateClient', (data) => {
                 const client = this.clients.find(client => client.id === socket.id);
                 if (!node_util_1.default.isDeepStrictEqual(client.position, data.position) || !node_util_1.default.isDeepStrictEqual(client.quaternion, data.quaternion) || client.action !== data.action) {
@@ -87,6 +87,7 @@ class App {
         }, 1000 / FPS);
     }
     tick() {
+        this.io.emit("clients", this.clients);
         for (const player of this.clients) {
             // console.log('player', player)// console.log(player, player.id)// console.log(player.x, player.y);// const inputs = inputsMap[player.id];
         }

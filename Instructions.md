@@ -40,6 +40,15 @@ npm install -D ts-node
 Run the app locally
 npm run dev
 
+Blender to glb
+
+Do not select the collect, but select the objects inside the collection
+File/Export
+Choose gtlf
+In 'Include' choose 'selected objects'
+In 'Transform' make sure Y+up is selected
+In 'Animations' make sure the checkboxes are selected
+Rename file and click export button
 
 Blender Add textures
 
