@@ -1,14 +1,17 @@
 import * as THREE from 'three';
-import { io } from 'socket.io-client';
+// import { io } from 'socket.io-client';
 import { Player } from './player';
-import { PlayerLocal } from './player_local';
+import PlayerLocal from './player_local';
 
-const socket = io();
+// const socket = io();
 let players: any = [];
 
 //new code
 let thisPlayer: PlayerLocal;
 let remotePlayers: any = [];
+let remoteData: any = [];
+let remoteColliders: any = [];
+let initialisingPlayers: any = [];
 
 // camera
 const camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
@@ -55,7 +58,7 @@ renderer.outputEncoding = THREE.sRGBEncoding;
 
 document.body.appendChild( renderer.domElement );
 
-thisPlayer = new PlayerLocal(scene, camera, undefined);
+thisPlayer = new PlayerLocal(scene, camera);
 
 window.addEventListener( 'resize', onWindowResize, false );
 
@@ -71,7 +74,7 @@ let keysPressed: { [key: string]: boolean; } = {};
 document.addEventListener( 'keydown', ( e ) => {
   if (thisPlayer.characterControls) {
     keysPressed[e.key] = true;
-    console.log(keysPressed)
+    // console.log(keysPressed)
   }
 });
 
@@ -81,39 +84,109 @@ document.addEventListener('keyup', ( e ) => {
   }
 });
 
-socket.on( 'connect', function () {
-  console.log('connected', socket.id);
-});
+// socket.on( 'connect', function () {
+//   console.log('connected', socket.id);
+// });
 
-socket.on( 'newPlayer', (client) => {
-  players.push(client);
-  console.log('new player added', client)
+// socket.on( 'newPlayer', (client) => {
+//   players.push(client);
+//   console.log('new player added', client)
   
-});
+// });
 
-socket.on( 'disconnect', function (message: any) {
-  console.log( 'disconnect ' + message );
-  // the following code gets handled in the socket.on 'clients' function, so this isn't needed
-  // players = players.filter((player: { id: string; }) => player.id !== socket.id)
-  // console.log('players left:', players)
-});
+// socket.on( 'disconnect', function (message: any) {
+//   console.log( 'disconnect ' + message );
+//   // the following code gets handled in the socket.on 'clients' function, so this isn't needed
+//   // players = players.filter((player: { id: string; }) => player.id !== socket.id)
+//   // console.log('players left:', players)
+// });
 
-socket.on('clients', (clients: any = []) => {
-  // we only want to update players if different from clients given to us by the server
-  if(JSON.stringify(clients) != JSON.stringify(players)) {
-    players = clients;
-    console.log('players', players)
-  }
-});
+// socket.on('clients', (clients: any = []) => {
+//   // we only want to update players if different from clients given to us by the server
+//   if(JSON.stringify(clients) != JSON.stringify(players)) {
+//     players = clients;
+//     console.log('players', players)
+//   }
+// });
 
-socket.on( 'removeClient', ( id: string ) => {
-  scene.remove( scene.getObjectByName(id) as THREE.Object3D );
-});
+// socket.on( 'removeClient', ( id: string ) => {
+//   scene.remove( scene.getObjectByName(id) as THREE.Object3D );
+// });
+
+function updateRemotePlayers(delta: number) {
+  // console.log(remoteData) - remote data is now empty
+  if(remoteData === undefined || remoteData.length == 0 || thisPlayer === undefined || thisPlayer.id === undefined) return;
+
+  // get all remote players from remote data array
+  const rPlayers: never[] = [];
+  const rColliders: any[] = [];
+
+  remoteData.forEach(function(data: { id: any; model: any}){
+    if(thisPlayer.id != data.id){
+      let iplayer;
+
+      // is player being initialised?
+      initialisingPlayers.forEach(function(player: any){
+        if(player.id == data.id) iplayer = player;
+      });
+
+      // if not being initialised check the remote players array
+      if(iplayer === undefined) {
+        let rplayer :any;
+        remotePlayers.forEach(function(player: { id: any; }){
+          if(player.id == data.id) rplayer = player;
+        });
+
+        if(rplayer === undefined){
+          // initialise player
+          initialisingPlayers.push(new Player(scene, camera, data));
+        } else{
+          //player exists
+          remotePlayers.push(rplayer);
+          rColliders.push(rplayer.collider);
+        }
+      }
+    }
+  });
+
+  scene.children.forEach(function(object){
+    // debugger
+    console.log('updateRemotePlayers', object)
+    if(object.userData.remotePlayer && getRemotePlayerById(object.userData.id) === undefined){
+      scene.remove(object);
+    }
+  });
+
+  remotePlayers = rPlayers;
+  remoteColliders = rColliders;
+  remotePlayers.forEach(function(player: { update: (arg0: number) => void; }){player.update(delta);});
+}
+
+function getRemotePlayerById(id: string){
+  if(remotePlayers === undefined || remotePlayers.length == 0) return;
+
+  const players = remotePlayers.filter(function(player: { id: string; }){
+    if(player.id == id) return true;
+  });
+
+  if(players.length == 0) return;
+
+  return players[0];
+}
 
 const clock = new THREE.Clock();
 
 function animate() {
   let mixerUpdateDelta = clock.getDelta();
+  
+  requestAnimationFrame( animate );
+
+  updateRemotePlayers(mixerUpdateDelta);
+
+  // console.log('remotePlayers', remotePlayers)
+  if(remotePlayers.length > 0) {
+    console.log('remotePlayers', remotePlayers)
+  }
   
   if (thisPlayer.characterControls !== undefined) {
     thisPlayer.characterControls.update(mixerUpdateDelta, keysPressed);
@@ -124,7 +197,7 @@ function animate() {
     thisPlayer.move(mixerUpdateDelta);
   }
 
-  requestAnimationFrame( animate );
+  
 
   if (thisPlayer.thirdPersonCamera !== undefined) {
     thisPlayer.thirdPersonCamera.update(mixerUpdateDelta);
@@ -134,7 +207,7 @@ function animate() {
         quaternion: thisPlayer.characterControls.model.quaternion,
         action: thisPlayer.characterControls.currentAction,
       }
-      socket.emit('updateClient', userData);
+      // socket.emit('updateClient', userData);
     }
   }
  

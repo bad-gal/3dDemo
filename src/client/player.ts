@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { Object3D, Scene } from 'three';
+// import { Object3D, Scene } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { CharacterControls } from './characterControls';
 import { ThirdPersonCameraController } from './third_person_camera_controller';
+// import PlayerLocal from './player_local';
 
 
 export class Player {
@@ -19,14 +20,14 @@ export class Player {
   collider: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial> | undefined;
   characterControls: CharacterControls | undefined;
   thirdPersonCamera: ThirdPersonCameraController | undefined;
-
-  constructor(game: any, camera: any, options: { id: any; model: any; } | undefined) {
+  
+  constructor(game: any, camera: any, options?: any) {
     this.local = true;
     let model: string;
     let filename: any;
 
+    
     const quadRacers: {name: string; filename: string}[]  = [
-      {name: "blue rider", filename:"assets/blue_rider_quad.glb"},
       {name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb"},
       {name: "green rider", filename:"assets/green_rider_quad.glb"},
       {name: "lime rider", filename:"assets/lime_rider_quad.glb"},
@@ -36,15 +37,18 @@ export class Player {
       {name: "purple rider", filename:"assets/purple_rider_quad.glb"},
       {name: "red rider", filename:"assets/red_rider_quad.glb"},
       {name: "red star rider", filename:"assets/red_star_rider_quad.glb"},
+      {name: "blue rider", filename:"assets/blue_rider_quad.glb"},
     ]
 
     if(options === undefined) {
-      model = quadRacers[Math.floor(Math.random()*quadRacers.length)].name;
-    } else if (typeof options === 'object') {
+      model = "blue rider";
+    } else if (typeof options == 'object') {
+      // debugger
       this.local = false;
       this.options = options;
       this.id = options.id;
-      model = options.model;
+      model = quadRacers[Math.floor(Math.random()*quadRacers.length - 1 )].name;
+      // model = options.model;
     } else {
       model = options;
     }
@@ -54,7 +58,8 @@ export class Player {
     this.animations = this.game.animations;
 
     const loader = new GLTFLoader();
-    const player = this;
+    const player = this; //game
+  
     let clips: THREE.AnimationClip[];
     const fps = 30;
     const animationsMap = new Map();
@@ -286,7 +291,7 @@ export class Player {
 
     loader.load( filename, function( object ) {
       object.scene.name = model;
-      game.add( object.scene );
+      
       const mixer = new THREE.AnimationMixer(object.scene);
       clips = object.animations;
       let action;
@@ -298,18 +303,16 @@ export class Player {
           animationsMap.set(clip.name, action);
       });
 
+      console.log('player', Object.getOwnPropertyNames(player))
       player.root = object;
       player.mixer = mixer;
-      player.object = new Scene();
-      player.object.position.set(0,0,0);
-      player.object.rotation.set(0,0,0);
-
-      // if (player.deleted === undefined) {
-      //   console.log('player add:', object)
-      //   console.log('game', game)
-      //   // game.add(object);
-      //   // game.scene.add(object);
-      // }
+      player.object = object.scene;
+     
+      console.log('player', player)
+      // debugger
+      if (player.deleted === undefined) {
+        game.add( object.scene );
+      }
 
       if(player.local) {
         console.log("PLAYER IS LOCAL")
@@ -317,6 +320,11 @@ export class Player {
         let thirdPersonCamera = new ThirdPersonCameraController({target: characterControls});
         player.characterControls = characterControls;
         player.thirdPersonCamera = thirdPersonCamera;
+        // console.log('initSocket', player.initSocket)
+        // if(player?.help !== undefined) {
+        //   console.log('calling initSocket')
+        //   player?.help();
+        // }
       } else {
         const geometry = new THREE.BoxGeometry(100,300,100);
 				const material = new THREE.MeshBasicMaterial({visible:false});
@@ -325,8 +333,10 @@ export class Player {
 				box.position.set(0, 150, 0);
 				player.object.add(box);
 				player.collider = box;
+        console.log('player userData', player.object.userData)
 				player.object.userData.id = player.id;
 				player.object.userData.remotePlayer = true;
+        console.log('init player', player, game)
 				const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(game), 1);
 				game.remotePlayers.push(players[0]);
       }

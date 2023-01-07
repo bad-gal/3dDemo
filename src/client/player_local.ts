@@ -1,25 +1,30 @@
 import { Player } from "./player";
 import { io } from 'socket.io-client';
 
-export class PlayerLocal extends Player {
+export default class PlayerLocal extends Player {
   socket: any;
-  constructor(game: any, camera: any, model: { id: any; model: any; } | undefined) {
-    super(game, camera, model);
+  
+  constructor(game: any, camera: any) {
+    super(game, camera);
 
+  
     const player = this;
-    const socket = io();
+    const socket = io().connect();
 
-    socket.on('setId', function(data: { id: any; }){
+    socket.on('setId', function(data){
 			player.id = data.id;
-      console.log(data.id)
+      console.log('setId connected', data.id)
 		});
     
 		socket.on('remoteData', function(data: any){
 			game.remoteData = data;
+      // console.log('remoteData',data)
 		});
 
-    socket.on('deletePlayer', function(data: { id: any; }){
-			const players = game.remotePlayers.filter(function(player: { id: any; }){
+    socket.on('deletePlayer', function(data: { id: string; }){
+      console.log('rd', game.remotePlayers)
+			const players = game.remotePlayers.filter(function(player: { id: string; }){
+        
 				if (player.id == data.id){
 					return player;
 				}
@@ -41,15 +46,20 @@ export class PlayerLocal extends Player {
 		})
 
     this.socket = socket;
+
+    
   }
 
+  
   // this method does not get called
+  
   initSocket() {
     this.socket.emit('init',{
+      // id: this.socket.id,
       model: this.model,
-      position: this.object?.position,
+      position: this.characterControls?.model.position,
       quaternion: this.object?.quaternion,
-      action: 'idle_02',
+      action: this.characterControls?.currentAction,
     })
   }
 
@@ -57,9 +67,11 @@ export class PlayerLocal extends Player {
     if (this.socket !== undefined) {
       // the new socket is coming from here
       this.socket.emit('update', {
-        position: this.object?.position,
-        quaternion: this.object?.quaternion,
-        action: 'idle_02',
+        // id: this.socket.id,
+        position: this.characterControls?.model.position,
+        quaternion: this.characterControls?.model.quaternion,
+        action: this.characterControls?.currentAction,
+        model: this.model,
       })
     }
 
