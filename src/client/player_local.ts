@@ -32,15 +32,16 @@ export default class PlayerLocal extends Player {
 				if (index!=-1){
 					game.remotePlayers.splice( index, 1 );
 					game.scene.remove(players[0].object);
-				}else{
-					index = game.initialisingPlayers.indexOf(data.id);
-					if (index!=-1){
-						const player = game.initialisingPlayers[index];
-						player.deleted = true;
-						game.initialisingPlayers.splice(index, 1);
-					}
 				}
-			}
+      }
+      else{
+        let index = game.initialisingPlayers.indexOf(data.id);
+        if (index!=-1){
+          const player = game.initialisingPlayers[index];
+          player.deleted = true;
+          game.initialisingPlayers.splice(index, 1);
+        }
+      }
 		})
 
     this.socket = socket;

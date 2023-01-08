@@ -37,19 +37,15 @@ export default class Player {
     ]
 
     if(options === undefined) {
-      model = "blue rider";
-      console.log("model option is undefined")
+      model = quadRacers[Math.floor(Math.random()*quadRacers.length )].name;
     } 
     else if (typeof options === 'object') {
-      console.log("model option is 'object'")
       this.local = false;
       this.options = options;
       this.id = options.id;
-      model = quadRacers[Math.floor(Math.random()*quadRacers.length - 1 )].name;
-      // model = options.model;
+      model = options.model;
     } 
     else {
-      console.log("model option is other")
       model = options;
     }
 
@@ -307,7 +303,7 @@ export default class Player {
       player.object = object.scene;
       
       if (player.deleted === undefined) {
-        game.add( object.scene );
+        game.scene.add( object.scene );
       }
 
       if(player.local) {
@@ -336,8 +332,7 @@ export default class Player {
         console.log('player userData', player.object.userData)
 				player.object.userData.id = player.id;
 				player.object.userData.remotePlayer = true;
-        console.log('init player', player, game)
-				const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(game), 1);
+				const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(player), 1);
 				game.remotePlayers.push(players[0]);
       }      
     });
@@ -345,5 +340,16 @@ export default class Player {
 
   update(delta: any){
     this.mixer?.update(delta);
+
+    if(this.game.remoteData.length > 0){
+      let found = false;
+      for(let data of this.game.remoteData){
+        if(data.id != this.id) continue;
+
+        //player found
+        found = true;
+      }
+      if(!found) this.game.remotePlayer(this);
+    }
   }
 }
