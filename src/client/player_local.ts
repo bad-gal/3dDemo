@@ -1,4 +1,4 @@
-import { Player } from "./player";
+import Player from "./player";
 import { io } from 'socket.io-client';
 
 export default class PlayerLocal extends Player {
@@ -7,7 +7,6 @@ export default class PlayerLocal extends Player {
   constructor(game: any, camera: any) {
     super(game, camera);
 
-  
     const player = this;
     const socket = io().connect();
 
@@ -17,12 +16,11 @@ export default class PlayerLocal extends Player {
 		});
     
 		socket.on('remoteData', function(data: any){
+      //DEBUGGING: game.remoteData is not being passed back to client.ts
 			game.remoteData = data;
-      // console.log('remoteData',data)
 		});
 
     socket.on('deletePlayer', function(data: { id: string; }){
-      console.log('rd', game.remotePlayers)
 			const players = game.remotePlayers.filter(function(player: { id: string; }){
         
 				if (player.id == data.id){
@@ -46,16 +44,10 @@ export default class PlayerLocal extends Player {
 		})
 
     this.socket = socket;
-
-    
   }
-
-  
-  // this method does not get called
   
   initSocket() {
     this.socket.emit('init',{
-      // id: this.socket.id,
       model: this.model,
       position: this.characterControls?.model.position,
       quaternion: this.object?.quaternion,
@@ -65,16 +57,13 @@ export default class PlayerLocal extends Player {
 
   updateSocket() {
     if (this.socket !== undefined) {
-      // the new socket is coming from here
       this.socket.emit('update', {
-        // id: this.socket.id,
+        model: this.model,
         position: this.characterControls?.model.position,
         quaternion: this.characterControls?.model.quaternion,
         action: this.characterControls?.currentAction,
-        model: this.model,
       })
     }
-
   }
 
   move(delta: any) {

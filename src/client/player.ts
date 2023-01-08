@@ -1,12 +1,9 @@
 import * as THREE from 'three';
-// import { Object3D, Scene } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { CharacterControls } from './characterControls';
 import { ThirdPersonCameraController } from './third_person_camera_controller';
-// import PlayerLocal from './player_local';
 
-
-export class Player {
+export default class Player {
   local: boolean;
   options: any;
   id: any;
@@ -26,7 +23,6 @@ export class Player {
     let model: string;
     let filename: any;
 
-    
     const quadRacers: {name: string; filename: string}[]  = [
       {name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb"},
       {name: "green rider", filename:"assets/green_rider_quad.glb"},
@@ -42,14 +38,18 @@ export class Player {
 
     if(options === undefined) {
       model = "blue rider";
-    } else if (typeof options == 'object') {
-      // debugger
+      console.log("model option is undefined")
+    } 
+    else if (typeof options === 'object') {
+      console.log("model option is 'object'")
       this.local = false;
       this.options = options;
       this.id = options.id;
       model = quadRacers[Math.floor(Math.random()*quadRacers.length - 1 )].name;
       // model = options.model;
-    } else {
+    } 
+    else {
+      console.log("model option is other")
       model = options;
     }
 
@@ -58,7 +58,7 @@ export class Player {
     this.animations = this.game.animations;
 
     const loader = new GLTFLoader();
-    const player = this; //game
+    const player = this;
   
     let clips: THREE.AnimationClip[];
     const fps = 30;
@@ -287,7 +287,6 @@ export class Player {
     ];
 
     filename = quadRacers.find(racer => racer.name === model)?.filename;
-    // if (filename === undefined) filename = "assets/blue_rider_quad.glb";
 
     loader.load( filename, function( object ) {
       object.scene.name = model;
@@ -303,13 +302,10 @@ export class Player {
           animationsMap.set(clip.name, action);
       });
 
-      console.log('player', Object.getOwnPropertyNames(player))
       player.root = object;
       player.mixer = mixer;
       player.object = object.scene;
-     
-      console.log('player', player)
-      // debugger
+      
       if (player.deleted === undefined) {
         game.add( object.scene );
       }
@@ -320,12 +316,16 @@ export class Player {
         let thirdPersonCamera = new ThirdPersonCameraController({target: characterControls});
         player.characterControls = characterControls;
         player.thirdPersonCamera = thirdPersonCamera;
-        // console.log('initSocket', player.initSocket)
-        // if(player?.help !== undefined) {
-        //   console.log('calling initSocket')
-        //   player?.help();
-        // }
-      } else {
+        // without the ignore we get TS2339: Property 'initSocket' does not exist on type 'Player'
+        // even though initSocket is a valid property of PlayerLocal which extends Player
+        //@ts-ignore
+        if(player.initSocket !== undefined){
+          //@ts-ignore
+          player.initSocket();
+        }
+      } 
+      else {
+        console.log("PLAYER IS REMOTE")
         const geometry = new THREE.BoxGeometry(100,300,100);
 				const material = new THREE.MeshBasicMaterial({visible:false});
 				const box = new THREE.Mesh(geometry, material);
@@ -339,9 +339,7 @@ export class Player {
         console.log('init player', player, game)
 				const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(game), 1);
 				game.remotePlayers.push(players[0]);
-      }
-
-      
+      }      
     });
   }
 
