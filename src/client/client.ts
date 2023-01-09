@@ -130,6 +130,7 @@ class Client {
             //player exists
             remotePlayers.push(rplayer);
             remoteColliders.push(rplayer.collider);
+            // console.log('remote player details', rplayer)
           }
         }
       }
@@ -173,6 +174,7 @@ class Client {
     if(this.player?.mixer != undefined) {
       this.player.mixer.update(mixerUpdateDelta);
       this.player.move(mixerUpdateDelta);
+      // console.log('local player', this.player)
     }
   
     if (this.player?.thirdPersonCamera !== undefined) {

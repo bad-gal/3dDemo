@@ -18,11 +18,14 @@ export default class Player {
   characterControls: CharacterControls | undefined;
   thirdPersonCamera: ThirdPersonCameraController | undefined;
   
+  // private action = '';
+  action: string;
+  animationsMap: any;
   constructor(game: any, camera: any, options?: any) {
     this.local = true;
     let model: string;
     let filename: any;
-
+    this.action = '';
     const quadRacers: {name: string; filename: string}[]  = [
       {name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb"},
       {name: "green rider", filename:"assets/green_rider_quad.glb"},
@@ -58,7 +61,7 @@ export default class Player {
   
     let clips: THREE.AnimationClip[];
     const fps = 30;
-    const animationsMap = new Map();
+    
     const animationsFrameLocations = [
       {
           name: 'jump_down',
@@ -282,9 +285,10 @@ export default class Player {
       },
     ];
 
+    this.animationsMap = new Map();
     filename = quadRacers.find(racer => racer.name === model)?.filename;
 
-    loader.load( filename, function( object ) {
+    loader.load( filename, ( object ) => {
       object.scene.name = model;
       
       const mixer = new THREE.AnimationMixer(object.scene);
@@ -292,10 +296,10 @@ export default class Player {
       let action;
       
       // store the animations from the model in an array
-      animationsFrameLocations.forEach( function(clip) {
+      animationsFrameLocations.forEach( (clip) => {
           let animClip = THREE.AnimationUtils.subclip ( clips[1], clip.name, clip.frameStart, clip.frameEnd, fps );
           action = mixer.clipAction( animClip );
-          animationsMap.set(clip.name, action);
+          this.animationsMap.set(clip.name, action);
       });
 
       player.root = object;
@@ -308,7 +312,7 @@ export default class Player {
 
       if(player.local) {
         console.log("PLAYER IS LOCAL")
-        let characterControls = new CharacterControls( object.scene, mixer, animationsMap, camera, 'idle_02');
+        let characterControls = new CharacterControls( object.scene, mixer, this.animationsMap, camera, 'idle_02');
         let thirdPersonCamera = new ThirdPersonCameraController({target: characterControls});
         player.characterControls = characterControls;
         player.thirdPersonCamera = thirdPersonCamera;
@@ -334,9 +338,11 @@ export default class Player {
 				player.object.userData.remotePlayer = true;
 				const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(player), 1);
 				game.remotePlayers.push(players[0]);
+        if(action === '') action = 'idle_02';
       }      
     });
   }
+  
 
   update(delta: any){
     this.mixer?.update(delta);
@@ -347,6 +353,15 @@ export default class Player {
         if(data.id != this.id) continue;
 
         //player found
+        this.object?.position.set(data.position.x, data.position.y, data.position.z);
+        this.object?.quaternion.set(data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w);
+        this.action = data.action;
+        if(!this.local) {
+          // DEBUGGING: we now have the remote player moving in idle, need to check other animations
+          const clip = this.animationsMap.get(data.action);
+          clip.play();
+        }
+      
         found = true;
       }
       if(!found) this.game.remotePlayer(this);
