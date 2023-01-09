@@ -115,7 +115,7 @@ export class CharacterControls {
       this.model.position.add(forward);
       this.model.position.add(sideways);
 
-      console.log('position', this.model.position)
+      // console.log('position', this.model.position)
     }
     
     // I think I need to use keyup also as it is not working properly when changing animations
