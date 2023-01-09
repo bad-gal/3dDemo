@@ -327,18 +327,18 @@ export default class Player {
       else {
         console.log("PLAYER IS REMOTE")
         const geometry = new THREE.BoxGeometry(100,300,100);
-				const material = new THREE.MeshBasicMaterial({visible:false});
+				const material = new THREE.MeshBasicMaterial({visible: false});
 				const box = new THREE.Mesh(geometry, material);
 				box.name = "Collider";
 				box.position.set(0, 150, 0);
 				player.object.add(box);
 				player.collider = box;
-        console.log('player userData', player.object.userData)
+        // console.log('player userData', player.object.userData)
 				player.object.userData.id = player.id;
 				player.object.userData.remotePlayer = true;
+
 				const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(player), 1);
 				game.remotePlayers.push(players[0]);
-        if(action === '') action = 'idle_02';
       }      
     });
   }
@@ -355,13 +355,20 @@ export default class Player {
         //player found
         this.object?.position.set(data.position.x, data.position.y, data.position.z);
         this.object?.quaternion.set(data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w);
-        this.action = data.action;
+
         if(!this.local) {
-          // DEBUGGING: we now have the remote player moving in idle, need to check other animations
-          const clip = this.animationsMap.get(data.action);
-          clip.play();
+          // console.log('this.action',this.action, 'data.action', data.action)
+          if(this.action !== data.action){
+            if( this.action == '') this.action = 'idle_02';
+
+            const currentClip = this.animationsMap.get(this.action);
+            currentClip.fadeOut( 0.2 );
+            const newClip = this.animationsMap.get(data.action);
+            newClip.reset().fadeIn( 0.2 ).play();
+            this.action = data.action;
+          }
         }
-      
+
         found = true;
       }
       if(!found) this.game.remotePlayer(this);
