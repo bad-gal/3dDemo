@@ -1,31 +1,32 @@
 import * as THREE from 'three';
 import Player from './player';
 import PlayerLocal from './player_local';
+import { Box3 } from 'three';
 
 class Client {
   player: PlayerLocal | undefined;
   scene: THREE.Scene | undefined;
   remotePlayers: any;
   remoteData: any;
-  remoteColliders: any;
   initialisingPlayers: any;
   camera: any;
   renderer: any;
   clock: any;
   keysPressed: { [key: string]: boolean; } = {};
+  counter: number;
 
   constructor() {
     this.player;
     this.scene;
     this.remotePlayers = [];
     this.remoteData = [];
-    this.remoteColliders = [];
     this.initialisingPlayers = [];
     this.camera;
     this.renderer;
     this.clock;
     this.keysPressed;
     this.clock = new THREE.Clock();
+    this.counter = 0;
 
     // camera
     this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
@@ -44,19 +45,19 @@ class Client {
     this.scene.add( hemiLight );
 
     const dirLight = new THREE.DirectionalLight( 0xffffff );
-    dirLight.position.set( 0, 20, 20);
+    dirLight.position.set( 0, 20, 20 );
     dirLight.name = 'dirLight';
     this.scene.add( dirLight );
 
     // ground
-    const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false }));
+    const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x0DBA28, depthWrite: false } ) );
     mesh.rotation.x = -Math.PI / 2;
     mesh.name = 'ground mesh';
     this.scene.add( mesh );
 
     // grid
     const grid = new THREE.GridHelper( 200, 40, 0x000000, 0x000000 );
-    if (grid.material instanceof THREE.Material) {
+    if ( grid.material instanceof THREE.Material ) {
         grid.material.opacity = 0.2;
         grid.material.transparent = true;
     }
@@ -69,18 +70,18 @@ class Client {
     this.renderer.setSize( window.innerWidth, window.innerHeight );
     this.renderer.outputEncoding = THREE.sRGBEncoding;
 
-    document.body.appendChild( this.renderer.domElement);
+    document.body.appendChild( this.renderer.domElement );
 
-    this.player = new PlayerLocal(this, this.camera);
+    this.player = new PlayerLocal( this, this.camera );
 
     document.addEventListener( 'keydown', ( e ) => {
-      if (this.player?.characterControls) {
+      if ( this.player?.characterController ) {
         this.keysPressed[e.key] = true;
       }
     });
     
-    document.addEventListener('keyup', ( e ) => {
-      if(this.player?.characterControls) {
+    document.addEventListener( 'keyup', ( e ) => {
+      if( this.player?.characterController ) {
         this.keysPressed[e.key] = false;
       }
     });
@@ -96,65 +97,63 @@ class Client {
     this.renderer.setSize( window.innerWidth, window.innerHeight );
   }
 
-  updateRemotePlayers(delta: number) {
-    if(this.remoteData === undefined || this.remoteData.length == 0 || this.player === undefined || this.player.id === undefined) return;
+  updateRemotePlayers( delta: number ) {
+    if( this.remoteData === undefined || this.remoteData.length == 0 || this.player === undefined || this.player.id === undefined ) return;
 
     const game = this;
     const remotePlayers: any[] = [];
-    const remoteColliders: any[] = [];
 
-    this.remoteData.forEach(function(data: { id: any; model: any}){
-      if(game.player?.id != data.id){
+    this.remoteData.forEach( function( data: { id: any; model: any, position: any} ) {
+      if( game.player?.id != data.id ) {
 
         // is player being initialised?
         let iplayer;
         
-        game.initialisingPlayers.forEach(function(player: any){
-          if(player.id == data.id) iplayer = player;
+        game.initialisingPlayers.forEach( function( player: any ){
+          if( player.id == data.id ) iplayer = player;
         });
 
         // if not being initialised check the remote players array
-        if(iplayer === undefined) {
+        if( iplayer === undefined ) {
           let rplayer: Player | undefined;
-          game.remotePlayers.forEach(function(player: any){
-            if(player.id === data.id) {
+          game.remotePlayers.forEach( function( player: any ){
+            if( player.id === data.id ) {
               rplayer = player;
             }
           });
 
-          if(rplayer === undefined){
-            // initialise player
-            game.initialisingPlayers.push(new Player(game, game.camera, data));
+          if( rplayer === undefined ){
+            // initialise remote player
+            game.initialisingPlayers.push( new Player( game, game.camera, data ) );
           } 
           else{
             //player exists
-            remotePlayers.push(rplayer);
-            remoteColliders.push(rplayer.collider);
-            // console.log('remote player details', rplayer)
+            remotePlayers.push( rplayer );
           }
         }
       }
     });
 
-    this.scene?.children.forEach(function(object){
-      if(object.userData.remotePlayer && game.getRemotePlayerById(object.userData.id) === undefined){
-        game.scene?.remove(object);
+    this.scene?.children.forEach( function( object ) {
+      if( object.userData.remotePlayer && game.getRemotePlayerById( object.userData.id ) === undefined ) {
+        game.scene?.remove( object );
       }
     });
 
     this.remotePlayers = remotePlayers;
-    this.remoteColliders = remoteColliders;
-    this.remotePlayers.forEach(function(player: any){player.update(delta);});
+    this.remotePlayers.forEach( function( player: any ) {
+      player.update( delta );
+    });
   }
 
-  getRemotePlayerById(id: string){
-    if(this.remotePlayers === undefined || this.remotePlayers.length == 0) return;
+  getRemotePlayerById( id: string ) {
+    if( this.remotePlayers === undefined || this.remotePlayers.length == 0 ) return;
 
-    const players = this.remotePlayers.filter(function(player: { id: string; }){
-      if(player.id == id) return true;
+    const players = this.remotePlayers.filter( function( player: { id: string; } ) {
+      if( player.id == id ) return true;
     });
 
-    if(players.length == 0) return;
+    if( players.length == 0 ) return;
 
     return players[0];
   }
@@ -162,32 +161,58 @@ class Client {
   animate() {
     const game = this;
     let mixerUpdateDelta = this.clock.getDelta();
-    
-    requestAnimationFrame( function(){game.animate()} );
-  
-    this.updateRemotePlayers(mixerUpdateDelta);
-    
-    if (this.player?.characterControls !== undefined) {
-      this.player.characterControls.update(mixerUpdateDelta, this.keysPressed);
+
+    requestAnimationFrame( function(){ game.animate() } );
+
+    if ( this.player?.characterController !== undefined ) {
+        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
     }
   
-    if(this.player?.mixer != undefined) {
-      this.player.mixer.update(mixerUpdateDelta);
-      this.player.move(mixerUpdateDelta);
-      // console.log('local player', this.player)
+    if( this.player?.mixer != undefined ) {
+        this.player.boxHelper?.geometry.computeBoundingBox();
+        this.player.boxHelper?.update();
+        this.player.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
+
+        this.player.mixer?.update( mixerUpdateDelta );
+        this.player.updatePlayerData();
     }
   
-    if (this.player?.thirdPersonCamera !== undefined) {
-      this.player.thirdPersonCamera.update(mixerUpdateDelta);
-      if (this.player.characterControls !== undefined){
+    this.updateRemotePlayers( mixerUpdateDelta );
+
+    if ( this.remotePlayers !== undefined ) {
+      this.checkCollisions();
+    }
+
+    if ( this.player?.thirdPersonCamera !== undefined ) {
+      this.player.thirdPersonCamera.update( mixerUpdateDelta );
+      if ( this.player.characterController !== undefined ){
         this.player.updateSocket();
       }
     }
+
     this.renderer.render( this.scene, this.camera );
   }
   
   render() {
     this.renderer.render( this.scene, this.camera );
+  }
+
+  checkCollisions() {
+    const playerBB = this.player?.boundaryBox;
+
+    for( let remotePlayer of this.remotePlayers ) {
+      const remoteBB: Box3 = remotePlayer.boundaryBox;
+      remoteBB.copy( remotePlayer.boxHelper.geometry.boundingBox );
+      remoteBB.applyMatrix4( remotePlayer.boxHelper.matrixWorld );
+
+      if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided == false ) {
+          console.log( 'collision detected!!!!' );
+
+        if( this.player !== undefined ) {
+          this.player.collided = true;
+        }
+      }
+    }
   }
 }
 
