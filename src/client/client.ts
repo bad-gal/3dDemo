@@ -35,8 +35,8 @@ class Client {
 
     this.scene = new THREE.Scene();
     // background and fog
-    this.scene.background = new THREE.Color( 0xe0e0e0 );
-    this.scene.fog = new THREE.Fog( 0xe0e0e0, 20, 100 );
+    this.scene.background = new THREE.Color( 0x0d820d );
+    this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
 
     // lighting
     const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -44,23 +44,18 @@ class Client {
     hemiLight.name = 'hemiLight';
     this.scene.add( hemiLight );
 
-    const dirLight = new THREE.DirectionalLight( 0xffffff );
-    dirLight.position.set( 0, 20, 20 );
-    dirLight.name = 'dirLight';
-    this.scene.add( dirLight );
-
     // ground
-    const mesh = new THREE.Mesh( new THREE.PlaneGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x0DBA28, depthWrite: false } ) );
-    mesh.rotation.x = -Math.PI / 2;
+    const scale = new THREE.Vector3(100, 1, 100);
+    const mesh = new THREE.Mesh( new THREE.BoxGeometry(5000, 0, 5000), new THREE.MeshPhongMaterial( { color: 0x000000 } ));
+    mesh.position.set(-1000, -0.5, 0)
+    mesh.scale.set(scale.x, scale.y, scale.z)
     mesh.name = 'ground mesh';
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     this.scene.add( mesh );
 
     // grid
-    const grid = new THREE.GridHelper( 200, 40, 0x000000, 0x000000 );
-    if ( grid.material instanceof THREE.Material ) {
-        grid.material.opacity = 0.2;
-        grid.material.transparent = true;
-    }
+    const grid = new THREE.GridHelper( 150, 120, 0x0d820d, "green" );
     grid.name = 'ground grid';
     this.scene.add( grid );
 
