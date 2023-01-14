@@ -4,42 +4,47 @@ import { io } from 'socket.io-client';
 export default class PlayerLocal extends Player {
   socket: any;
   
-  constructor(game: any, camera: any) {
-    super(game, camera);
+  constructor( game: any, camera: any ) {
+    super( game, camera );
 
     const player = this;
-    const socket = io().connect();
+    const socket = io()//.connect();
 
-    socket.on('setId', function(data){
+    socket.on('connect', () => {
+      console.log(socket.id)
+    })
+
+    socket.on( 'setId', function( data ) {
 			player.id = data.id;
-      console.log('setId connected', data.id)
+      player.position = data.position;
+      console.log( 'setId connected', data );
 		});
     
-		socket.on('remoteData', function(data: any){
-      //DEBUGGING: game.remoteData is not being passed back to client.ts
+		socket.on( 'remoteData', function( data: any ) {
 			game.remoteData = data;
 		});
 
-    socket.on('deletePlayer', function(data: { id: string; }){
-			const players = game.remotePlayers.filter(function(player: { id: string; }){
+    socket.on( 'deletePlayer', function( data: { id: string; } ) {
+			const players = game.remotePlayers.filter( function( player: { id: string; } ) {
         
-				if (player.id == data.id){
+				if ( player.id == data.id ) {
 					return player;
 				}
 			});
-			if (players.length>0){
-				let index = game.remotePlayers.indexOf(players[0]);
-				if (index!=-1){
+
+			if ( players.length>0 ) {
+				let index = game.remotePlayers.indexOf( players[0] );
+				if ( index!=-1 ) {
 					game.remotePlayers.splice( index, 1 );
-					game.scene.remove(players[0].object);
+					game.scene.remove( players[0].object );
 				}
       }
       else{
-        let index = game.initialisingPlayers.indexOf(data.id);
-        if (index!=-1){
+        let index = game.initialisingPlayers.indexOf( data.id );
+        if ( index!=-1 ){
           const player = game.initialisingPlayers[index];
           player.deleted = true;
-          game.initialisingPlayers.splice(index, 1);
+          game.initialisingPlayers.splice( index, 1 );
         }
       }
 		})
@@ -48,26 +53,27 @@ export default class PlayerLocal extends Player {
   }
   
   initSocket() {
-    this.socket.emit('init',{
+    this.socket.emit( 'init',{
       model: this.model,
-      position: this.characterControls?.model.position,
+      position: this.position,
       quaternion: this.object?.quaternion,
-      action: this.characterControls?.currentAction,
+      velocity: this.characterController?.velocity,
+      action: this.characterController?.currentAction,
     })
   }
 
   updateSocket() {
-    if (this.socket !== undefined) {
-      this.socket.emit('update', {
+    if ( this.socket !== undefined ) {
+      this.socket.emit( 'update', {
         model: this.model,
-        position: this.characterControls?.model.position,
-        quaternion: this.characterControls?.model.quaternion,
-        action: this.characterControls?.currentAction,
+        position: this.characterController?.model.position,
+        quaternion: this.characterController?.model.quaternion,
+        velocity: this.characterController?.velocity,
+        action: this.characterController?.currentAction,
       })
     }
   }
-
-  move(delta: any) {
+  updatePlayerData() {
     this.updateSocket();
   }
 }

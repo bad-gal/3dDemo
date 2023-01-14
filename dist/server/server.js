@@ -42,21 +42,46 @@ class App {
         app.use(express_1.default.static(path_1.default.join(__dirname, '../client')));
         this.server = new http_1.default.Server(app);
         this.io = new socket_io_1.Server(this.server);
+        let playerCount = 0;
+        let positionsInUse = new Map();
+        let playerXPositions = [0, 2, 4, 6, 8];
         this.io.sockets.on('connection', (socket) => {
+            let positionX = playerXPositions[playerCount];
+            if (positionsInUse.size == 0) {
+                console.log('positionsInUse.size', positionsInUse.size);
+                positionX = playerXPositions[0];
+            }
+            else {
+                // loop through playerXPositions to find a value that isn't taken by positionsInUse 
+                for (let index = 0; index < playerXPositions.length; index++) {
+                    if (!Array.from(positionsInUse.values()).includes(playerXPositions[index])) {
+                        console.log('index', index);
+                        positionX = playerXPositions[index];
+                        break;
+                    }
+                }
+                ;
+            }
+            // store positions that are taken by the client
+            positionsInUse.set(socket.id, positionX);
+            console.log('positions in use', positionsInUse);
             socket.userData = {
-                position: { x: 0, y: 0, z: 0 },
+                position: { x: positionX, y: 0, z: 0 },
                 quaternion: { isQuaternion: true, _x: 0, _y: 0, _z: 0, _w: 0 },
                 action: 'idle_02',
             };
+            playerCount += 1;
             console.log('CONNECTED WITH', socket.id);
-            socket.emit('setId', { id: socket.id });
+            console.log('player count', playerCount);
+            socket.emit('setId', { id: socket.id, position: { x: positionX, y: 0, z: 0 } });
             socket.on('disconnect', () => {
                 console.log('removing player : ' + socket.id, ' deleting now');
                 socket.broadcast.emit('deletePlayer', { id: socket.id });
+                // remove the position from the list, another client is free to use it
+                positionsInUse.delete(socket.id);
+                playerCount -= 1;
             });
             socket.on('init', function (data) {
-                console.log('socket init', data.model);
-                console.log('socket data', socket.userData);
                 socket.userData.model = data.model;
                 socket.userData.position = data.position;
                 socket.userData.quaternion = data.quaternion;
@@ -69,7 +94,6 @@ class App {
                 socket.userData.action = data.action;
             });
         });
-        // TODO: Adding and removing of client socket not working properly now that I am using array instead of object
         setInterval(() => {
             let pack = [];
             this.io.sockets.sockets.forEach((socket) => {

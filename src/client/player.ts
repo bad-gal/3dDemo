@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { CharacterControls } from './characterControls';
-import { ThirdPersonCameraController } from './third_person_camera_controller';
+import CharacterController from './characterController';
+import ThirdPersonCameraController from './third_person_camera_controller';
+import { Vector3 } from 'three';
 
 export default class Player {
   local: boolean;
@@ -14,35 +15,39 @@ export default class Player {
   mixer: THREE.AnimationMixer | undefined;
   object: THREE.Object3D<THREE.Event> | undefined;
   deleted: undefined;
-  collider: THREE.Mesh<THREE.BoxGeometry, THREE.MeshBasicMaterial> | undefined;
-  characterControls: CharacterControls | undefined;
+  characterController: CharacterController | undefined;
   thirdPersonCamera: ThirdPersonCameraController | undefined;
-  
-  // private action = '';
+  boundaryBox: any;
+  boxHelper: any;
   action: string;
   animationsMap: any;
-  constructor(game: any, camera: any, options?: any) {
+  position: Vector3 | undefined;
+  collided: boolean;
+
+  constructor( game: any, camera: any, options?: any ) {
     this.local = true;
     let model: string;
     let filename: any;
     this.action = '';
-    const quadRacers: {name: string; filename: string}[]  = [
-      {name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb"},
-      {name: "green rider", filename:"assets/green_rider_quad.glb"},
-      {name: "lime rider", filename:"assets/lime_rider_quad.glb"},
-      {name: "mustard rider", filename:"assets/mustard_rider_quad.glb"},
-      {name: "neon rider", filename:"assets/neon_rider_quad.glb"},
-      {name: "orange rider", filename:"assets/orange_rider_quad.glb"},
-      {name: "purple rider", filename:"assets/purple_rider_quad.glb"},
-      {name: "red rider", filename:"assets/red_rider_quad.glb"},
-      {name: "red star rider", filename:"assets/red_star_rider_quad.glb"},
-      {name: "blue rider", filename:"assets/blue_rider_quad.glb"},
+    this.collided = false;
+
+    const quadRacers: { name: string; filename: string }[]  = [
+      { name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb" },
+      { name: "green rider", filename:"assets/green_rider_quad.glb" },
+      { name: "lime rider", filename:"assets/lime_rider_quad.glb" },
+      { name: "mustard rider", filename:"assets/mustard_rider_quad.glb" },
+      { name: "neon rider", filename:"assets/neon_rider_quad.glb" },
+      { name: "orange rider", filename:"assets/orange_rider_quad.glb" },
+      { name: "purple rider", filename:"assets/purple_rider_quad.glb" },
+      { name: "red rider", filename:"assets/red_rider_quad.glb" },
+      { name: "red star rider", filename:"assets/red_star_rider_quad.glb" },
+      { name: "blue rider", filename:"assets/blue_rider_quad.glb" },
     ]
 
-    if(options === undefined) {
-      model = quadRacers[Math.floor(Math.random()*quadRacers.length )].name;
+    if( options === undefined ) {
+      model = quadRacers[Math.floor( Math.random()*quadRacers.length )].name;
     } 
-    else if (typeof options === 'object') {
+    else if ( typeof options === 'object' ) {
       this.local = false;
       this.options = options;
       this.id = options.id;
@@ -286,92 +291,109 @@ export default class Player {
     ];
 
     this.animationsMap = new Map();
-    filename = quadRacers.find(racer => racer.name === model)?.filename;
+    filename = quadRacers.find( racer => racer.name === model )?.filename;
 
     loader.load( filename, ( object ) => {
       object.scene.name = model;
-      
-      const mixer = new THREE.AnimationMixer(object.scene);
+    
+      const mixer = new THREE.AnimationMixer( object.scene );
       clips = object.animations;
-      let action;
-      
+      let clipAction;
+
       // store the animations from the model in an array
-      animationsFrameLocations.forEach( (clip) => {
+      animationsFrameLocations.forEach( ( clip ) => {
           let animClip = THREE.AnimationUtils.subclip ( clips[1], clip.name, clip.frameStart, clip.frameEnd, fps );
-          action = mixer.clipAction( animClip );
-          this.animationsMap.set(clip.name, action);
+          clipAction = mixer.clipAction( animClip );
+          this.animationsMap.set( clip.name, clipAction );
       });
 
       player.root = object;
       player.mixer = mixer;
       player.object = object.scene;
       
-      if (player.deleted === undefined) {
+      if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
       }
 
-      if(player.local) {
-        console.log("PLAYER IS LOCAL")
-        let characterControls = new CharacterControls( object.scene, mixer, this.animationsMap, camera, 'idle_02');
-        let thirdPersonCamera = new ThirdPersonCameraController({target: characterControls});
-        player.characterControls = characterControls;
+      if( player.local ) {
+        this.action = 'idle_02';
+        let characterController = new CharacterController( object.scene, mixer, this.animationsMap, camera, this.action, this.position );
+        let thirdPersonCamera = new ThirdPersonCameraController( { target: characterController } );
+        player.characterController = characterController;
         player.thirdPersonCamera = thirdPersonCamera;
+
         // without the ignore we get TS2339: Property 'initSocket' does not exist on type 'Player'
         // even though initSocket is a valid property of PlayerLocal which extends Player
         //@ts-ignore
-        if(player.initSocket !== undefined){
+        if( player.initSocket !== undefined ){
           //@ts-ignore
           player.initSocket();
         }
       } 
       else {
-        console.log("PLAYER IS REMOTE")
-        const geometry = new THREE.BoxGeometry(100,300,100);
-				const material = new THREE.MeshBasicMaterial({visible: false});
-				const box = new THREE.Mesh(geometry, material);
-				box.name = "Collider";
-				box.position.set(0, 150, 0);
-				player.object.add(box);
-				player.collider = box;
-        // console.log('player userData', player.object.userData)
 				player.object.userData.id = player.id;
 				player.object.userData.remotePlayer = true;
+        player.object.userData.position = options.position;
+        this.position = new Vector3( options.position.x, options.position.y, options.position.z );
 
-				const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(player), 1);
-				game.remotePlayers.push(players[0]);
+				const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
+				game.remotePlayers.push( players[0] );
       }      
+
+      // create player boundary box for collision detection
+      const geometry = new THREE.BoxGeometry( 1,2.5, 1 );
+      const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
+
+      this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
+      this.boxHelper.visible = false;
+
+      this.boundaryBox = new THREE.Box3();
+      this.boundaryBox.setFromObject( this.boxHelper );
+
+      object.scene.add( this.boxHelper );
     });
   }
-  
 
-  update(delta: any){
-    this.mixer?.update(delta);
+  update( delta: any ){
+    this.mixer?.update( delta );
 
-    if(this.game.remoteData.length > 0){
+    if( this.game.remoteData.length > 0 ){
       let found = false;
-      for(let data of this.game.remoteData){
-        if(data.id != this.id) continue;
+      for( let data of this.game.remoteData ){
+        if( data.id != this.id ) continue;
 
         //player found
-        this.object?.position.set(data.position.x, data.position.y, data.position.z);
-        this.object?.quaternion.set(data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w);
+        this.object?.position.set( data.position.x, data.position.y, data.position.z );
+        this.object?.quaternion.set( data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w );
 
-        if(!this.local) {
-          // console.log('this.action',this.action, 'data.action', data.action)
-          if(this.action !== data.action){
-            if( this.action == '') this.action = 'idle_02';
+        if( !this.local ) {
+          if( this.action !== data.action ) {
+            if( this.action == '' ) this.action = 'idle_02';
 
-            const currentClip = this.animationsMap.get(this.action);
+            this.object?.updateMatrix()
+            this.object?.updateMatrixWorld( true );
+
+            const currentClip = this.animationsMap.get( this.action );
             currentClip.fadeOut( 0.2 );
-            const newClip = this.animationsMap.get(data.action);
-            newClip.reset().fadeIn( 0.2 ).play();
+
+            const newClip = this.animationsMap.get( data.action );
+
+            if( data.action == 'drive_fail_02' ){
+              console.log('data action: ', data.action)
+              newClip.reset().fadeIn( 0.2 ).setLoop( THREE.LoopOnce, 1 );
+              newClip.clampWhenFinished = true;
+              newClip.play();
+            } 
+            else {
+              newClip.reset().fadeIn( 0.2 ).play();
+            }
+
             this.action = data.action;
           }
         }
-
         found = true;
       }
-      if(!found) this.game.remotePlayer(this);
+      if( !found ) this.game.remotePlayer( this );
     }
   }
 }

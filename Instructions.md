@@ -84,3 +84,16 @@ NOTE: You can click on the star on the track that you want to play to see the se
 In the "Active Strip" you can move the from start to 0 if you want
 
 https://gist.github.com/nickjanssen/666517984aff72eaf798
+
+https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
+cannon.js
+
+To access remote players main values
+remotePlayer.object.position
+remotePlayer.object.quaternion
+remotePlayer.boundaryBox
+
+To access local player main values
+this.player.object.position
+this.player.object.quaternion
+this.player.boundaryBox
