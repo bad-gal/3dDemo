@@ -46,9 +46,9 @@ class Client {
 
     // ground
     const scale = new THREE.Vector3(100, 1, 100);
-    const mesh = new THREE.Mesh( new THREE.BoxGeometry(5000, 0, 5000), new THREE.MeshPhongMaterial( { color: 0x000000 } ));
-    mesh.position.set(-1000, -0.5, 0)
-    mesh.scale.set(scale.x, scale.y, scale.z)
+    const mesh = new THREE.Mesh( new THREE.BoxGeometry( 5000, 0, 5000 ), new THREE.MeshPhongMaterial( { color: 0x000000 } ));
+    mesh.position.set( -1000, -0.5, 0 )
+    mesh.scale.set( scale.x, scale.y, scale.z )
     mesh.name = 'ground mesh';
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -193,18 +193,30 @@ class Client {
   }
 
   checkCollisions() {
+    this.player?.boxHelper?.geometry.computeBoundingBox();
+    this.player?.boxHelper?.update();
+    this.player?.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
     const playerBB = this.player?.boundaryBox;
 
     for( let remotePlayer of this.remotePlayers ) {
+      remotePlayer?.boxHelper?.geometry.computeBoundingBox();
+      remotePlayer?.boxHelper?.update();
+      remotePlayer?.boundaryBox?.copy( remotePlayer.boxHelper.geometry.boundingBox ).applyMatrix4( remotePlayer.boxHelper.matrixWorld );
+
       const remoteBB: Box3 = remotePlayer.boundaryBox;
-      remoteBB.copy( remotePlayer.boxHelper.geometry.boundingBox );
-      remoteBB.applyMatrix4( remotePlayer.boxHelper.matrixWorld );
 
       if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided == false ) {
-          console.log( 'collision detected!!!!' );
+        console.log('intersects but not necessarily collided')
+        const distance = this.player?.object?.position?.distanceTo(remotePlayer.object.position)
+        if(distance !== undefined){
+          if(distance < 1){
+            console.log( 'collision detected!!!!' );
 
-        if( this.player !== undefined ) {
-          this.player.collided = true;
+            if( this.player !== undefined ) {
+              console.log('player is going to be set as collided - the distance is', distance)
+              this.player.collided = true;
+            }
+          }
         }
       }
     }

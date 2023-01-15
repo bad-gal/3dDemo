@@ -55,7 +55,6 @@ export default class CharacterController {
 
       if ( collided == true ) {
         play = "drive_fail_02";
-        console.log('happens in charCon update')
       }
 
       if ( play == '' ) {

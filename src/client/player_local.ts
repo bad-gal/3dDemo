@@ -8,13 +8,13 @@ export default class PlayerLocal extends Player {
     super( game, camera );
 
     const player = this;
-    const socket = io()//.connect();
+    const socket = io();
 
-    socket.on('connect', () => {
+    socket.once('connect', () => {
       console.log(socket.id)
     })
 
-    socket.on( 'setId', function( data ) {
+    socket.once( 'setId', function( data ) {
 			player.id = data.id;
       player.position = data.position;
       console.log( 'setId connected', data );

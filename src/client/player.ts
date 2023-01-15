@@ -310,9 +310,25 @@ export default class Player {
       player.root = object;
       player.mixer = mixer;
       player.object = object.scene;
+
       
       if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
+        // create player boundary box for collision detection
+        const geometry = new THREE.BoxGeometry( 1,2.5, 1 );
+        const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
+
+        this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
+        this.boxHelper.visible = false;
+
+        this.boundaryBox = new THREE.Box3();
+        this.boundaryBox.setFromObject( this.boxHelper );
+
+        object.scene.add( this.boxHelper );
+
+        this.boxHelper?.geometry.computeBoundingBox();
+        this.boxHelper?.update();
+        this.boundaryBox?.copy( this.boxHelper.geometry.boundingBox ).applyMatrix4( this.boxHelper.matrixWorld );
       }
 
       if( player.local ) {
@@ -338,19 +354,7 @@ export default class Player {
 
 				const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
 				game.remotePlayers.push( players[0] );
-      }      
-
-      // create player boundary box for collision detection
-      const geometry = new THREE.BoxGeometry( 1,2.5, 1 );
-      const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
-
-      this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
-      this.boxHelper.visible = false;
-
-      this.boundaryBox = new THREE.Box3();
-      this.boundaryBox.setFromObject( this.boxHelper );
-
-      object.scene.add( this.boxHelper );
+      }
     });
   }
 
