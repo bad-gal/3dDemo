@@ -59,6 +59,7 @@ export default class PlayerLocal extends Player {
       quaternion: this.object?.quaternion,
       velocity: this.characterController?.velocity,
       action: this.characterController?.currentAction,
+      collided: this.collided,
     })
   }
 
@@ -70,6 +71,7 @@ export default class PlayerLocal extends Player {
         quaternion: this.characterController?.model.quaternion,
         velocity: this.characterController?.velocity,
         action: this.characterController?.currentAction,
+        collided: this.collided,
       })
     }
   }

@@ -14,6 +14,7 @@ class Client {
   clock: any;
   keysPressed: { [key: string]: boolean; } = {};
   counter: number;
+  BLINK_AMOUNT: number;
 
   constructor() {
     this.player;
@@ -27,6 +28,8 @@ class Client {
     this.keysPressed;
     this.clock = new THREE.Clock();
     this.counter = 0;
+
+    this.BLINK_AMOUNT = 11;
 
     // camera
     this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
@@ -98,7 +101,7 @@ class Client {
     const game = this;
     const remotePlayers: any[] = [];
 
-    this.remoteData.forEach( function( data: { id: any; model: any, position: any} ) {
+    this.remoteData.forEach( function( data: { id: any; model: any, position: any } ) {
       if( game.player?.id != data.id ) {
 
         // is player being initialised?
@@ -111,7 +114,7 @@ class Client {
         // if not being initialised check the remote players array
         if( iplayer === undefined ) {
           let rplayer: Player | undefined;
-          game.remotePlayers.forEach( function( player: any ){
+          game.remotePlayers.forEach( function( player: any ) {
             if( player.id === data.id ) {
               rplayer = player;
             }
@@ -119,7 +122,7 @@ class Client {
 
           if( rplayer === undefined ){
             // initialise remote player
-            game.initialisingPlayers.push( new Player( game, game.camera, data ) );
+            game.initialisingPlayers.push( new Player( game, game.camera, data ));
           } 
           else{
             //player exists
@@ -161,8 +164,30 @@ class Client {
 
     if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
+        // run blink animation after player on player collision
+        if( this.player.collided ) {
+          this.player.mixer?.addEventListener( 'finished', function() {
+            if ( game.player?.skinnedMesh !== undefined ) {
+              game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
+            }
+          });
+        }
     }
   
+    this.updateRemotePlayers( mixerUpdateDelta );
+
+    if ( this.remotePlayers !== undefined ) {
+      this.checkCollisions();
+      this.remotePlayers.forEach(( rPlayer: Player ) => {
+        // run blink animation after player on player collision
+        if( rPlayer.collided ) {
+          rPlayer.mixer?.addEventListener( 'finished', function() {
+            game.onBlinkPlayer( game.BLINK_AMOUNT, rPlayer?.skinnedMesh, rPlayer );
+          });
+        }
+      });
+    }
+
     if( this.player?.mixer != undefined ) {
         this.player.boxHelper?.geometry.computeBoundingBox();
         this.player.boxHelper?.update();
@@ -172,15 +197,9 @@ class Client {
         this.player.updatePlayerData();
     }
   
-    this.updateRemotePlayers( mixerUpdateDelta );
-
-    if ( this.remotePlayers !== undefined ) {
-      this.checkCollisions();
-    }
-
     if ( this.player?.thirdPersonCamera !== undefined ) {
       this.player.thirdPersonCamera.update( mixerUpdateDelta );
-      if ( this.player.characterController !== undefined ){
+      if ( this.player.characterController !== undefined ) {
         this.player.updateSocket();
       }
     }
@@ -207,9 +226,9 @@ class Client {
 
       if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided == false ) {
         console.log('intersects but not necessarily collided')
-        const distance = this.player?.object?.position?.distanceTo(remotePlayer.object.position)
+        const distance = this.player?.object?.position?.distanceTo( remotePlayer.object.position );
         if(distance !== undefined){
-          if(distance < 1){
+          if( distance < 1 ) {
             console.log( 'collision detected!!!!' );
 
             if( this.player !== undefined ) {
@@ -220,6 +239,35 @@ class Client {
         }
       }
     }
+  }
+
+  onBlinkPlayer( numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
+    let iterationCounter = 0;
+
+    this.setBlink( iterationCounter, numberOfIterations, skinnedMesh, player );
+  }
+
+  changePlayerOpacity( skinnedMesh: THREE.SkinnedMesh[], counter: number ) {
+    skinnedMesh?.forEach( ( mesh ) => {
+      let opacityScale = counter % 2 === 0 ? 0.5 : 1;
+        //@ts-ignore
+        mesh.material.opacity = opacityScale;
+    })
+  }
+
+  setBlink( iteratorIndex: number, numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
+    const game = this;
+    setTimeout( function() {
+      game.changePlayerOpacity( skinnedMesh, iteratorIndex );
+      iteratorIndex++;
+
+      if ( iteratorIndex >= numberOfIterations ) {
+        console.log('we have finished with the blinking', player)
+        player.resetCollidedPlayer();
+        return;
+      }
+      game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );
+    }, 300)
   }
 }
 

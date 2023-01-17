@@ -57,6 +57,7 @@ class App {
         position: { x: positionX, y: 0,z: 0 },
         quaternion: { isQuaternion: true, _x: 0, _y: 0, _z: 0, _w: 0 },
         action: 'idle_02',
+        collided: false,
       }
 
       playerCount += 1;
@@ -78,6 +79,7 @@ class App {
         socket.userData.position = data.position;
         socket.userData.quaternion = data.quaternion;
         socket.userData.action = data.action;
+        socket.userData.collided = data.collided;
       });
 
       socket.on('update', function(data){
@@ -85,6 +87,7 @@ class App {
         socket.userData.quaternion = data.quaternion;
         socket.userData.model = data.model;
         socket.userData.action = data.action;
+        socket.userData.collided = data.collided;
       });
     });
 
@@ -99,6 +102,7 @@ class App {
             position: socket.userData.position,
             quaternion: socket.userData.quaternion,
             action: socket.userData.action,
+            collided: socket.userData.collided,
           });
         }
       });
