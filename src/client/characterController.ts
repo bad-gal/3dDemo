@@ -49,6 +49,7 @@ export default class CharacterController {
 
   public update( delta: number, collided: boolean, keysPressed: { [key: string]: boolean; } = {} ) {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
+    let inputVector = new THREE.Vector3();
 
     if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided == true ) {
       let play = '';
@@ -81,7 +82,7 @@ export default class CharacterController {
         }
       }
       this.mixer.update( delta );
-
+      inputVector.applyQuaternion( this.camera.quaternion );
     } 
     else {
       this.userInput( delta, keysPressed );
@@ -90,12 +91,12 @@ export default class CharacterController {
   };
 
   checkActiveKeys( key: boolean ) {
-    return key == false
+    return key == false;
   }
 
   isKeyPressed( keysPressed: { [key: string]: boolean; } = {} ) {
-    const keys = Object.values( keysPressed )
-    return keys
+    const keys = Object.values( keysPressed );
+    return keys;
   }
 
   userInput( delta: number, keysPressed: { [key: string]: boolean; } = {} ) {

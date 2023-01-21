@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import CharacterController from './characterController';
 import ThirdPersonCameraController from './third_person_camera_controller';
-import { Vector3 } from 'three';
+import { SkinnedMesh, Vector3 } from 'three';
 
 export default class Player {
   local: boolean;
@@ -23,6 +23,7 @@ export default class Player {
   animationsMap: any;
   position: Vector3 | undefined;
   collided: boolean;
+  skinnedMesh: THREE.SkinnedMesh[] = [];
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
@@ -295,7 +296,6 @@ export default class Player {
 
     loader.load( filename, ( object ) => {
       object.scene.name = model;
-    
       const mixer = new THREE.AnimationMixer( object.scene );
       clips = object.animations;
       let clipAction;
@@ -311,9 +311,17 @@ export default class Player {
       player.mixer = mixer;
       player.object = object.scene;
 
-      
+      // this sets the transparency of the gltf skin, we store the skinned mesh for easy access
+      object.scene.traverse((o) => {
+        if (o instanceof SkinnedMesh) {
+          o.material.transparent = true
+          this.skinnedMesh.push(o)
+        }
+      })
+
       if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
+
         // create player boundary box for collision detection
         const geometry = new THREE.BoxGeometry( 1,2.5, 1 );
         const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
@@ -350,6 +358,7 @@ export default class Player {
 				player.object.userData.id = player.id;
 				player.object.userData.remotePlayer = true;
         player.object.userData.position = options.position;
+        player.object.userData.collided = player.collided;
         this.position = new Vector3( options.position.x, options.position.y, options.position.z );
 
 				const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
@@ -361,9 +370,9 @@ export default class Player {
   update( delta: any ){
     this.mixer?.update( delta );
 
-    if( this.game.remoteData.length > 0 ){
+    if( this.game.remoteData.length > 0 ) {
       let found = false;
-      for( let data of this.game.remoteData ){
+      for( let data of this.game.remoteData ) {
         if( data.id != this.id ) continue;
 
         //player found
@@ -383,7 +392,6 @@ export default class Player {
             const newClip = this.animationsMap.get( data.action );
 
             if( data.action == 'drive_fail_02' ){
-              console.log('data action: ', data.action)
               newClip.reset().fadeIn( 0.2 ).setLoop( THREE.LoopOnce, 1 );
               newClip.clampWhenFinished = true;
               newClip.play();
@@ -393,11 +401,30 @@ export default class Player {
             }
 
             this.action = data.action;
+            this.collided = data.collided;
           }
         }
         found = true;
       }
       if( !found ) this.game.remotePlayer( this );
+    }
+  }
+
+  resetCollidedPlayer() {
+    this.collided = false;
+    if ( this.object !== undefined ) {
+      if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
+      this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
+      
+      this.skinnedMesh.forEach((mesh: THREE.SkinnedMesh) =>  {
+        //@ts-ignore
+        mesh.material.opacity = 1;
+      })
+     
+      this.boxHelper?.geometry.computeBoundingBox();
+      this.boxHelper?.update();
+      this.action = 'idle_02';
+      this.boundaryBox?.copy( this.boxHelper.geometry.boundingBox ).applyMatrix4( this.boxHelper.matrixWorld );
     }
   }
 }
