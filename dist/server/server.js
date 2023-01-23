@@ -45,7 +45,14 @@ class App {
         let playerCount = 0;
         let positionsInUse = new Map();
         let playerXPositions = [0, 2, 4, 6, 8];
+        let quadRacerList = [
+            "camouflage rider", "green rider", "lime rider", "mustard rider",
+            "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
+            "blue rider",
+        ];
         this.io.sockets.on('connection', (socket) => {
+            // send list of quadRacers to clients
+            socket.emit('quadRacerList', quadRacerList);
             let positionX = playerXPositions[playerCount];
             if (positionsInUse.size == 0) {
                 console.log('positionsInUse.size', positionsInUse.size);
@@ -96,7 +103,14 @@ class App {
                 socket.userData.action = data.action;
                 socket.userData.collided = data.collided;
             });
+            socket.on('updateQuadRacers', function (data) {
+                quadRacerList = data;
+                console.log(data);
+            });
         });
+        setInterval(() => {
+            this.io.emit('sendQuadRacerList', quadRacerList);
+        }, 2000 / FPS);
         setInterval(() => {
             let pack = [];
             this.io.sockets.sockets.forEach((socket) => {

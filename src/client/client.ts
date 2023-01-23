@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import Player from './player';
 import PlayerLocal from './player_local';
 import { Box3 } from 'three';
+import { io } from 'socket.io-client';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -15,6 +16,19 @@ class Client {
   keysPressed: { [key: string]: boolean; } = {};
   counter: number;
   BLINK_AMOUNT: number;
+  currentState: string;
+  GAMESTATES = {
+    MENU: 'menu',
+    WAITING_ROOM: 'waiting-room',
+    INIT: 'initial',
+    PLAY: 'play',
+  }
+  socket = io();
+  initPlayerId: any;
+  initPlayerPosition: any;
+  quadRacerList: any;
+  quadRacerFullList: string[];
+ 
 
   constructor() {
     this.player;
@@ -28,9 +42,193 @@ class Client {
     this.keysPressed;
     this.clock = new THREE.Clock();
     this.counter = 0;
-
     this.BLINK_AMOUNT = 11;
+    this.initPlayerId;
+    this.initPlayerPosition;
+    this.quadRacerList = [];
+    this.quadRacerFullList = [
+      "camouflage rider", "green rider", "lime rider", "mustard rider",
+      "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
+      "blue rider",
+    ];
 
+    this.socket.once('connect', () => {
+      console.log(this.socket.id)
+    })
+
+    window.addEventListener( 'resize', () => this.onWindowResize(), false );
+    this.currentState = this.GAMESTATES.MENU;
+    this.onMenuState();
+  }
+
+  onWindowResize() {
+    if (this.currentState == this.GAMESTATES.INIT || this.currentState == this.GAMESTATES.PLAY){
+      this.camera.aspect = window.innerWidth / window.innerHeight;
+      this.camera.updateProjectionMatrix();
+      this.renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+    else {
+      // all other states should handle window resize without the camera or renderer
+      window.resizeTo( window.innerWidth, window.innerHeight );
+    }
+  }
+
+  onMenuState() {
+    const game = this;
+
+    // get the list of quadRacers
+    this.socket.on( 'quadRacerList', function( data: string[]) {
+      game.quadRacerList = data;
+    });
+
+    // get the player id and it's initial position
+    this.socket.once( 'setId', function( data: any ) {
+			game.initPlayerId = data.id;
+      game.initPlayerPosition = data.position;
+      console.log( 'setId connected', data );
+		});
+
+    // create a container
+    const containerDiv = document.createElement("div");
+    containerDiv.className = ("container");
+    containerDiv.id = ('container');
+    document.body.appendChild(containerDiv);
+
+    // create a new div element
+    const menuDiv = document.createElement("div");
+    menuDiv.className = ('menu-title');
+    const newContent = document.createTextNode("Welcome to 3D Demo");
+
+    // add the text node to the newly created div
+    menuDiv.appendChild(newContent);
+    containerDiv.appendChild(menuDiv)
+
+    // add paragraph
+    const menuParagraph = document.createElement("p");
+    menuParagraph.className = ('menu-para');
+    const paraContent = document.createTextNode("Play this exciting demo of a 3D racing game with friends. Click button to join the waiting room. Let the fun begin!!!");
+    menuParagraph.appendChild(paraContent);
+    containerDiv.appendChild(menuParagraph);
+
+    // add button
+    const btn = document.createElement("button");
+    btn.className = ('btn waiting');
+    btn.id = ('joinButton');
+    btn.innerHTML = "Join Waiting Room";
+    containerDiv.appendChild(btn);
+
+    const waitingBtn: HTMLElement = document.getElementById("joinButton")!;
+    
+    waitingBtn.addEventListener("click", function() {
+      game.currentState = game.GAMESTATES.WAITING_ROOM;
+      game.onWaitingRoom();
+    });
+  };
+
+  onWaitingRoom() {
+    const game = this;
+
+    console.log('IN WAITING ROOM')
+
+    // remove the container div 
+    const container: HTMLElement = document.getElementById( "container" )!;
+    container.remove();
+
+    // create a new container
+    const containerDiv = document.createElement( "div" );
+    containerDiv.className = ( "waiting-room-container" );
+    containerDiv.id = ( 'waiting-room-container' );
+    document.body.appendChild( containerDiv );
+
+    // create a new div element with a title
+    const menuDiv = document.createElement( "div" );
+    menuDiv.className = ( 'waiting-room-title' );
+    const newContent = document.createTextNode( "Waiting Room" );
+    menuDiv.appendChild( newContent );
+    containerDiv.appendChild( menuDiv )
+
+    // add paragraph
+    const menuParagraph = document.createElement( "p" );
+    menuParagraph.className = ( 'waiting-room-para');
+    const paraContent = document.createTextNode( "Choose a player" );
+    menuParagraph.appendChild( paraContent );
+    containerDiv.appendChild( menuParagraph );
+
+    // create flexbox with list of quadRacers
+    const flex = document.createElement( "ul" );
+    flex.className = ( "player-container" );
+   
+    for ( let index = 0; index < this.quadRacerFullList.length; index++ ) {
+      let data = document.createElement( "button" );
+      data.className = ( "flex-item" );
+      let value = document.createTextNode( this.quadRacerFullList[index] );
+      data.appendChild( value );
+      flex.appendChild( data );
+    }
+    containerDiv.appendChild( flex );
+
+    let chosenQuadRacer: string;
+
+    // player can click to select a quadRacer
+    let quadRacerItems: HTMLCollectionOf<Element> = document.getElementsByClassName( "flex-item" )!;
+    
+    for ( let index = 0; index < quadRacerItems.length; index++ ) {
+      quadRacerItems[index].addEventListener("click", function() {
+        console.log( quadRacerItems[index].innerHTML );
+
+        // store the chosen quadRacer
+        chosenQuadRacer = quadRacerItems[index].innerHTML;
+
+        // remove chosen quadRacer from quadRacerList
+        const quadIndex = game.quadRacerList.indexOf( chosenQuadRacer );
+        if ( quadIndex > -1 ) game.quadRacerList.splice( quadIndex, 1 );
+
+        // send amended quadRacerList to server
+        game.socket.emit( 'updateQuadRacers', game.quadRacerList );
+
+        // the chosen quadRacer should be disabled
+        (quadRacerItems[index] as HTMLButtonElement).disabled = true;
+
+        // change the chosen quadRacer colour to grey
+        (quadRacerItems[index] as HTMLElement).style.background = "gray";
+        (quadRacerItems[index] as HTMLElement).style.color ="#383838"
+        console.log('quadRacerList', game.quadRacerList)
+      });
+    }
+
+    // we need to keep requesting the quadRacerList from the server
+    game.socket.on( 'sendQuadRacerList', function( data: string[]) {
+      game.quadRacerList = data;
+      
+      // we need to update changes made by other players
+      let diff = game.quadRacerFullList.filter( x => !game.quadRacerList.includes(x));
+
+      // then we need to go through them to make sure they are disabled
+      for ( let index = 0; index < quadRacerItems.length; index++ ) {
+        if ( (quadRacerItems[index] as HTMLButtonElement).disabled == true) {
+          continue
+        } 
+
+        if (diff.includes(quadRacerItems[index].innerHTML)){
+          // change the quadRacer to disabled and change colour to grey
+          (quadRacerItems[index] as HTMLButtonElement).disabled = true;
+          (quadRacerItems[index] as HTMLElement).style.background = "gray";
+          (quadRacerItems[index] as HTMLElement).style.color ="#383838"
+        }
+      }
+    });
+  }
+
+  onInitState() {
+    console.log('In init state')
+
+    // remove the waiting room contents 
+    // const element: HTMLElement = document.getElementById("container")!;
+    // element.remove();   
+
+    const game = this;
+    
+    // set up 3D space
     // camera
     this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
     this.camera.position.set( -5, 3, 10);
@@ -69,31 +267,27 @@ class Client {
     this.renderer.outputEncoding = THREE.sRGBEncoding;
 
     document.body.appendChild( this.renderer.domElement );
+  };
 
-    this.player = new PlayerLocal( this, this.camera );
+  onPlayState() {
+    if ( this.currentState == this.GAMESTATES.PLAY ) {
+      this.player = new PlayerLocal( this, this.camera, this.socket );
 
-    document.addEventListener( 'keydown', ( e ) => {
-      if ( this.player?.characterController ) {
-        this.keysPressed[e.key] = true;
-      }
-    });
+      document.addEventListener( 'keydown', ( e ) => {
+        if ( this.player?.characterController ) {
+          this.keysPressed[e.key] = true;
+        }
+      });
     
-    document.addEventListener( 'keyup', ( e ) => {
-      if( this.player?.characterController ) {
-        this.keysPressed[e.key] = false;
-      }
-    });
+      document.addEventListener( 'keyup', ( e ) => {
+        if( this.player?.characterController ) {
+          this.keysPressed[e.key] = false;
+        }
+      });
 
-    window.addEventListener( 'resize', () => this.onWindowResize(), false );
-
-    this.animate();
-  }
-
-  onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize( window.innerWidth, window.innerHeight );
-  }
+      this.animate();
+    }
+  };
 
   updateRemotePlayers( delta: number ) {
     if( this.remoteData === undefined || this.remoteData.length == 0 || this.player === undefined || this.player.id === undefined ) return;
@@ -162,7 +356,8 @@ class Client {
 
     requestAnimationFrame( function(){ game.animate() } );
 
-    if ( this.player?.characterController !== undefined ) {
+    if ( this.currentState == this.GAMESTATES.PLAY) {
+      if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
         // run blink animation after player on player collision
         if( this.player.collided ) {
@@ -172,35 +367,36 @@ class Client {
             }
           });
         }
-    }
+      }
   
-    this.updateRemotePlayers( mixerUpdateDelta );
+      this.updateRemotePlayers( mixerUpdateDelta );
 
-    if ( this.remotePlayers !== undefined ) {
-      this.checkCollisions();
-      this.remotePlayers.forEach(( rPlayer: Player ) => {
-        // run blink animation after player on player collision
-        if( rPlayer.collided ) {
-          rPlayer.mixer?.addEventListener( 'finished', function() {
-            game.onBlinkPlayer( game.BLINK_AMOUNT, rPlayer?.skinnedMesh, rPlayer );
-          });
+      if ( this.remotePlayers !== undefined ) {
+        this.checkCollisions();
+        this.remotePlayers.forEach(( rPlayer: Player ) => {
+          // run blink animation after player on player collision
+          if( rPlayer.collided ) {
+            rPlayer.mixer?.addEventListener( 'finished', function() {
+              game.onBlinkPlayer( game.BLINK_AMOUNT, rPlayer?.skinnedMesh, rPlayer );
+            });
+          }
+        });
+      }
+
+      if( this.player?.mixer != undefined ) {
+          this.player.boxHelper?.geometry.computeBoundingBox();
+          this.player.boxHelper?.update();
+          this.player.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
+
+          this.player.mixer?.update( mixerUpdateDelta );
+          this.player.updatePlayerData();
+      }
+  
+      if ( this.player?.thirdPersonCamera !== undefined ) {
+        this.player.thirdPersonCamera.update( mixerUpdateDelta );
+        if ( this.player.characterController !== undefined ) {
+          this.player.updateSocket();
         }
-      });
-    }
-
-    if( this.player?.mixer != undefined ) {
-        this.player.boxHelper?.geometry.computeBoundingBox();
-        this.player.boxHelper?.update();
-        this.player.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
-
-        this.player.mixer?.update( mixerUpdateDelta );
-        this.player.updatePlayerData();
-    }
-  
-    if ( this.player?.thirdPersonCamera !== undefined ) {
-      this.player.thirdPersonCamera.update( mixerUpdateDelta );
-      if ( this.player.characterController !== undefined ) {
-        this.player.updateSocket();
       }
     }
 

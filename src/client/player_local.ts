@@ -1,24 +1,13 @@
 import Player from "./player";
-import { io } from 'socket.io-client';
+
 
 export default class PlayerLocal extends Player {
   socket: any;
   
-  constructor( game: any, camera: any ) {
+  constructor( game: any, camera: any, socket: any ) {
     super( game, camera );
 
     const player = this;
-    const socket = io();
-
-    socket.once('connect', () => {
-      console.log(socket.id)
-    })
-
-    socket.once( 'setId', function( data ) {
-			player.id = data.id;
-      player.position = data.position;
-      console.log( 'setId connected', data );
-		});
     
 		socket.on( 'remoteData', function( data: any ) {
 			game.remoteData = data;
