@@ -1,3 +1,4 @@
+import { Vector3 } from "three";
 import Player from "./player";
 
 
@@ -9,13 +10,20 @@ export default class PlayerLocal extends Player {
 
     const player = this;
     
+    player.id = socket.id;
+    
+    socket.emit('getPlayerPosition', 'getPlayerPosition');
+
+    socket.on( 'playerPosition', function( data: any ) {
+      player.position = new Vector3( data.position.x, data.position.y, data.position.z );
+		});
+
 		socket.on( 'remoteData', function( data: any ) {
 			game.remoteData = data;
 		});
 
     socket.on( 'deletePlayer', function( data: { id: string; } ) {
 			const players = game.remotePlayers.filter( function( player: { id: string; } ) {
-        
 				if ( player.id == data.id ) {
 					return player;
 				}
@@ -37,7 +45,6 @@ export default class PlayerLocal extends Player {
         }
       }
 		})
-
     this.socket = socket;
   }
   

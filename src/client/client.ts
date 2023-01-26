@@ -22,13 +22,13 @@ class Client {
     WAITING_ROOM: 'waiting-room',
     INIT: 'initial',
     PLAY: 'play',
+    EXPELLED: 'expelled',
   }
   socket = io();
   initPlayerId: any;
-  initPlayerPosition: any;
   quadRacerList: any;
   quadRacerFullList: string[];
- 
+  userModel: string;
 
   constructor() {
     this.player;
@@ -44,7 +44,7 @@ class Client {
     this.counter = 0;
     this.BLINK_AMOUNT = 11;
     this.initPlayerId;
-    this.initPlayerPosition;
+    this.userModel = '';
     this.quadRacerList = [];
     this.quadRacerFullList = [
       "camouflage rider", "green rider", "lime rider", "mustard rider",
@@ -62,7 +62,7 @@ class Client {
   }
 
   onWindowResize() {
-    if (this.currentState == this.GAMESTATES.INIT || this.currentState == this.GAMESTATES.PLAY){
+    if ( this.currentState === this.GAMESTATES.INIT || this.currentState === this.GAMESTATES.PLAY ) {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize( window.innerWidth, window.innerHeight );
@@ -73,21 +73,7 @@ class Client {
     }
   }
 
-  onMenuState() {
-    const game = this;
-
-    // get the list of quadRacers
-    this.socket.on( 'quadRacerList', function( data: string[]) {
-      game.quadRacerList = data;
-    });
-
-    // get the player id and it's initial position
-    this.socket.once( 'setId', function( data: any ) {
-			game.initPlayerId = data.id;
-      game.initPlayerPosition = data.position;
-      console.log( 'setId connected', data );
-		});
-
+  createMenuItems() {
     // create a container
     const containerDiv = document.createElement("div");
     containerDiv.className = ("container");
@@ -116,20 +102,33 @@ class Client {
     btn.id = ('joinButton');
     btn.innerHTML = "Join Waiting Room";
     containerDiv.appendChild(btn);
+  }
+
+  onMenuState() {
+    const game = this;
+
+    // get the list of quadRacers
+    this.socket.on( 'quadRacerList', function( data: string[]) {
+      game.quadRacerList = data;
+    });
+
+    // get the player id and it's initial position
+    this.socket.once( 'setId', function( data: any ) {
+			game.initPlayerId = data.id;
+      console.log( 'setId connected', data );
+		});
+
+    this.createMenuItems();
 
     const waitingBtn: HTMLElement = document.getElementById("joinButton")!;
     
     waitingBtn.addEventListener("click", function() {
       game.currentState = game.GAMESTATES.WAITING_ROOM;
-      game.onWaitingRoom();
+      game.onWaitingRoomState();
     });
   };
 
-  onWaitingRoom() {
-    const game = this;
-
-    console.log('IN WAITING ROOM')
-
+  createWaitingRoomItems() {
     // remove the container div 
     const container: HTMLElement = document.getElementById( "container" )!;
     container.remove();
@@ -166,11 +165,19 @@ class Client {
       flex.appendChild( data );
     }
     containerDiv.appendChild( flex );
+  }
 
+  onWaitingRoomState() {
+    const game = this;
+    let timer;
+
+    // console.log('IN WAITING ROOM')
     let chosenQuadRacer: string;
 
     // player can click to select a quadRacer
     let quadRacerItems: HTMLCollectionOf<Element> = document.getElementsByClassName( "flex-item" )!;
+    
+    this.createWaitingRoomItems();
     
     for ( let index = 0; index < quadRacerItems.length; index++ ) {
       quadRacerItems[index].addEventListener("click", function() {
@@ -183,6 +190,12 @@ class Client {
         const quadIndex = game.quadRacerList.indexOf( chosenQuadRacer );
         if ( quadIndex > -1 ) game.quadRacerList.splice( quadIndex, 1 );
 
+        // need to disable all buttons including this one
+        const buttons = document.getElementsByTagName("button");
+        for (const button of buttons) {
+          button.disabled = true;
+        }
+
         // send amended quadRacerList to server
         game.socket.emit( 'updateQuadRacers', game.quadRacerList );
 
@@ -191,10 +204,32 @@ class Client {
 
         // change the chosen quadRacer colour to grey
         (quadRacerItems[index] as HTMLElement).style.background = "gray";
-        (quadRacerItems[index] as HTMLElement).style.color ="#383838"
-        console.log('quadRacerList', game.quadRacerList)
+        (quadRacerItems[index] as HTMLElement).style.color ="#383838";
+        (quadRacerItems[index] as HTMLElement).style.border = "10px solid yellow"
       });
     }
+
+    //x second timer for players to choose player and start game
+    game.socket.emit( 'startTimer', true );
+    game.socket.on( '30SecondsWaitingRoom', function( data: number ) {
+      timer = data;
+      console.log(timer, data);
+      // when timer finished players move to gameplay or gets kicked out of server
+      if( timer == -1) {
+        // continue to gameplay
+        // TODO: and players is more than 1 maybe?
+        if( chosenQuadRacer !== undefined ) {
+          game.userModel = chosenQuadRacer;
+          game.currentState = game.GAMESTATES.INIT;
+          game.onInitState();
+        } else {
+          // kick out this player
+          game.socket.emit( 'kickOutPlayer', game.socket.id );
+          game.currentState = game.GAMESTATES.EXPELLED;
+          game.onExpelledState();
+        }
+      }
+    });
 
     // we need to keep requesting the quadRacerList from the server
     game.socket.on( 'sendQuadRacerList', function( data: string[]) {
@@ -205,10 +240,6 @@ class Client {
 
       // then we need to go through them to make sure they are disabled
       for ( let index = 0; index < quadRacerItems.length; index++ ) {
-        if ( (quadRacerItems[index] as HTMLButtonElement).disabled == true) {
-          continue
-        } 
-
         if (diff.includes(quadRacerItems[index].innerHTML)){
           // change the quadRacer to disabled and change colour to grey
           (quadRacerItems[index] as HTMLButtonElement).disabled = true;
@@ -219,74 +250,103 @@ class Client {
     });
   }
 
+  onExpelledState() {
+    // remove the container div 
+    const container: HTMLElement = document.getElementById( "waiting-room-container" )!;
+    container.remove();
+
+    // create a new container
+    const containerDiv = document.createElement( "div" );
+    containerDiv.className = ( "expelled-container" );
+    containerDiv.id = ( 'expelled-container' );
+    document.body.appendChild( containerDiv );
+
+    // create a new div element with a title
+    const expelledDiv = document.createElement( "div" );
+    expelledDiv.className = ( 'expelled-title' );
+    const newContent = document.createTextNode( "Game Closed" );
+    expelledDiv.appendChild( newContent );
+    containerDiv.appendChild( expelledDiv )
+
+    // add paragraph
+    const expelledParagraph = document.createElement( "p" );
+    expelledParagraph.className = ( 'expelled-para');
+    const paraContent = document.createTextNode( "You have been kicked out because you didn't choose a player within the timeframe or there were more than 10 players. Try again later" );
+    expelledParagraph.appendChild( paraContent );
+    containerDiv.appendChild( expelledParagraph );
+  }
+
   onInitState() {
-    console.log('In init state')
+    if ( this.currentState === 'initial' ) {
+      // console.log('In init state')
+      // remove the waiting room contents
+      const element: HTMLElement | null = document.getElementById("waiting-room-container");
+      if (element !== null) {
+        element.remove();   
+      }
+      
+      // set up 3D space
+      // camera
+      this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
+      this.camera.position.set( -5, 3, 10);
+      this.camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
 
-    // remove the waiting room contents 
-    // const element: HTMLElement = document.getElementById("container")!;
-    // element.remove();   
+      this.scene = new THREE.Scene();
+      // background and fog
+      this.scene.background = new THREE.Color( 0x0d820d );
+      this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
 
-    const game = this;
-    
-    // set up 3D space
-    // camera
-    this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
-    this.camera.position.set( -5, 3, 10);
-    this.camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
+      // lighting
+      const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+      hemiLight.position.set( 0, 20, 0 );
+      hemiLight.name = 'hemiLight';
+      this.scene.add( hemiLight );
 
-    this.scene = new THREE.Scene();
-    // background and fog
-    this.scene.background = new THREE.Color( 0x0d820d );
-    this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
+      // ground
+      const scale = new THREE.Vector3(100, 1, 100);
+      const mesh = new THREE.Mesh( new THREE.BoxGeometry( 5000, 0, 5000 ), new THREE.MeshPhongMaterial( { color: 0x000000 } ));
+      mesh.position.set( -1000, -0.5, 0 )
+      mesh.scale.set( scale.x, scale.y, scale.z )
+      mesh.name = 'ground mesh';
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      this.scene.add( mesh );
 
-    // lighting
-    const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
-    hemiLight.position.set( 0, 20, 0 );
-    hemiLight.name = 'hemiLight';
-    this.scene.add( hemiLight );
+      // grid
+      const grid = new THREE.GridHelper( 150, 120, 0x0d820d, "green" );
+      grid.name = 'ground grid';
+      this.scene.add( grid );
 
-    // ground
-    const scale = new THREE.Vector3(100, 1, 100);
-    const mesh = new THREE.Mesh( new THREE.BoxGeometry( 5000, 0, 5000 ), new THREE.MeshPhongMaterial( { color: 0x000000 } ));
-    mesh.position.set( -1000, -0.5, 0 )
-    mesh.scale.set( scale.x, scale.y, scale.z )
-    mesh.name = 'ground mesh';
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    this.scene.add( mesh );
+      // web render
+      this.renderer = new THREE.WebGLRenderer( { antialias: true } );
+      this.renderer.setPixelRatio( window.devicePixelRatio );
+      this.renderer.setSize( window.innerWidth, window.innerHeight );
+      this.renderer.outputEncoding = THREE.sRGBEncoding;
 
-    // grid
-    const grid = new THREE.GridHelper( 150, 120, 0x0d820d, "green" );
-    grid.name = 'ground grid';
-    this.scene.add( grid );
+      document.body.appendChild( this.renderer.domElement );
 
-    // web render
-    this.renderer = new THREE.WebGLRenderer( { antialias: true } );
-    this.renderer.setPixelRatio( window.devicePixelRatio );
-    this.renderer.setSize( window.innerWidth, window.innerHeight );
-    this.renderer.outputEncoding = THREE.sRGBEncoding;
-
-    document.body.appendChild( this.renderer.domElement );
+      this.currentState = this.GAMESTATES.PLAY;
+      this.onPlayState();
+    }
   };
 
+  // TODO: set the player model to the model chosen by the player
   onPlayState() {
-    if ( this.currentState == this.GAMESTATES.PLAY ) {
-      this.player = new PlayerLocal( this, this.camera, this.socket );
+    this.player = new PlayerLocal( this, this.camera, this.socket );
 
-      document.addEventListener( 'keydown', ( e ) => {
-        if ( this.player?.characterController ) {
-          this.keysPressed[e.key] = true;
-        }
-      });
-    
-      document.addEventListener( 'keyup', ( e ) => {
-        if( this.player?.characterController ) {
-          this.keysPressed[e.key] = false;
-        }
-      });
+    document.addEventListener( 'keydown', ( e ) => {
+      if ( this.player?.characterController ) {
+        this.keysPressed[e.key] = true;
+      }
+    });
+  
+    document.addEventListener( 'keyup', ( e ) => {
+      if( this.player?.characterController ) {
+        this.keysPressed[e.key] = false;
+      }
+    });
 
-      this.animate();
-    }
+    this.animate();
   };
 
   updateRemotePlayers( delta: number ) {
@@ -352,11 +412,12 @@ class Client {
 
   animate() {
     const game = this;
-    let mixerUpdateDelta = this.clock.getDelta();
+    
+    if ( this.currentState === this.GAMESTATES.PLAY ) {
+      let mixerUpdateDelta = this.clock.getDelta();
 
-    requestAnimationFrame( function(){ game.animate() } );
+      requestAnimationFrame( function(){ game.animate() } );
 
-    if ( this.currentState == this.GAMESTATES.PLAY) {
       if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
         // run blink animation after player on player collision
@@ -398,9 +459,9 @@ class Client {
           this.player.updateSocket();
         }
       }
-    }
 
-    this.renderer.render( this.scene, this.camera );
+      this.renderer.render( this.scene, this.camera );
+    }
   }
   
   render() {
@@ -421,14 +482,14 @@ class Client {
       const remoteBB: Box3 = remotePlayer.boundaryBox;
 
       if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided == false ) {
-        console.log('intersects but not necessarily collided')
+        // console.log('intersects but not necessarily collided')
         const distance = this.player?.object?.position?.distanceTo( remotePlayer.object.position );
         if(distance !== undefined){
           if( distance < 1 ) {
-            console.log( 'collision detected!!!!' );
+            // console.log( 'collision detected!!!!' );
 
             if( this.player !== undefined ) {
-              console.log('player is going to be set as collided - the distance is', distance)
+              // console.log('player is going to be set as collided - the distance is', distance)
               this.player.collided = true;
             }
           }
@@ -458,7 +519,7 @@ class Client {
       iteratorIndex++;
 
       if ( iteratorIndex >= numberOfIterations ) {
-        console.log('we have finished with the blinking', player)
+        // console.log('we have finished with the blinking', player)
         player.resetCollidedPlayer();
         return;
       }
