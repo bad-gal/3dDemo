@@ -3,6 +3,7 @@ import Player from './player';
 import PlayerLocal from './player_local';
 import { Box3 } from 'three';
 import { io } from 'socket.io-client';
+import { url } from 'inspector';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -146,12 +147,33 @@ class Client {
     menuDiv.appendChild( newContent );
     containerDiv.appendChild( menuDiv )
 
-    // add paragraph
+    // add paragraphs
     const menuParagraph = document.createElement( "p" );
     menuParagraph.className = ( 'waiting-room-para');
     const paraContent = document.createTextNode( "Choose a player" );
     menuParagraph.appendChild( paraContent );
     containerDiv.appendChild( menuParagraph );
+
+    const timerParagraph = document.createElement( "p" );
+    timerParagraph.className = ( 'timer-para');
+    timerParagraph.id = ( 'timer-text' )
+    const timerContent = document.createTextNode( " " );
+    timerParagraph.appendChild( timerContent );
+    containerDiv.appendChild( timerParagraph );
+
+    // list of player images
+    let playerImgs = new Map();
+    
+    playerImgs.set( this.quadRacerFullList[0], 'camouflage_racer.png' );
+    playerImgs.set( this.quadRacerFullList[1], 'green_racer.png' );
+    playerImgs.set( this.quadRacerFullList[2], 'lime_racer.png' );
+    playerImgs.set( this.quadRacerFullList[3], 'mustard_racer.png' );
+    playerImgs.set( this.quadRacerFullList[4], 'neon_racer.png' );
+    playerImgs.set( this.quadRacerFullList[5], 'orange_racer.png' );
+    playerImgs.set( this.quadRacerFullList[6], 'purple_racer.png' );
+    playerImgs.set( this.quadRacerFullList[7], 'red_racer.png' );
+    playerImgs.set( this.quadRacerFullList[8], 'red_star_racer.png' );
+    playerImgs.set( this.quadRacerFullList[9], 'blue_racer.png' );
 
     // create flexbox with list of quadRacers
     const flex = document.createElement( "ul" );
@@ -160,8 +182,10 @@ class Client {
     for ( let index = 0; index < this.quadRacerFullList.length; index++ ) {
       let data = document.createElement( "button" );
       data.className = ( "flex-item" );
-      let value = document.createTextNode( this.quadRacerFullList[index] );
-      data.appendChild( value );
+      data.id = ( this.quadRacerFullList[index] );
+      console.log('filename', "assets/images/" + playerImgs.get(this.quadRacerFullList[index]));
+      let imgStr = "assets/images/" + playerImgs.get(this.quadRacerFullList[index]);
+      data.style.background = "url(" + imgStr + ")";
       flex.appendChild( data );
     }
     containerDiv.appendChild( flex );
@@ -171,7 +195,6 @@ class Client {
     const game = this;
     let timer;
 
-    // console.log('IN WAITING ROOM')
     let chosenQuadRacer: string;
 
     // player can click to select a quadRacer
@@ -181,10 +204,10 @@ class Client {
     
     for ( let index = 0; index < quadRacerItems.length; index++ ) {
       quadRacerItems[index].addEventListener("click", function() {
-        console.log( quadRacerItems[index].innerHTML );
+        console.log( quadRacerItems[index].id );
 
         // store the chosen quadRacer
-        chosenQuadRacer = quadRacerItems[index].innerHTML;
+        chosenQuadRacer = quadRacerItems[index].id;
 
         // remove chosen quadRacer from quadRacerList
         const quadIndex = game.quadRacerList.indexOf( chosenQuadRacer );
@@ -202,10 +225,9 @@ class Client {
         // the chosen quadRacer should be disabled
         (quadRacerItems[index] as HTMLButtonElement).disabled = true;
 
-        // change the chosen quadRacer colour to grey
-        (quadRacerItems[index] as HTMLElement).style.background = "gray";
+        // change the border around chosen quadRacer
         (quadRacerItems[index] as HTMLElement).style.color ="#383838";
-        (quadRacerItems[index] as HTMLElement).style.border = "10px solid yellow"
+        (quadRacerItems[index] as HTMLElement).style.border = "10px solid green"
       });
     }
 
@@ -213,11 +235,14 @@ class Client {
     game.socket.emit( 'startTimer', true );
     game.socket.on( '30SecondsWaitingRoom', function( data: number ) {
       timer = data;
+      let timerText = document.getElementById( 'timer-text')
+      if ( timerText !== null ) {
+        timerText.innerHTML = "Game will start in " + timer + " seconds."
+      }
       console.log(timer, data);
       // when timer finished players move to gameplay or gets kicked out of server
       if( timer == -1) {
         // continue to gameplay
-        // TODO: and players is more than 1 maybe?
         if( chosenQuadRacer !== undefined ) {
           game.userModel = chosenQuadRacer;
           game.currentState = game.GAMESTATES.INIT;
@@ -240,11 +265,20 @@ class Client {
 
       // then we need to go through them to make sure they are disabled
       for ( let index = 0; index < quadRacerItems.length; index++ ) {
-        if (diff.includes(quadRacerItems[index].innerHTML)){
-          // change the quadRacer to disabled and change colour to grey
-          (quadRacerItems[index] as HTMLButtonElement).disabled = true;
-          (quadRacerItems[index] as HTMLElement).style.background = "gray";
-          (quadRacerItems[index] as HTMLElement).style.color ="#383838"
+        if (diff.includes(quadRacerItems[index].id)){
+          if (quadRacerItems[index].id !== chosenQuadRacer) {
+            // if taken image does not exist add it
+            if ( document.getElementById( "taken " + quadRacerItems[index].id ) === null ) {
+              let img = document.createElement( "img" );
+              img.className = ( "img-overlay-taken" );
+              img.id = ( "taken " + quadRacerItems[index].id )
+              img.src = ( "assets/images/taken-img.png" );
+              quadRacerItems[index].appendChild( img );
+
+              (quadRacerItems[index] as HTMLButtonElement).disabled = true;
+              (quadRacerItems[index] as HTMLElement).style.border = "10px solid red"
+            }
+          }
         }
       }
     });
@@ -330,7 +364,6 @@ class Client {
     }
   };
 
-  // TODO: set the player model to the model chosen by the player
   onPlayState() {
     this.player = new PlayerLocal( this, this.camera, this.socket );
 

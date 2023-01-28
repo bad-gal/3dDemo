@@ -34,7 +34,7 @@ class App {
       "blue rider",
     ];
     let startTimer = false;
-    const waitingTime = 10; // should be 30
+    const waitingTime = 30;
     let waitingRoomTimeRemaining = waitingTime;
 
     this.io.sockets.on( 'connection', ( socket: ISocket ) => {

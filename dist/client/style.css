@@ -1,12 +1,12 @@
 body {
   overflow: hidden;
-  margin: 0px;
+  margin: 0rem;
 }
 
 .container {
-  height: 300px;
-  margin-left: 10px;
-  margin-right:10px;
+  height: 18.75rem;
+  margin-left: 0.625rem;
+  margin-right:0.625rem;
   position: relative;
 }
 
@@ -22,6 +22,13 @@ body {
 {
   text-align: center;
   font-size: x-large;
+}
+
+.timer-para {
+  text-align: center;
+  font-size: large;
+  font-weight: bold;
+  color: blueviolet;
 }
 
 .waiting {
@@ -40,14 +47,13 @@ body {
 }
 
 .flex-item {
-  background: tomato;
   padding: 1rem;
-  width: 200px;
-  height: 150px;
-  line-height: 150px;
-  color: white;
-  font-weight: bold;
-  font-size: 1.5rem;
-  text-align: center;
+  width: 18.75rem;
+  height: 18.75rem;
   border-width: 0;
+  border: 0.125rem solid rgb(0, 0, 0);
+}
+
+.img-overlay-taken {
+  margin-left: -1.5rem;
 }
