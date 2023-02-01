@@ -42,44 +42,31 @@ class App {
         app.use(express_1.default.static(path_1.default.join(__dirname, '../client')));
         this.server = new http_1.default.Server(app);
         this.io = new socket_io_1.Server(this.server);
+        let playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
         let playerCount = 0;
-        let positionsInUse = new Map();
-        let playerXPositions = [0, 2, 4, 6, 8];
+        let quadRacerList = [
+            "camouflage rider", "green rider", "lime rider", "mustard rider",
+            "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
+            "blue rider",
+        ];
+        let startTimer = false;
+        const waitingTime = 10; // should be 30
+        let waitingRoomTimeRemaining = waitingTime;
         this.io.sockets.on('connection', (socket) => {
-            let positionX = playerXPositions[playerCount];
-            if (positionsInUse.size == 0) {
-                console.log('positionsInUse.size', positionsInUse.size);
-                positionX = playerXPositions[0];
-            }
-            else {
-                // loop through playerXPositions to find a value that isn't taken by positionsInUse 
-                for (let index = 0; index < playerXPositions.length; index++) {
-                    if (!Array.from(positionsInUse.values()).includes(playerXPositions[index])) {
-                        console.log('index', index);
-                        positionX = playerXPositions[index];
-                        break;
-                    }
-                }
-                ;
-            }
-            // store positions that are taken by the client
-            positionsInUse.set(socket.id, positionX);
-            console.log('positions in use', positionsInUse);
+            // send list of quadRacers to clients
+            socket.emit('quadRacerList', quadRacerList);
             socket.userData = {
-                position: { x: positionX, y: 0, z: 0 },
+                position: { x: 0, y: 0, z: 0 },
                 quaternion: { isQuaternion: true, _x: 0, _y: 0, _z: 0, _w: 0 },
                 action: 'idle_02',
                 collided: false,
             };
-            playerCount += 1;
             console.log('CONNECTED WITH', socket.id);
             console.log('player count', playerCount);
-            socket.emit('setId', { id: socket.id, position: { x: positionX, y: 0, z: 0 } });
+            socket.emit('setId', { id: socket.id });
             socket.on('disconnect', () => {
                 console.log('removing player : ' + socket.id, ' deleting now');
                 socket.broadcast.emit('deletePlayer', { id: socket.id });
-                // remove the position from the list, another client is free to use it
-                positionsInUse.delete(socket.id);
                 playerCount -= 1;
             });
             socket.on('init', function (data) {
@@ -96,7 +83,42 @@ class App {
                 socket.userData.action = data.action;
                 socket.userData.collided = data.collided;
             });
+            socket.on('updateQuadRacers', function (data) {
+                quadRacerList = data;
+                console.log(data);
+            });
+            socket.on('startTimer', function (data) {
+                startTimer = data;
+            });
+            socket.on('kickOutPlayer', function (data) {
+                socket.broadcast.emit('deletePlayer', { id: data });
+                playerCount--;
+                socket.disconnect(true);
+            });
+            // socket.emit( 'playerPosition', { position: { x: positionX, y: 0, z: 0 }} );
+            socket.on('getPlayerPosition', function (data) {
+                let positionX = playerXPositions.shift();
+                playerCount++;
+                console.log(playerXPositions, playerCount);
+                socket.emit('playerPosition', { position: { x: positionX, y: 0, z: 0 } });
+            });
         });
+        setInterval(() => {
+            this.io.emit('sendQuadRacerList', quadRacerList);
+        }, 2000 / FPS);
+        setInterval(() => {
+            if (startTimer) {
+                if (waitingRoomTimeRemaining == -1) {
+                    clearTimeout(waitingRoomTimeRemaining);
+                    startTimer = false;
+                    waitingRoomTimeRemaining = waitingTime;
+                }
+                else {
+                    waitingRoomTimeRemaining--;
+                }
+                this.io.emit('30SecondsWaitingRoom', waitingRoomTimeRemaining);
+            }
+        }, 1000);
         setInterval(() => {
             let pack = [];
             this.io.sockets.sockets.forEach((socket) => {

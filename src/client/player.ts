@@ -8,7 +8,7 @@ export default class Player {
   local: boolean;
   options: any;
   id: any;
-  model: any;
+  model: string;
   game: any;
   animations: any;
   root: any;
@@ -24,6 +24,7 @@ export default class Player {
   position: Vector3 | undefined;
   collided: boolean;
   skinnedMesh: THREE.SkinnedMesh[] = [];
+  counter: number;
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
@@ -31,6 +32,7 @@ export default class Player {
     let filename: any;
     this.action = '';
     this.collided = false;
+    this.counter = 0;
 
     const quadRacers: { name: string; filename: string }[]  = [
       { name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb" },
@@ -45,20 +47,16 @@ export default class Player {
       { name: "blue rider", filename:"assets/blue_rider_quad.glb" },
     ]
 
-    if( options === undefined ) {
-      model = quadRacers[Math.floor( Math.random()*quadRacers.length )].name;
-    } 
-    else if ( typeof options === 'object' ) {
+    if ( typeof options === 'object' ) {
       this.local = false;
       this.options = options;
       this.id = options.id;
-      model = options.model;
+      this.model = options.model;
     } 
     else {
-      model = options;
+      this.model = game.userModel;
     }
-
-    this.model = model;
+    
     this.game = game;
     this.animations = this.game.animations;
 
@@ -292,7 +290,7 @@ export default class Player {
     ];
 
     this.animationsMap = new Map();
-    filename = quadRacers.find( racer => racer.name === model )?.filename;
+    filename = quadRacers.find( racer => racer.name === this.model )?.filename;
 
     loader.load( filename, ( object ) => {
       object.scene.name = model;
@@ -375,6 +373,10 @@ export default class Player {
       for( let data of this.game.remoteData ) {
         if( data.id != this.id ) continue;
 
+        if(this.counter == 0) {
+          console.log('a player', this) 
+          this.counter = 1
+        }
         //player found
         this.object?.position.set( data.position.x, data.position.y, data.position.z );
         this.object?.quaternion.set( data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w );

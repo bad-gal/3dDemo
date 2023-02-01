@@ -2,3 +2,52 @@ body {
   overflow: hidden;
   margin: 0px;
 }
+
+.container {
+  height: 300px;
+  margin-left: 10px;
+  margin-right:10px;
+  position: relative;
+}
+
+.menu-title, 
+.waiting-room-title
+{
+  text-align: center;
+  font-size: xx-large;
+}
+
+.menu-para,
+.waiting-room-para
+{
+  text-align: center;
+  font-size: x-large;
+}
+
+.waiting {
+  margin: auto;
+  display: flex;
+}
+
+.player-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.flex-item {
+  background: tomato;
+  padding: 1rem;
+  width: 200px;
+  height: 150px;
+  line-height: 150px;
+  color: white;
+  font-weight: bold;
+  font-size: 1.5rem;
+  text-align: center;
+  border-width: 0;
+}
