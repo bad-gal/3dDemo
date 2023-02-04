@@ -55,7 +55,7 @@ class App {
       socket.on( 'disconnect', () => {
         console.log( 'removing player : ' + socket.id, ' deleting now' );
         socket.broadcast.emit('deletePlayer', { id: socket.id });
-        playerCount -= 1;
+        if ( playerCount > 0 ) playerCount -= 1;
       });
 
       socket.on('init', function(data){    
@@ -85,7 +85,7 @@ class App {
 
       socket.on( 'kickOutPlayer', function( data ) {
         socket.broadcast.emit('deletePlayer', { id: data });
-        playerCount--;
+        if ( playerCount > 0 ) playerCount--;
         socket.disconnect(true);
       });
 
