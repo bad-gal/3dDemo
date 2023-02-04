@@ -3,7 +3,9 @@ import Player from './player';
 import PlayerLocal from './player_local';
 import { Box3 } from 'three';
 import { io } from 'socket.io-client';
-import { url } from 'inspector';
+import MenuState from './menu_state';
+import WaitingState from './waiting_state';
+import ExpelledState from './expelled_state';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -74,240 +76,22 @@ class Client {
     }
   }
 
-  createMenuItems() {
-    // create a container
-    const containerDiv = document.createElement("div");
-    containerDiv.className = ("container");
-    containerDiv.id = ('container');
-    document.body.appendChild(containerDiv);
-
-    // create a new div element
-    const menuDiv = document.createElement("div");
-    menuDiv.className = ('menu-title');
-    const newContent = document.createTextNode("Welcome to 3D Demo");
-
-    // add the text node to the newly created div
-    menuDiv.appendChild(newContent);
-    containerDiv.appendChild(menuDiv)
-
-    // add paragraph
-    const menuParagraph = document.createElement("p");
-    menuParagraph.className = ('menu-para');
-    const paraContent = document.createTextNode("Play this exciting demo of a 3D racing game with friends. Click button to join the waiting room. Let the fun begin!!!");
-    menuParagraph.appendChild(paraContent);
-    containerDiv.appendChild(menuParagraph);
-
-    // add button
-    const btn = document.createElement("button");
-    btn.className = ('btn waiting');
-    btn.id = ('joinButton');
-    btn.innerHTML = "Join Waiting Room";
-    containerDiv.appendChild(btn);
-  }
-
   onMenuState() {
-    const game = this;
+    const gameState = new MenuState(this);
 
-    // get the list of quadRacers
-    this.socket.on( 'quadRacerList', function( data: string[]) {
-      game.quadRacerList = data;
-    });
-
-    // get the player id and it's initial position
-    this.socket.once( 'setId', function( data: any ) {
-			game.initPlayerId = data.id;
-      console.log( 'setId connected', data );
-		});
-
-    this.createMenuItems();
-
-    const waitingBtn: HTMLElement = document.getElementById("joinButton")!;
-    
-    waitingBtn.addEventListener("click", function() {
-      game.currentState = game.GAMESTATES.WAITING_ROOM;
-      game.onWaitingRoomState();
-    });
+    gameState.onMenuState();
   };
 
-  createWaitingRoomItems() {
-    // remove the container div 
-    const container: HTMLElement = document.getElementById( "container" )!;
-    container.remove();
-
-    // create a new container
-    const containerDiv = document.createElement( "div" );
-    containerDiv.className = ( "waiting-room-container" );
-    containerDiv.id = ( 'waiting-room-container' );
-    document.body.appendChild( containerDiv );
-
-    // create a new div element with a title
-    const menuDiv = document.createElement( "div" );
-    menuDiv.className = ( 'waiting-room-title' );
-    const newContent = document.createTextNode( "Waiting Room" );
-    menuDiv.appendChild( newContent );
-    containerDiv.appendChild( menuDiv )
-
-    // add paragraphs
-    const menuParagraph = document.createElement( "p" );
-    menuParagraph.className = ( 'waiting-room-para');
-    const paraContent = document.createTextNode( "Choose a player" );
-    menuParagraph.appendChild( paraContent );
-    containerDiv.appendChild( menuParagraph );
-
-    const timerParagraph = document.createElement( "p" );
-    timerParagraph.className = ( 'timer-para');
-    timerParagraph.id = ( 'timer-text' )
-    const timerContent = document.createTextNode( " " );
-    timerParagraph.appendChild( timerContent );
-    containerDiv.appendChild( timerParagraph );
-
-    // list of player images
-    let playerImgs = new Map();
-    
-    playerImgs.set( this.quadRacerFullList[0], 'camouflage_racer.png' );
-    playerImgs.set( this.quadRacerFullList[1], 'green_racer.png' );
-    playerImgs.set( this.quadRacerFullList[2], 'lime_racer.png' );
-    playerImgs.set( this.quadRacerFullList[3], 'mustard_racer.png' );
-    playerImgs.set( this.quadRacerFullList[4], 'neon_racer.png' );
-    playerImgs.set( this.quadRacerFullList[5], 'orange_racer.png' );
-    playerImgs.set( this.quadRacerFullList[6], 'purple_racer.png' );
-    playerImgs.set( this.quadRacerFullList[7], 'red_racer.png' );
-    playerImgs.set( this.quadRacerFullList[8], 'red_star_racer.png' );
-    playerImgs.set( this.quadRacerFullList[9], 'blue_racer.png' );
-
-    // create flexbox with list of quadRacers
-    const flex = document.createElement( "ul" );
-    flex.className = ( "player-container" );
-   
-    for ( let index = 0; index < this.quadRacerFullList.length; index++ ) {
-      let data = document.createElement( "button" );
-      data.className = ( "flex-item" );
-      data.id = ( this.quadRacerFullList[index] );
-      console.log('filename', "assets/images/" + playerImgs.get(this.quadRacerFullList[index]));
-      let imgStr = "assets/images/" + playerImgs.get(this.quadRacerFullList[index]);
-      data.style.background = "url(" + imgStr + ")";
-      flex.appendChild( data );
-    }
-    containerDiv.appendChild( flex );
-  }
-
   onWaitingRoomState() {
-    const game = this;
-    let timer;
+    const gameState = new WaitingState(this);
 
-    let chosenQuadRacer: string;
-
-    // player can click to select a quadRacer
-    let quadRacerItems: HTMLCollectionOf<Element> = document.getElementsByClassName( "flex-item" )!;
-    
-    this.createWaitingRoomItems();
-    
-    for ( let index = 0; index < quadRacerItems.length; index++ ) {
-      quadRacerItems[index].addEventListener("click", function() {
-        console.log( quadRacerItems[index].id );
-
-        // store the chosen quadRacer
-        chosenQuadRacer = quadRacerItems[index].id;
-
-        // remove chosen quadRacer from quadRacerList
-        const quadIndex = game.quadRacerList.indexOf( chosenQuadRacer );
-        if ( quadIndex > -1 ) game.quadRacerList.splice( quadIndex, 1 );
-
-        // need to disable all buttons including this one
-        const buttons = document.getElementsByTagName("button");
-        for (const button of buttons) {
-          button.disabled = true;
-        }
-
-        // send amended quadRacerList to server
-        game.socket.emit( 'updateQuadRacers', game.quadRacerList );
-
-        // the chosen quadRacer should be disabled
-        (quadRacerItems[index] as HTMLButtonElement).disabled = true;
-
-        // change the border around chosen quadRacer
-        (quadRacerItems[index] as HTMLElement).style.color ="#383838";
-        (quadRacerItems[index] as HTMLElement).style.border = "10px solid green"
-      });
-    }
-
-    //x second timer for players to choose player and start game
-    game.socket.emit( 'startTimer', true );
-    game.socket.on( '30SecondsWaitingRoom', function( data: number ) {
-      timer = data;
-      let timerText = document.getElementById( 'timer-text')
-      if ( timerText !== null ) {
-        timerText.innerHTML = "Game will start in " + timer + " seconds."
-      }
-      console.log(timer, data);
-      // when timer finished players move to gameplay or gets kicked out of server
-      if( timer == -1) {
-        // continue to gameplay
-        if( chosenQuadRacer !== undefined ) {
-          game.userModel = chosenQuadRacer;
-          game.currentState = game.GAMESTATES.INIT;
-          game.onInitState();
-        } else {
-          // kick out this player
-          game.socket.emit( 'kickOutPlayer', game.socket.id );
-          game.currentState = game.GAMESTATES.EXPELLED;
-          game.onExpelledState();
-        }
-      }
-    });
-
-    // we need to keep requesting the quadRacerList from the server
-    game.socket.on( 'sendQuadRacerList', function( data: string[]) {
-      game.quadRacerList = data;
-      
-      // we need to update changes made by other players
-      let diff = game.quadRacerFullList.filter( x => !game.quadRacerList.includes(x));
-
-      // then we need to go through them to make sure they are disabled
-      for ( let index = 0; index < quadRacerItems.length; index++ ) {
-        if (diff.includes(quadRacerItems[index].id)){
-          if (quadRacerItems[index].id !== chosenQuadRacer) {
-            // if taken image does not exist add it
-            if ( document.getElementById( "taken " + quadRacerItems[index].id ) === null ) {
-              let img = document.createElement( "img" );
-              img.className = ( "img-overlay-taken" );
-              img.id = ( "taken " + quadRacerItems[index].id )
-              img.src = ( "assets/images/taken-img.png" );
-              quadRacerItems[index].appendChild( img );
-
-              (quadRacerItems[index] as HTMLButtonElement).disabled = true;
-              (quadRacerItems[index] as HTMLElement).style.border = "10px solid red"
-            }
-          }
-        }
-      }
-    });
+    gameState.onWaitingRoomState();
   }
 
   onExpelledState() {
-    // remove the container div 
-    const container: HTMLElement = document.getElementById( "waiting-room-container" )!;
-    container.remove();
+    const gameState = new ExpelledState(this);
 
-    // create a new container
-    const containerDiv = document.createElement( "div" );
-    containerDiv.className = ( "expelled-container" );
-    containerDiv.id = ( 'expelled-container' );
-    document.body.appendChild( containerDiv );
-
-    // create a new div element with a title
-    const expelledDiv = document.createElement( "div" );
-    expelledDiv.className = ( 'expelled-title' );
-    const newContent = document.createTextNode( "Game Closed" );
-    expelledDiv.appendChild( newContent );
-    containerDiv.appendChild( expelledDiv )
-
-    // add paragraph
-    const expelledParagraph = document.createElement( "p" );
-    expelledParagraph.className = ( 'expelled-para');
-    const paraContent = document.createTextNode( "You have been kicked out because you didn't choose a player within the timeframe or there were more than 10 players. Try again later" );
-    expelledParagraph.appendChild( paraContent );
-    containerDiv.appendChild( expelledParagraph );
+    gameState.onExpelledState();
   }
 
   onInitState() {
