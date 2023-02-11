@@ -141,6 +141,7 @@ class Client {
       this.renderer.setSize( window.innerWidth, window.innerHeight );
       this.renderer.outputEncoding = THREE.sRGBEncoding;
 
+      document.body.style.overflow = 'hidden';
       document.body.appendChild( this.renderer.domElement );
 
       this.currentState = this.GAMESTATES.PLAY;
