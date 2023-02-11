@@ -26,7 +26,7 @@ class App {
 
     this.server = new http.Server( app );
     this.io = new Server( this.server );
-    let playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
+    let playerXPositions : Array<number> = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
     let playerCount = 0;
     let quadRacerList = [
       "camouflage rider", "green rider", "lime rider", "mustard rider",
@@ -34,7 +34,7 @@ class App {
       "blue rider",
     ];
     let startTimer = false;
-    const waitingTime = 30;
+    const waitingTime = 15 //30;
     let waitingRoomTimeRemaining = waitingTime;
 
     this.io.sockets.on( 'connection', ( socket: ISocket ) => {
@@ -53,9 +53,22 @@ class App {
       socket.emit( 'setId', { id: socket.id } );
 
       socket.on( 'disconnect', () => {
+        const leavingPlayerPosition = socket.userData.position.x;
+        playerXPositions.unshift( leavingPlayerPosition );
+        playerXPositions.sort( function( a, b ) {
+          return a - b;
+        });
+        console.log('playerPositions', playerXPositions)
         console.log( 'removing player : ' + socket.id, ' deleting now' );
+
         socket.broadcast.emit('deletePlayer', { id: socket.id });
         if ( playerCount > 0 ) playerCount -= 1;
+
+        //if there are no players, can we set waitingRoomTimeRemaining = waitingTime
+        //this way if the server is still running new players can join a new game
+        if ( playerCount == 0) {
+          waitingRoomTimeRemaining = waitingTime;
+        }
       });
 
       socket.on('init', function(data){    
@@ -84,15 +97,21 @@ class App {
       });
 
       socket.on( 'kickOutPlayer', function( data ) {
+        console.log('on kickOutPlayer socket userData:',socket.userData)
+        console.log('playerPositions', playerXPositions)
         socket.broadcast.emit('deletePlayer', { id: data });
         if ( playerCount > 0 ) playerCount--;
         socket.disconnect(true);
       });
 
-      // socket.emit( 'playerPosition', { position: { x: positionX, y: 0, z: 0 }} );
+      let positionX 
+
       socket.on( 'getPlayerPosition', function( data ) {
-        let positionX = playerXPositions.shift();
-        playerCount++;
+         if (positionX === undefined) {
+            positionX = playerXPositions.shift();
+            playerCount++;
+          }
+
         console.log(playerXPositions, playerCount)
         socket.emit( 'playerPosition', { position: { x: positionX, y: 0, z: 0 }} );
       });
@@ -107,7 +126,6 @@ class App {
         if( waitingRoomTimeRemaining == -1 ) {
           clearTimeout( waitingRoomTimeRemaining );
           startTimer = false;
-          waitingRoomTimeRemaining = waitingTime
         }
         else {
           waitingRoomTimeRemaining--;
