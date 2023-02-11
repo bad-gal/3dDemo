@@ -59,7 +59,6 @@ export default class WaitingState {
       let data = document.createElement( "button" );
       data.className = ( "flex-item" );
       data.id = ( this.gameState.quadRacerFullList[index] );
-      console.log('filename', "assets/images/" + playerImgs.get(this.gameState.quadRacerFullList[index]));
       let imgStr = "assets/images/" + playerImgs.get(this.gameState.quadRacerFullList[index]);
       data.style.background = "url(" + imgStr + ")";
       flex.appendChild( data );
