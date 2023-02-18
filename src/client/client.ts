@@ -6,6 +6,7 @@ import { io } from 'socket.io-client';
 import MenuState from './menu_state';
 import WaitingState from './waiting_state';
 import ExpelledState from './expelled_state';
+import Coin from './coin';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -32,6 +33,8 @@ class Client {
   quadRacerList: any;
   quadRacerFullList: string[];
   userModel: string;
+  coins: Coin[];
+  coinLocations: any[];
 
   constructor() {
     this.player;
@@ -54,10 +57,18 @@ class Client {
       "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
       "blue rider",
     ];
+    this.coins = [];
+    this.coinLocations = [];
 
     this.socket.once('connect', () => {
       console.log(this.socket.id)
     })
+
+    // get the coin locations from the server
+    this.socket.on( 'coinLocations', ( data: any ) => {
+      console.log('we have received something from the server', data)
+      this.coinLocations = data;
+    });
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
     this.currentState = this.GAMESTATES.MENU;
@@ -151,6 +162,22 @@ class Client {
 
   onPlayState() {
     this.player = new PlayerLocal( this, this.camera, this.socket );
+
+    this.socket.on( 'removeCoin', ( data: any ) => {
+      for (let i = this.coins.length - 1; i >=0; i--) {
+        let coin = this.coins[i];
+        if(coin.object !== undefined && coin.object.parent !== null) {
+          if ( coin.object?.position.x == data[0].x && coin.object?.position.z == data[0].z ) {
+            this?.scene?.remove( coin.object.parent.remove(coin.object));
+            this.coins.splice(i, 1);
+          }
+        }
+      }
+		});
+
+    for ( let i = 0; i < this.coinLocations.length; i++ ) {
+      this.coins.push( new Coin( this, this.coinLocations[i] ));
+    }
 
     document.addEventListener( 'keydown', ( e ) => {
       if ( this.player?.characterController ) {
@@ -247,8 +274,33 @@ class Client {
           });
         }
       }
-  
+
+      this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
       this.updateRemotePlayers( mixerUpdateDelta );
+
+      // check if player gets a coin
+      // this.coins.forEach((coin, index) => {
+      //   let result = this.checkCoinCollsion(coin, this.player);
+      //   if (result == true) {
+      //     // this.coins.splice(index, 1)
+      //     console.log('player has collided with coin');
+      //   }
+      // })
+
+      for (let i = this.coins.length - 1; i >=0; i--) {
+        if ( this.checkCoinCollsion(this.coins[i], this.player)){
+          console.log('player has collided with coin');
+          let coin = this.coins[i];
+          if(coin.object !== undefined && coin.object.parent !== null) {
+            let coinPosition = { x: coin.object.position.x, z: coin.object.position.z}
+            // console.log(coin.object.position);
+            this.socket.emit('updateCoins', coinPosition);
+            game?.scene?.remove( coin.object.parent.remove(coin.object));
+            this.coins.splice(i, 1);
+          }
+          console.log(this.coins.length)
+        }
+      }
 
       if ( this.remotePlayers !== undefined ) {
         this.checkCollisions();
@@ -284,6 +336,18 @@ class Client {
   
   render() {
     this.renderer.render( this.scene, this.camera );
+  }
+
+  checkCoinCollsion( coinModel:any, playerModel:any ) {
+    if ( coinModel !== undefined && playerModel !== undefined ){
+      if(playerModel.boundaryBox !== undefined){
+        const coinBoundingBox = new THREE.Box3().setFromObject(coinModel.boxHelper);
+        const playerBoundingBox = playerModel.boundaryBox;
+
+        //check if the two boxes intersect
+        return coinBoundingBox.intersectsBox(playerBoundingBox);
+      }
+    }
   }
 
   checkCollisions() {

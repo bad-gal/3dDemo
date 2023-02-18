@@ -32,6 +32,7 @@ const http_1 = __importDefault(require("http"));
 const socket_io_1 = require("socket.io");
 const path_1 = __importDefault(require("path"));
 const process_1 = __importDefault(require("process"));
+const crypto_1 = require("crypto");
 dotenv.config();
 const port = process_1.default.env.PORT;
 const FPS = 30;
@@ -53,6 +54,19 @@ class App {
         let startTimer = false;
         const waitingTime = 15;
         let waitingRoomTimeRemaining = waitingTime;
+        // store locations of coins to be displayed in game
+        // might be some extra work to do as coins may be too close together in some instances
+        let coinsLength = (0, crypto_1.randomInt)(30, 55);
+        let coinTypes = ['bronze', 'silver', 'gold'];
+        let coinLocations = [];
+        for (let i = 0; i < coinsLength; i++) {
+            let x = (0, crypto_1.randomInt)(-20, 20);
+            let z = (0, crypto_1.randomInt)(-20, 20);
+            let coinIndex = (0, crypto_1.randomInt)(0, 3);
+            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
+        }
+        // remove any duplicate location values
+        coinLocations = [...new Set(coinLocations)];
         this.io.sockets.on('connection', (socket) => {
             // send list of quadRacers to clients
             socket.emit('quadRacerList', quadRacerList);
@@ -122,6 +136,21 @@ class App {
                 }
                 console.log(playerXPositions, playerCount);
                 socket.emit('playerPosition', { position: { x: positionX, y: 0, z: 0 } });
+            });
+            // send coin locations to clients
+            socket.emit('coinLocations', coinLocations);
+            // a client has collected a coin
+            socket.on('updateCoins', function (data) {
+                let result = coinLocations.filter(coin => coin.x == data.x && coin.z == data.z);
+                if (result.length == 1) {
+                    result = result.flat();
+                    const index = coinLocations.indexOf(result);
+                    if (index > -1) {
+                        coinLocations.splice(index, 1);
+                    }
+                    // emit the deleted coin location value to the rest of the clients
+                    socket.broadcast.emit('removeCoin', result);
+                }
             });
         });
         setInterval(() => {

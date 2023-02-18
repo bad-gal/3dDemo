@@ -97,3 +97,31 @@ To access local player main values
 this.player.object.position
 this.player.object.quaternion
 this.player.boundaryBox
+
+fix-players-not-moving branch
+need to send back the initialPosition in socket.userData for when disconnecting player
+
+add-coins branch
+✔︎ //1. server generates coin location array with x and z value locations for coins e.g. [[1,4], [-1,-3], ...] 
+✘ //2. client tells server it wants the coin location array - (this step not needed)  
+✔︎ //3. server sends the coin location array to the clients
+✔︎ //4. the clients store the coin location array 
+//5. the client initializes an array of the Coin class to create the coins using the data from the coin location array
+//6. when a coin is collected by a player, the client tells the server which location has been collected e.g [-1,-3]
+//7. the server updates the coin location array
+//8. the server emits the deleted coin location value e.g. [-1,-3] to the rest of the clients.
+//9. the clients remove the Coin array that has that location value [-1,-3]
+//NOTE: could also update the coin location array on the clients but it is only needed once by the clients to create the Coin array
+
+
+ // Create a timer to spawn spheres every 30 seconds
+let spawnTimer = setInterval(() => {
+    // Generate random y coordinate between 1.0 and 3.0
+    let yCoord = Math.random() * (3.0 - 1.0) + 1.0;
+
+    // Spawn sphere at random y coordinate
+    let sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 32), new THREE.MeshBasicMaterial({ color: 0xffff00 }));
+    sphere.position.y = yCoord;
+    scene.add(sphere);
+}, 30000);
+
