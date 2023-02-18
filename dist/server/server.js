@@ -49,8 +49,9 @@ class App {
             "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
             "blue rider",
         ];
+        let clientStartingPositions = new Map();
         let startTimer = false;
-        const waitingTime = 15; //30;
+        const waitingTime = 15;
         let waitingRoomTimeRemaining = waitingTime;
         this.io.sockets.on('connection', (socket) => {
             // send list of quadRacers to clients
@@ -65,19 +66,19 @@ class App {
             console.log('player count', playerCount);
             socket.emit('setId', { id: socket.id });
             socket.on('disconnect', () => {
-                const leavingPlayerPosition = socket.userData.position.x;
-                playerXPositions.unshift(leavingPlayerPosition);
-                playerXPositions.sort(function (a, b) {
-                    return a - b;
-                });
+                const leavingModel = socket.userData.model;
+                if (leavingModel != null) {
+                    quadRacerList.push(leavingModel);
+                    this.refreshPlayerPositions(playerXPositions, clientStartingPositions, socket.id);
+                }
                 console.log('playerPositions', playerXPositions);
                 console.log('removing player : ' + socket.id, ' deleting now');
                 socket.broadcast.emit('deletePlayer', { id: socket.id });
                 if (playerCount > 0)
                     playerCount -= 1;
-                //if there are no players, can we set waitingRoomTimeRemaining = waitingTime
-                //this way if the server is still running new players can join a new game
-                if (playerCount == 0) {
+                // if there are no players, can we reset waitingRoomTimeRemaining to waitingTime
+                // this way if the server is still running new players can join a new game
+                if (playerCount == 0 && waitingRoomTimeRemaining == 0) {
                     waitingRoomTimeRemaining = waitingTime;
                 }
             });
@@ -103,17 +104,20 @@ class App {
                 startTimer = data;
             });
             socket.on('kickOutPlayer', function (data) {
-                console.log('on kickOutPlayer socket userData:', socket.userData);
                 console.log('playerPositions', playerXPositions);
                 socket.broadcast.emit('deletePlayer', { id: data });
-                if (playerCount > 0)
-                    playerCount--;
+                waitingRoomTimeRemaining = 0;
+                startTimer = false;
+                console.log('kickout stats', waitingRoomTimeRemaining, startTimer);
                 socket.disconnect(true);
             });
             let positionX;
             socket.on('getPlayerPosition', function (data) {
                 if (positionX === undefined) {
                     positionX = playerXPositions.shift();
+                    // we are storing the starting position so if the client leaves
+                    // we can add position back into playerXPositions
+                    clientStartingPositions.set(socket.id, positionX);
                     playerCount++;
                 }
                 console.log(playerXPositions, playerCount);
@@ -128,6 +132,7 @@ class App {
                 if (waitingRoomTimeRemaining == -1) {
                     clearTimeout(waitingRoomTimeRemaining);
                     startTimer = false;
+                    waitingRoomTimeRemaining = 0; //waitingTime;
                 }
                 else {
                     waitingRoomTimeRemaining--;
@@ -153,6 +158,13 @@ class App {
                 this.io.emit('remoteData', pack);
             }
         }, 1000 / FPS);
+    }
+    refreshPlayerPositions(playerXPositions, positionMap, socket_id) {
+        const leavingPlayerPosition = positionMap.get(socket_id);
+        playerXPositions.unshift(leavingPlayerPosition);
+        playerXPositions.sort(function (a, b) {
+            return a - b;
+        });
     }
     Start() {
         this.server.listen(port, function () {
