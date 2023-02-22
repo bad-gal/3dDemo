@@ -4,6 +4,8 @@ import http from 'http';
 import { Server, Socket } from 'socket.io';
 import path from 'path';
 import process from 'process';
+import { randomInt } from 'crypto';
+
 
 dotenv.config();
 
@@ -37,6 +39,21 @@ class App {
     let startTimer = false;
     const waitingTime = 15;
     let waitingRoomTimeRemaining = waitingTime;
+    
+    // store locations of coins to be displayed in game
+    // might be some extra work to do as coins may be too close together in some instances
+    let coinsLength = randomInt(30, 55);
+    let coinTypes = ['bronze', 'silver', 'gold'];
+    let coinLocations = []
+    for(let i = 0; i < coinsLength; i++) {
+      let x = randomInt(-20, 20);
+      let z = randomInt(-20, 20);
+      let coinIndex = randomInt(0, 3);
+      coinLocations.push( {x: x, z: z, type: coinTypes[coinIndex] } )
+    }
+
+    // remove any duplicate location values
+    coinLocations = [...new Set(coinLocations)]
 
     this.io.sockets.on( 'connection', ( socket: ISocket ) => {
       // send list of quadRacers to clients
@@ -120,6 +137,24 @@ class App {
 
         console.log(playerXPositions, playerCount)
         socket.emit( 'playerPosition', { position: { x: positionX, y: 0, z: 0 }} );
+      });
+
+      // send coin locations to clients
+      socket.emit( 'coinLocations', coinLocations );
+
+      // a client has collected a coin
+      socket.on( 'updateCoins', function( data ) {
+        let result = coinLocations.filter( coin => coin.x == data.x && coin.z == data.z );
+        if ( result.length == 1 ) {
+          result = result.flat();
+
+          const index = coinLocations.indexOf(result);
+          if (index > -1) {
+            coinLocations.splice(index, 1);
+          }
+          // emit the deleted coin location value to the rest of the clients
+          socket.broadcast.emit( 'removeCoin', result);
+        }
       });
     });
 

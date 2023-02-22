@@ -321,7 +321,7 @@ export default class Player {
         game.scene.add( object.scene );
 
         // create player boundary box for collision detection
-        const geometry = new THREE.BoxGeometry( 1,2.5, 1 );
+        const geometry = new THREE.BoxGeometry( 0.75, 2.5, 0.75 );
         const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
 
         this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
