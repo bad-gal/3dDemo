@@ -146,6 +146,27 @@ class Client {
       grid.name = 'ground grid';
       this.scene.add( grid );
 
+      // Create wall objects around the plane mesh
+      const wallGeometry = new THREE.BoxGeometry(150, 10, 1);  // width, height, depth of wall
+      const wallMaterial = new THREE.MeshBasicMaterial({color: 0x000000}); // black color
+      const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+
+      wall.position.set(0, 5, 75);
+      this.scene.add(wall);
+
+      const wall2 = wall.clone();
+      wall2.position.set(0, 5, -75);
+      this.scene.add(wall2);
+
+      const wall3 = wall.clone();
+      wall3.rotation.y = Math.PI/2;
+      wall3.position.set(-75, 5, 0);
+      this.scene.add(wall3);
+
+      const wall4 = wall3.clone();
+      wall4.position.set(75, 5, 0);
+      this.scene.add(wall4);
+
       // web render
       this.renderer = new THREE.WebGLRenderer( { antialias: true } );
       this.renderer.setPixelRatio( window.devicePixelRatio );
