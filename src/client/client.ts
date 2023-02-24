@@ -115,9 +115,9 @@ class Client {
       // remove the waiting room contents
       const element: HTMLElement | null = document.getElementById("waiting-room-container");
       if (element !== null) {
-        element.remove();   
+        element.remove();
       }
-      
+
       // set up 3D space
       // camera
       this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
@@ -250,7 +250,7 @@ class Client {
         this.keysPressed[e.key] = true;
       }
     });
-  
+
     document.addEventListener( 'keyup', ( e ) => {
       if( this.player?.characterController ) {
         this.keysPressed[e.key] = false;
@@ -271,7 +271,7 @@ class Client {
 
         // is player being initialised?
         let iplayer;
-        
+
         game.initialisingPlayers.forEach( function( player: any ){
           if( player.id == data.id ) iplayer = player;
         });
@@ -288,7 +288,7 @@ class Client {
           if( rplayer === undefined ){
             // initialise remote player
             game.initialisingPlayers.push( new Player( game, game.camera, data ));
-          } 
+          }
           else{
             //player exists
             remotePlayers.push( rplayer );
@@ -323,7 +323,7 @@ class Client {
 
   animate() {
     const game = this;
-    
+
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
 
@@ -356,7 +356,10 @@ class Client {
           let coin = this.coins[i];
           if(coin.object !== undefined && coin.object.parent !== null) {
             let coinPosition = { x: coin.object.position.x, z: coin.object.position.z}
-            // console.log(coin.object.position);
+            if ( this.player !== undefined) {
+              this.player.score += coin.points;
+              console.log(this.player.score);
+            }
             this.socket.emit('updateCoins', coinPosition);
             game?.scene?.remove( coin.object.parent.remove(coin.object));
             this.coins.splice(i, 1);
@@ -385,7 +388,7 @@ class Client {
           this.player.mixer?.update( mixerUpdateDelta );
           this.player.updatePlayerData();
       }
-  
+
       if ( this.player?.thirdPersonCamera !== undefined ) {
         this.player.thirdPersonCamera.update( mixerUpdateDelta );
         if ( this.player.characterController !== undefined ) {
@@ -396,7 +399,7 @@ class Client {
       this.renderer.render( this.scene, this.camera );
     }
   }
-  
+
   render() {
     this.renderer.render( this.scene, this.camera );
   }

@@ -39,7 +39,7 @@ class App {
     let startTimer = false;
     const waitingTime = 5;
     let waitingRoomTimeRemaining = waitingTime;
-    
+
     // store locations of coins to be displayed in game
     // might be some extra work to do as coins may be too close together in some instances
     let coinsLength = randomInt(30, 55);
@@ -89,12 +89,13 @@ class App {
         }
       });
 
-      socket.on('init', function(data){    
+      socket.on('init', function(data){
         socket.userData.model = data.model;
         socket.userData.position = data.position;
         socket.userData.quaternion = data.quaternion;
         socket.userData.action = data.action;
         socket.userData.collided = data.collided;
+        socket.userData.score = data.score;
       });
 
       socket.on('update', function(data){
@@ -103,6 +104,7 @@ class App {
         socket.userData.model = data.model;
         socket.userData.action = data.action;
         socket.userData.collided = data.collided;
+        socket.userData.score = data.score;
       });
 
       socket.on( 'updateQuadRacers', function( data ) {
@@ -123,7 +125,7 @@ class App {
         socket.disconnect(true);
       });
 
-      let positionX 
+      let positionX
 
       socket.on( 'getPlayerPosition', function( data ) {
          if (positionX === undefined) {
@@ -161,7 +163,7 @@ class App {
     setInterval(() => {
       this.io.emit( 'sendQuadRacerList', quadRacerList)
     }, 2000/ FPS);
-    
+
     setInterval(() => {
       if( startTimer ){
         if( waitingRoomTimeRemaining == -1 ) {
@@ -188,6 +190,7 @@ class App {
             quaternion: socket.userData.quaternion,
             action: socket.userData.action,
             collided: socket.userData.collided,
+            score: socket.userData.score,
           });
         }
       });
