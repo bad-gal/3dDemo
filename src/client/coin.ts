@@ -44,17 +44,17 @@ export default class Coin {
       object.scene.position.set( coinData.x, 1, coinData.z );
 
       const geometry = new THREE.BoxGeometry( 0.25, 0.25, 0.25 );
-        const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
+      const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
 
-        this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
-        this.boxHelper.visible = false;
+      this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
+      this.boxHelper.visible = false;
 
-        let boundaryBox = new THREE.Box3();
-        boundaryBox.setFromObject( this.boxHelper );
-        this.boxHelper.geometry.computeBoundingBox();
-        this.boxHelper.update();
+      let boundaryBox = new THREE.Box3();
+      boundaryBox.setFromObject( this.boxHelper );
+      this.boxHelper.geometry.computeBoundingBox();
+      this.boxHelper.update();
 
-        object.scene.add( this.boxHelper );
+      object.scene.add( this.boxHelper );
     });
   }
 

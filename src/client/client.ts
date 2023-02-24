@@ -35,6 +35,7 @@ class Client {
   userModel: string;
   coins: Coin[];
   coinLocations: any[];
+  wallBoundaryList: string[];
 
   constructor() {
     this.player;
@@ -59,6 +60,9 @@ class Client {
     ];
     this.coins = [];
     this.coinLocations = [];
+    this.wallBoundaryList = [
+      'wall_boundary_1', 'wall_boundary_2', 'wall_boundary_3', 'wall_boundary_4'
+    ];
 
     this.socket.once('connect', () => {
       console.log(this.socket.id)
@@ -146,6 +150,67 @@ class Client {
       grid.name = 'ground grid';
       this.scene.add( grid );
 
+      // Create wall objects around the plane mesh
+      const wallGeometry = new THREE.BoxGeometry(150, 5, 1);  // width, height, depth of wall
+      const wallMaterial = new THREE.MeshBasicMaterial({color: 0x000000}); // black color
+      const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+
+      wall.position.set(0, 0, 75);
+      wall.name = 'wall_1'
+      this.scene.add(wall);
+
+      const wallHelper = new THREE.BoxHelper( wall, 0xf542dd );
+      wallHelper.visible = true;
+      let boundaryBox = new THREE.Box3();
+      boundaryBox.setFromObject( wallHelper );
+      wallHelper.geometry.computeBoundingBox();
+      wallHelper.update();
+      wallHelper.name = 'wall_boundary_1'
+      this.scene.add( wallHelper );
+
+      const wall2 = wall.clone();
+      wall2.position.set(0, 0, -75);
+      wall2.name = 'wall_2'
+      this.scene.add(wall2);
+
+      const wallHelper2 = new THREE.BoxHelper( wall2, 0xf542dd );
+      wallHelper2.visible = true;
+      let boundaryBox2 = new THREE.Box3();
+      boundaryBox2.setFromObject( wallHelper2 );
+      wallHelper2.geometry.computeBoundingBox();
+      wallHelper2.update();
+      wallHelper2.name = 'wall_boundary_2'
+      this.scene.add( wallHelper2 );
+
+      const wall3 = wall.clone();
+      wall3.rotation.y = Math.PI/2;
+      wall3.position.set(-75, 0, 0);
+      wall3.name = 'wall_3'
+      this.scene.add(wall3);
+
+      const wallHelper3 = new THREE.BoxHelper( wall3, 0xf542dd );
+      wallHelper3.visible = true;
+      let boundaryBox3 = new THREE.Box3();
+      boundaryBox3.setFromObject( wallHelper3 );
+      wallHelper3.geometry.computeBoundingBox();
+      wallHelper3.update();
+      wallHelper3.name = 'wall_boundary_3'
+      this.scene.add( wallHelper3 );
+
+      const wall4 = wall3.clone();
+      wall4.position.set(75, 0, 0);
+      wall4.name = 'wall_4'
+      this.scene.add(wall4);
+
+      const wallHelper4 = new THREE.BoxHelper( wall4, 0xf542dd );
+      wallHelper4.visible = true;
+      let boundaryBox4 = new THREE.Box3();
+      boundaryBox4.setFromObject( wallHelper4 );
+      wallHelper4.geometry.computeBoundingBox();
+      wallHelper4.update();
+      wallHelper4.name = 'wall_boundary_4'
+      this.scene.add( wallHelper4 );
+
       // web render
       this.renderer = new THREE.WebGLRenderer( { antialias: true } );
       this.renderer.setPixelRatio( window.devicePixelRatio );
@@ -155,6 +220,7 @@ class Client {
       document.body.style.overflow = 'hidden';
       document.body.appendChild( this.renderer.domElement );
 
+      console.log('this scene', this.scene)
       this.currentState = this.GAMESTATES.PLAY;
       this.onPlayState();
     }
@@ -278,14 +344,11 @@ class Client {
       this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
       this.updateRemotePlayers( mixerUpdateDelta );
 
-      // check if player gets a coin
-      // this.coins.forEach((coin, index) => {
-      //   let result = this.checkCoinCollsion(coin, this.player);
-      //   if (result == true) {
-      //     // this.coins.splice(index, 1)
-      //     console.log('player has collided with coin');
-      //   }
-      // })
+      for( let i = 0; i < this.wallBoundaryList.length; i++ ) {
+        if ( this.checkWallCollison( this.wallBoundaryList[i], this.player )) {
+          break;
+        }
+      }
 
       for (let i = this.coins.length - 1; i >=0; i--) {
         if ( this.checkCoinCollsion(this.coins[i], this.player)){
@@ -348,6 +411,39 @@ class Client {
         return coinBoundingBox.intersectsBox(playerBoundingBox);
       }
     }
+  }
+
+  checkWallCollison( boundaryWall: string, playerModel: any ) {
+    if( playerModel !== undefined && playerModel.boundaryBox !== undefined ) {
+      const wallOne = this.scene?.getObjectByName( boundaryWall );
+
+      if( wallOne !== undefined ) {
+        let wallName = boundaryWall.replace( "_boundary_", "_" );
+        let wall = this.scene?.getObjectByName( wallName );
+
+        if( wall !== undefined ) {
+          if ( wall.position.x !== 0 ) {
+            //wall is either to the left or right
+            let distance = Math.abs( wall.position.x - playerModel.object.position.x );
+            if( distance <= 2 ) {
+              const newX = playerModel.object.position.x - (( wall.position.x - playerModel.object.position.x ) *2 )
+              playerModel.object.position.set( newX, playerModel.object.position.y, playerModel.object.position.z )
+              return true;
+            }
+          }
+          else if ( wall.position.z !== 0 ) {
+            //wall is either top or bottom
+            let distance = Math.abs( wall.position.z - playerModel.object.position.z );
+            if( distance <= 2 ) {
+              const newZ = playerModel.object.position.z - (( wall.position.z - playerModel.object.position.z ) *2 )
+              playerModel.object.position.set( playerModel.object.position.x, playerModel.object.position.y, newZ )
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
   }
 
   checkCollisions() {
