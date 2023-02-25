@@ -6,6 +6,10 @@ export default class MenuState {
   }
 
   createMenuItems() {
+    // hide score panel
+    const scorePanel = document.getElementById("score-info");
+    if ( scorePanel !== null ) scorePanel.style.visibility='hidden';
+
     // create a container
     const containerDiv = document.createElement("div");
     containerDiv.className = ("container");

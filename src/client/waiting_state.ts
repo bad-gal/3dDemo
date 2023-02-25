@@ -4,9 +4,9 @@ export default class WaitingState {
   constructor(game:any) {
     this.gameState = game;
   }
-  
+
   createWaitingRoomItems() {
-    // remove the container div 
+    // remove the container div
     const container: HTMLElement = document.getElementById( "container" )!;
     container.remove();
 
@@ -39,7 +39,7 @@ export default class WaitingState {
 
     // list of player images
     let playerImgs = new Map();
-    
+
     playerImgs.set( this.gameState.quadRacerFullList[0], 'camouflage_racer.png' );
     playerImgs.set( this.gameState.quadRacerFullList[1], 'green_racer.png' );
     playerImgs.set( this.gameState.quadRacerFullList[2], 'lime_racer.png' );
@@ -54,7 +54,7 @@ export default class WaitingState {
     // create flexbox with list of quadRacers
     const flex = document.createElement( "ul" );
     flex.className = ( "player-container" );
-   
+
     for ( let index = 0; index < this.gameState.quadRacerFullList.length; index++ ) {
       let data = document.createElement( "button" );
       data.className = ( "flex-item" );
@@ -74,9 +74,9 @@ export default class WaitingState {
 
     // player can click to select a quadRacer
     let quadRacerItems: HTMLCollectionOf<Element> = document.getElementsByClassName( "flex-item" )!;
-    
+
     this.createWaitingRoomItems();
-    
+
     for ( let index = 0; index < quadRacerItems.length; index++ ) {
       quadRacerItems[index].addEventListener("click", function() {
         console.log( quadRacerItems[index].id );
@@ -114,7 +114,7 @@ export default class WaitingState {
       if ( timerText !== null ) {
         timerText.innerHTML = "Game will start in " + timer + " seconds."
       }
-      console.log(timer, data);
+
       // when timer finished players move to gameplay or gets kicked out of server
       if( timer == -1) {
         // continue to gameplay
@@ -134,7 +134,7 @@ export default class WaitingState {
     // we need to keep requesting the quadRacerList from the server
     game.socket.on( 'sendQuadRacerList', function( data: string[]) {
       game.quadRacerList = data;
-      
+
       // we need to update changes made by other players
       let diff = game.quadRacerFullList.filter( (x: any) => !game.quadRacerList.includes(x));
 

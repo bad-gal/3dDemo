@@ -37,12 +37,14 @@ class Client {
   coinLocations: any[];
   wallBoundaryList: string[];
   coinPickupSound: THREE.Audio | undefined;
+  remoteScores: any[];
 
   constructor() {
     this.player;
     this.scene;
     this.remotePlayers = [];
     this.remoteData = [];
+    this.remoteScores = [];
     this.initialisingPlayers = [];
     this.camera;
     this.renderer;
@@ -117,6 +119,10 @@ class Client {
       if (element !== null) {
         element.remove();
       }
+
+      // show score panel
+      const scorePanel = document.getElementById("score-info");
+      if ( scorePanel !== null ) scorePanel.style.visibility='visible';
 
       // set up 3D space
       // camera
@@ -236,7 +242,6 @@ class Client {
       document.body.style.overflow = 'hidden';
       document.body.appendChild( this.renderer.domElement );
 
-      console.log('this scene', this.scene)
       this.currentState = this.GAMESTATES.PLAY;
       this.onPlayState();
     }
@@ -273,8 +278,85 @@ class Client {
       }
     });
 
+    this.createScorePanel();
     this.animate();
   };
+
+  createScorePanel(){
+    // create title
+    const scorePanelTitle = document.createElement( "p" );
+    scorePanelTitle.className = ( 'score-panel-title');
+    const titleText = document.createTextNode( "Scores" );
+    scorePanelTitle.appendChild( titleText );
+    const scorePanel = document.getElementById("score-info");
+    if( scorePanel !== null) scorePanel.appendChild( scorePanelTitle );
+
+    // create local player panel
+    let localPlayerPanel = document.createElement( "div" );
+    localPlayerPanel.className = ( 'score-box' );
+    let playerTitle = document.createElement( "div" );
+    let playerTitleHeader = document.createElement( "p" );
+
+    if ( this.player !== undefined ) {
+      let img = document.createElement( 'img' );
+      img.src = "assets/icons/" + this.player.model + ".ico"
+      playerTitleHeader.appendChild(img);
+    }
+
+    playerTitle.appendChild(playerTitleHeader);
+
+    let localPlayerScoreText = document.createElement("p")
+    localPlayerScoreText.id = ( 'local-player-score' );
+    let playerScoreText = document.createTextNode( (this.player!.score).toString() );
+    localPlayerScoreText.appendChild( playerScoreText );
+    playerTitle.appendChild(localPlayerScoreText);
+    localPlayerPanel.appendChild(playerTitle);
+    if( scorePanel !== null) scorePanel.appendChild(localPlayerPanel)
+  }
+
+  updateScorePanel(){
+    let localPlayerScore = document.getElementById('local-player-score');
+    if(localPlayerScore !== null) {
+      localPlayerScore.innerText = this.player!.score.toString();
+    }
+
+    //remote players
+    if (this.remoteScores.length > 0) {
+      const scorePanel = document.getElementById("score-info");
+
+      for(let i = 0; i < this.remoteScores.length; i++) {
+
+        //skip if there is already an element that matches the remote player id
+        let remotePanel = document.getElementById( this.remoteScores[i].id);
+
+        if (remotePanel === null) {
+          let remotePlayerPanel = document.createElement( "div" );
+          remotePlayerPanel.className = ( "score-box" );
+
+          let remoteTitle = document.createElement( 'div' );
+          let remoteTitleHeader = document.createElement( 'p' );
+
+          let img = document.createElement( 'img' );
+          img.src = "assets/icons/" + this.remoteScores[i].model + ".ico"
+
+          remoteTitleHeader.appendChild(img);
+          remoteTitle.appendChild(remoteTitleHeader);
+
+          let remotePlayerScoreText = document.createElement( 'p' );
+          remotePlayerScoreText.id = ( this.remoteScores[i].id );
+          let playerScoreText = document.createTextNode( (this.remoteScores[i].score).toString() );
+          remotePlayerScoreText.appendChild( playerScoreText );
+
+          remoteTitle.appendChild(remotePlayerScoreText);
+          remotePlayerPanel.appendChild(remoteTitle);
+          if( scorePanel !== null) scorePanel.appendChild(remotePlayerPanel);
+        }
+        else {
+          remotePanel.innerText = this.remoteScores[i].score.toString();
+        }
+      }
+    }
+  }
 
   updateRemotePlayers( delta: number ) {
     if( this.remoteData === undefined || this.remoteData.length == 0 || this.player === undefined || this.player.id === undefined ) return;
@@ -320,9 +402,11 @@ class Client {
     });
 
     this.remotePlayers = remotePlayers;
-    this.remotePlayers.forEach( function( player: any ) {
+
+    this.remotePlayers.forEach( ( player: any ) => {
       player.update( delta );
     });
+    // console.log('REMOTE SCORES', this.remoteScores)
   }
 
   getRemotePlayerById( id: string ) {
@@ -339,6 +423,8 @@ class Client {
 
   animate() {
     const game = this;
+
+    this.updateScorePanel();
 
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
@@ -380,7 +466,6 @@ class Client {
               }
 
               this.player.score += coin.points;
-              console.log(this.player.score);
             }
             this.socket.emit('updateCoins', coinPosition);
             game?.scene?.remove( coin.object.parent.remove(coin.object));

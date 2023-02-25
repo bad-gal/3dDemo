@@ -52,7 +52,7 @@ class App {
         ];
         let clientStartingPositions = new Map();
         let startTimer = false;
-        const waitingTime = 5;
+        const waitingTime = 15;
         let waitingRoomTimeRemaining = waitingTime;
         // store locations of coins to be displayed in game
         // might be some extra work to do as coins may be too close together in some instances
