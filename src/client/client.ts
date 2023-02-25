@@ -36,6 +36,7 @@ class Client {
   coins: Coin[];
   coinLocations: any[];
   wallBoundaryList: string[];
+  coinPickupSound: THREE.Audio | undefined;
 
   constructor() {
     this.player;
@@ -111,7 +112,6 @@ class Client {
 
   onInitState() {
     if ( this.currentState === 'initial' ) {
-      // console.log('In init state')
       // remove the waiting room contents
       const element: HTMLElement | null = document.getElementById("waiting-room-container");
       if (element !== null) {
@@ -149,6 +149,22 @@ class Client {
       const grid = new THREE.GridHelper( 150, 120, 0x0d820d, "green" );
       grid.name = 'ground grid';
       this.scene.add( grid );
+
+      // audio listener
+      const listener = new THREE.AudioListener();
+      this.camera.add( listener );
+
+      this.coinPickupSound = new THREE.Audio( listener );
+
+      // load a sound and set it as the Audio object's buffer
+      const audioLoader = new THREE.AudioLoader();
+      audioLoader.load( 'assets/audio/confirmation_001.ogg', ( buffer ) => {
+        if (this.coinPickupSound !== undefined) {
+          this.coinPickupSound.setBuffer( buffer );
+          this.coinPickupSound.setLoop( false );
+          this.coinPickupSound.setVolume( 0.5 );
+        }
+      });
 
       // Create wall objects around the plane mesh
       const wallGeometry = new THREE.BoxGeometry(150, 5, 1);  // width, height, depth of wall
@@ -352,11 +368,17 @@ class Client {
 
       for (let i = this.coins.length - 1; i >=0; i--) {
         if ( this.checkCoinCollsion(this.coins[i], this.player)){
-          console.log('player has collided with coin');
           let coin = this.coins[i];
           if(coin.object !== undefined && coin.object.parent !== null) {
             let coinPosition = { x: coin.object.position.x, z: coin.object.position.z}
             if ( this.player !== undefined) {
+              if ( this.coinPickupSound?.isPlaying ) {
+                this.coinPickupSound.stop();
+                this.coinPickupSound?.play();
+              } else {
+                this.coinPickupSound?.play();
+              }
+
               this.player.score += coin.points;
               console.log(this.player.score);
             }
@@ -364,7 +386,6 @@ class Client {
             game?.scene?.remove( coin.object.parent.remove(coin.object));
             this.coins.splice(i, 1);
           }
-          console.log(this.coins.length)
         }
       }
 
