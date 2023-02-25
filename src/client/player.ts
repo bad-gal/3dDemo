@@ -25,6 +25,7 @@ export default class Player {
   collided: boolean;
   skinnedMesh: THREE.SkinnedMesh[] = [];
   counter: number;
+  score: number;
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
@@ -33,6 +34,7 @@ export default class Player {
     this.action = '';
     this.collided = false;
     this.counter = 0;
+    this.score = 0;
 
     const quadRacers: { name: string; filename: string }[]  = [
       { name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb" },

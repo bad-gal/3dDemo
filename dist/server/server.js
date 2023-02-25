@@ -102,6 +102,7 @@ class App {
                 socket.userData.quaternion = data.quaternion;
                 socket.userData.action = data.action;
                 socket.userData.collided = data.collided;
+                socket.userData.score = data.score;
             });
             socket.on('update', function (data) {
                 socket.userData.position = data.position;
@@ -109,6 +110,7 @@ class App {
                 socket.userData.model = data.model;
                 socket.userData.action = data.action;
                 socket.userData.collided = data.collided;
+                socket.userData.score = data.score;
             });
             socket.on('updateQuadRacers', function (data) {
                 quadRacerList = data;
@@ -180,6 +182,7 @@ class App {
                         quaternion: socket.userData.quaternion,
                         action: socket.userData.action,
                         collided: socket.userData.collided,
+                        score: socket.userData.score,
                     });
                 }
             });

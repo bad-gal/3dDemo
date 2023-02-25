@@ -36,6 +36,7 @@ class Client {
   coins: Coin[];
   coinLocations: any[];
   wallBoundaryList: string[];
+  coinPickupSound: THREE.Audio | undefined;
 
   constructor() {
     this.player;
@@ -111,13 +112,12 @@ class Client {
 
   onInitState() {
     if ( this.currentState === 'initial' ) {
-      // console.log('In init state')
       // remove the waiting room contents
       const element: HTMLElement | null = document.getElementById("waiting-room-container");
       if (element !== null) {
-        element.remove();   
+        element.remove();
       }
-      
+
       // set up 3D space
       // camera
       this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
@@ -149,6 +149,22 @@ class Client {
       const grid = new THREE.GridHelper( 150, 120, 0x0d820d, "green" );
       grid.name = 'ground grid';
       this.scene.add( grid );
+
+      // audio listener
+      const listener = new THREE.AudioListener();
+      this.camera.add( listener );
+
+      this.coinPickupSound = new THREE.Audio( listener );
+
+      // load a sound and set it as the Audio object's buffer
+      const audioLoader = new THREE.AudioLoader();
+      audioLoader.load( 'assets/audio/confirmation_001.ogg', ( buffer ) => {
+        if (this.coinPickupSound !== undefined) {
+          this.coinPickupSound.setBuffer( buffer );
+          this.coinPickupSound.setLoop( false );
+          this.coinPickupSound.setVolume( 0.5 );
+        }
+      });
 
       // Create wall objects around the plane mesh
       const wallGeometry = new THREE.BoxGeometry(150, 5, 1);  // width, height, depth of wall
@@ -250,7 +266,7 @@ class Client {
         this.keysPressed[e.key] = true;
       }
     });
-  
+
     document.addEventListener( 'keyup', ( e ) => {
       if( this.player?.characterController ) {
         this.keysPressed[e.key] = false;
@@ -271,7 +287,7 @@ class Client {
 
         // is player being initialised?
         let iplayer;
-        
+
         game.initialisingPlayers.forEach( function( player: any ){
           if( player.id == data.id ) iplayer = player;
         });
@@ -288,7 +304,7 @@ class Client {
           if( rplayer === undefined ){
             // initialise remote player
             game.initialisingPlayers.push( new Player( game, game.camera, data ));
-          } 
+          }
           else{
             //player exists
             remotePlayers.push( rplayer );
@@ -323,7 +339,7 @@ class Client {
 
   animate() {
     const game = this;
-    
+
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
 
@@ -352,16 +368,24 @@ class Client {
 
       for (let i = this.coins.length - 1; i >=0; i--) {
         if ( this.checkCoinCollsion(this.coins[i], this.player)){
-          console.log('player has collided with coin');
           let coin = this.coins[i];
           if(coin.object !== undefined && coin.object.parent !== null) {
             let coinPosition = { x: coin.object.position.x, z: coin.object.position.z}
-            // console.log(coin.object.position);
+            if ( this.player !== undefined) {
+              if ( this.coinPickupSound?.isPlaying ) {
+                this.coinPickupSound.stop();
+                this.coinPickupSound?.play();
+              } else {
+                this.coinPickupSound?.play();
+              }
+
+              this.player.score += coin.points;
+              console.log(this.player.score);
+            }
             this.socket.emit('updateCoins', coinPosition);
             game?.scene?.remove( coin.object.parent.remove(coin.object));
             this.coins.splice(i, 1);
           }
-          console.log(this.coins.length)
         }
       }
 
@@ -385,7 +409,7 @@ class Client {
           this.player.mixer?.update( mixerUpdateDelta );
           this.player.updatePlayerData();
       }
-  
+
       if ( this.player?.thirdPersonCamera !== undefined ) {
         this.player.thirdPersonCamera.update( mixerUpdateDelta );
         if ( this.player.characterController !== undefined ) {
@@ -396,7 +420,7 @@ class Client {
       this.renderer.render( this.scene, this.camera );
     }
   }
-  
+
   render() {
     this.renderer.render( this.scene, this.camera );
   }

@@ -4,14 +4,14 @@ import Player from "./player";
 
 export default class PlayerLocal extends Player {
   socket: any;
-  
+
   constructor( game: any, camera: any, socket: any ) {
     super( game, camera );
 
     const player = this;
     
     player.id = socket.id;
-    
+
     socket.emit('getPlayerPosition', 'getPlayerPosition');
 
     socket.on( 'playerPosition', function( data: any ) {
@@ -47,7 +47,7 @@ export default class PlayerLocal extends Player {
 		})
     this.socket = socket;
   }
-  
+
   initSocket() {
     this.socket.emit( 'init',{
       model: this.model,
@@ -56,6 +56,7 @@ export default class PlayerLocal extends Player {
       velocity: this.characterController?.velocity,
       action: this.characterController?.currentAction,
       collided: this.collided,
+      score: this.score,
     })
   }
 
@@ -68,6 +69,7 @@ export default class PlayerLocal extends Player {
         velocity: this.characterController?.velocity,
         action: this.characterController?.currentAction,
         collided: this.collided,
+        score: this.score,
       })
     }
   }
