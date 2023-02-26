@@ -73,7 +73,6 @@ class Client {
 
     // get the coin locations from the server
     this.socket.on( 'coinLocations', ( data: any ) => {
-      console.log('we have received something from the server', data)
       this.coinLocations = data;
     });
 
