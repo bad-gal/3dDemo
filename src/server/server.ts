@@ -37,17 +37,17 @@ class App {
     ];
     let clientStartingPositions = new Map();
     let startTimer = false;
-    const waitingTime = 15;
+    const waitingTime = 20;
     let waitingRoomTimeRemaining = waitingTime;
 
     // store locations of coins to be displayed in game
     // might be some extra work to do as coins may be too close together in some instances
-    let coinsLength = randomInt(30, 55);
+    let coinsLength = randomInt(300, 500);
     let coinTypes = ['bronze', 'silver', 'gold'];
     let coinLocations = []
     for(let i = 0; i < coinsLength; i++) {
-      let x = randomInt(-20, 20);
-      let z = randomInt(-20, 20);
+      let x = randomInt(-70, 70);
+      let z = randomInt(-70, 70);
       let coinIndex = randomInt(0, 3);
       coinLocations.push( {x: x, z: z, type: coinTypes[coinIndex] } )
     }
