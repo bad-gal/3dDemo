@@ -9,7 +9,7 @@ export default class PlayerLocal extends Player {
     super( game, camera );
 
     const player = this;
-    
+
     player.id = socket.id;
 
     socket.emit('getPlayerPosition', 'getPlayerPosition');
@@ -20,6 +20,8 @@ export default class PlayerLocal extends Player {
 
 		socket.on( 'remoteData', function( data: any ) {
 			game.remoteData = data;
+      // console.log('remoteData', data)
+      // console.log('game.remoteData', game.remoteData)
 		});
 
     socket.on( 'deletePlayer', function( data: { id: string; } ) {

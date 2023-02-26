@@ -2,14 +2,14 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { randInt } from 'three/src/math/MathUtils';
 
-export default class Coin {  
+export default class Coin {
   game: any;
   root: any;
   animations: any;
   mixer: THREE.AnimationMixer | undefined;
   object: THREE.Object3D<THREE.Event> | undefined;
   points: number;
-  boxHelper: any;
+  boxHelper: THREE.Box3Helper | undefined;
 
   constructor( game: any, coinData: {x: number, z: number, type: string} ) {
 
@@ -43,17 +43,10 @@ export default class Coin {
 
       object.scene.position.set( coinData.x, 1, coinData.z );
 
-      const geometry = new THREE.BoxGeometry( 0.25, 0.25, 0.25 );
-      const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
-
-      this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
-      this.boxHelper.visible = false;
-
-      let boundaryBox = new THREE.Box3();
-      boundaryBox.setFromObject( this.boxHelper );
-      this.boxHelper.geometry.computeBoundingBox();
-      this.boxHelper.update();
-
+      const mesh = object.scene.children[0]
+      const box = new THREE.Box3().setFromObject(mesh);
+      this.boxHelper = new THREE.Box3Helper(box, new THREE.Color(0xffbbaa))
+      this.boxHelper.visible = false
       object.scene.add( this.boxHelper );
     });
   }

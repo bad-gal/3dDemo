@@ -43,6 +43,7 @@ class App {
         app.use(express_1.default.static(path_1.default.join(__dirname, '../client')));
         this.server = new http_1.default.Server(app);
         this.io = new socket_io_1.Server(this.server);
+        let fruitStart = false;
         let playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
         let playerCount = 0;
         let quadRacerList = [
@@ -52,10 +53,13 @@ class App {
         ];
         let clientStartingPositions = new Map();
         let startTimer = false;
-        const waitingTime = 20;
+        const waitingTime = 10; //20;
         let waitingRoomTimeRemaining = waitingTime;
+        // ===========================================================
+        // Coins
         // store locations of coins to be displayed in game
         // might be some extra work to do as coins may be too close together in some instances
+        // ===========================================================
         let coinsLength = (0, crypto_1.randomInt)(300, 500);
         let coinTypes = ['bronze', 'silver', 'gold'];
         let coinLocations = [];
@@ -67,6 +71,35 @@ class App {
         }
         // remove any duplicate location values
         coinLocations = [...new Set(coinLocations)];
+        // ===========================================================
+        // Flying obstacles (fruits)
+        // ===========================================================
+        let movingObstaclesLength = (0, crypto_1.randomInt)(14, 29);
+        let movingObstacleTypes = ['strawberry', 'apple', 'banana', 'cherry', 'pear'];
+        let movingObstacleLocations = [];
+        for (let i = 0; i < movingObstaclesLength; i++) {
+            let x = (0, crypto_1.randomInt)(-70, 70);
+            let y = (0, crypto_1.randomInt)(1, 4);
+            let z = (0, crypto_1.randomInt)(-70, 70);
+            let index = (0, crypto_1.randomInt)(0, 5);
+            let velX = (0, crypto_1.randomInt)(5, 8);
+            let velY = (0, crypto_1.randomInt)(5, 10);
+            let velZ = (0, crypto_1.randomInt)(4, 9);
+            movingObstacleLocations.push({ type: movingObstacleTypes[index], position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 } });
+            //   movingObstacleLocationsClone.push( { type: movingObstacleTypes[index], position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ}, rotation: {x: 0, y:0, z:0} } );
+        }
+        // ===========================================================
+        // Ground obstacles (barrels)
+        // ===========================================================
+        let groundObstaclesLength = (0, crypto_1.randomInt)(8, 21);
+        let groundObstacleTypes = ['barrel', 'barrel_side'];
+        let groundObstacleLocations = [];
+        for (let i = 0; i < groundObstaclesLength; i++) {
+            let x = (0, crypto_1.randomInt)(-70, 70);
+            let z = (0, crypto_1.randomInt)(-70, 70);
+            let index = (0, crypto_1.randomInt)(0, 2);
+            groundObstacleLocations.push({ type: groundObstacleTypes[index], position: { x: x, z: z } });
+        }
         this.io.sockets.on('connection', (socket) => {
             // send list of quadRacers to clients
             socket.emit('quadRacerList', quadRacerList);
@@ -74,7 +107,7 @@ class App {
                 position: { x: 0, y: 0, z: 0 },
                 quaternion: { isQuaternion: true, _x: 0, _y: 0, _z: 0, _w: 0 },
                 action: 'idle_02',
-                collided: false,
+                collided: { value: false, object: '' }
             };
             console.log('CONNECTED WITH', socket.id);
             console.log('player count', playerCount);
@@ -136,11 +169,13 @@ class App {
                     clientStartingPositions.set(socket.id, positionX);
                     playerCount++;
                 }
-                console.log(playerXPositions, playerCount);
+                console.log(playerXPositions, 'playerCount', playerCount);
                 socket.emit('playerPosition', { position: { x: positionX, y: 0, z: 0 } });
             });
             // send coin locations to clients
             socket.emit('coinLocations', coinLocations);
+            // send obstacles to clients
+            socket.emit('groundObstacleLocations', groundObstacleLocations);
             // a client has collected a coin
             socket.on('updateCoins', function (data) {
                 let result = coinLocations.filter(coin => coin.x == data.x && coin.z == data.z);
@@ -153,6 +188,12 @@ class App {
                     // emit the deleted coin location value to the rest of the clients
                     socket.broadcast.emit('removeCoin', result);
                 }
+            });
+            // send flying obstacles to clients
+            socket.emit('fruitObstaclesDataInitial', movingObstacleLocations);
+            // begin updating fruit
+            socket.on('fruitStart', function () {
+                fruitStart = true;
             });
         });
         setInterval(() => {
@@ -189,6 +230,9 @@ class App {
             if (pack.length > 0) {
                 this.io.emit('remoteData', pack);
             }
+            if (fruitStart == true) {
+                this.io.emit('remoteFruitObstaclesData', this.updateMovingObstacles(0.03, movingObstacleLocations));
+            }
         }, 1000 / FPS);
     }
     refreshPlayerPositions(playerXPositions, positionMap, socket_id) {
@@ -197,6 +241,61 @@ class App {
         playerXPositions.sort(function (a, b) {
             return a - b;
         });
+    }
+    updateMovingObstacles(delta, movingObstacles) {
+        let bounds = {
+            minX: -70, minY: 0.25, minZ: -70,
+            maxX: 70, maxY: 11, maxZ: 70,
+        };
+        for (let i = 0; i < movingObstacles.length; i++) {
+            let element = movingObstacles[i];
+            let currentPosX = element.position.x;
+            let currentPosY = element.position.y;
+            let currentPosZ = element.position.z;
+            if (currentPosX >= bounds.maxX) {
+                element.velocity.x = -element.velocity.x;
+            }
+            else if (currentPosX <= bounds.minX) {
+                element.velocity.x = Math.abs(element.velocity.x);
+            }
+            if (currentPosY >= bounds.maxY) {
+                element.velocity.y = -element.velocity.y;
+            }
+            else if (currentPosY <= bounds.minY) {
+                element.velocity.y = Math.abs(element.velocity.y);
+            }
+            if (currentPosZ >= bounds.maxZ) {
+                element.velocity.z = -element.velocity.z;
+            }
+            else if (currentPosZ <= bounds.minZ) {
+                element.velocity.z = Math.abs(element.velocity.z);
+            }
+            // mimic THREE js addScaledVector method
+            let newPositionX = element.velocity.x * delta + currentPosX;
+            let newPositionY = element.velocity.y * delta + currentPosY;
+            let newPositionZ = element.velocity.z * delta + currentPosZ;
+            // calculate the amount to rotate in the model
+            const rotationAmount = 2 * Math.PI * (delta / 2);
+            const rotationValue = movingObstacles[i].rotation.x + rotationAmount;
+            movingObstacles[i].rotation.x = rotationValue;
+            movingObstacles[i].rotation.y = 0;
+            movingObstacles[i].rotation.z = rotationValue;
+            if (rotationValue >= 2 * Math.PI) {
+                movingObstacles[i].rotation.x = 0;
+                movingObstacles[i].rotation.y = 0;
+                movingObstacles[i].rotation.z = 0;
+            }
+            // console.log( 'newPositions', newPositionX, newPositionY, newPositionZ )
+            movingObstacles[i].position.x = newPositionX;
+            movingObstacles[i].position.y = newPositionY;
+            movingObstacles[i].position.z = newPositionZ;
+            movingObstacles[i].velocity.x = element.velocity.x;
+            movingObstacles[i].velocity.y = element.velocity.y;
+            movingObstacles[i].velocity.z = element.velocity.z;
+            // console.log('array', movingObstacles)
+        }
+        ;
+        return movingObstacles;
     }
     Start() {
         this.server.listen(port, function () {

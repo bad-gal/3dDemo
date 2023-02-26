@@ -19,6 +19,7 @@ export default class CharacterController {
   driveBasicVelocity = 2;
   acceleration = new THREE.Vector3( 1, 0.25, 20.0 );
   velocity = new THREE.Vector3();
+  barrelCollisionCounter = 0;
 
   constructor(
     model: THREE.Group,
@@ -47,15 +48,44 @@ export default class CharacterController {
     this.toggleDrive = !this.toggleDrive;
   };
 
-  public update( delta: number, collided: boolean, keysPressed: { [key: string]: boolean; } = {} ) {
+  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {} ) {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
     let inputVector = new THREE.Vector3();
 
-    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided == true ) {
+    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided.value == true ) {
       let play = '';
 
-      if ( collided == true ) {
-        play = "drive_fail_02";
+      if ( collided.value == true ) {
+        if( collided.object == 'player' ){
+          play = "drive_fail_02";
+        }
+        else if (collided.object == 'barrel' ) {
+          play = "idle_02";
+
+          // the player is colliding with a stationary object, we apply
+          // enough reverse velocity so that the player bounces off the
+          // object immediately so it no longer collides with it
+          if( this.barrelCollisionCounter == 0) {
+            this.velocity.multiplyScalar(6.0);
+            this.velocity.negate();
+
+            const forward = new THREE.Vector3( 0, 0, this.velocity.z );
+            forward.applyQuaternion( this.model.quaternion );
+            forward.normalize();
+
+            const sideways = new THREE.Vector3( this.velocity.x, 0, 0 );
+            sideways.applyQuaternion( this.model.quaternion );
+            sideways.normalize();
+
+            sideways.multiplyScalar( this.velocity.x * delta );
+            forward.multiplyScalar( this.velocity.z * delta );
+
+            this.model.position.add( forward );
+            this.model.position.add (sideways );
+
+            this.barrelCollisionCounter = 1;
+          }
+        }
       }
 
       if ( play == '' ) {
@@ -66,16 +96,16 @@ export default class CharacterController {
       if ( this.currentAction != play ) {
         const toPlay = this.animationsMap.get( play );
         const current = this.animationsMap.get( this.currentAction );
-  
+
         current?.fadeOut( this.fadeDuration );
 
-        if ( collided == true ) {
+        if ( collided.value == true && collided.object == 'player') {
           toPlay?.reset().fadeIn( this.fadeDuration ).setLoop( THREE.LoopOnce, 1 );
           toPlay!.clampWhenFinished = true
           toPlay?.play();
           this.velocity = new Vector3();
           this.currentAction = play;
-        } 
+        }
         else {
           toPlay?.reset().fadeIn( this.fadeDuration ).play();
           this.currentAction = play;
@@ -83,11 +113,11 @@ export default class CharacterController {
       }
       this.mixer.update( delta );
       inputVector.applyQuaternion( this.camera.quaternion );
-    } 
+    }
     else {
       this.userInput( delta, keysPressed );
     }
-    
+
   };
 
   checkActiveKeys( key: boolean ) {
@@ -172,7 +202,7 @@ export default class CharacterController {
       this.model.position.add( forward );
       this.model.position.add (sideways );
     }
-    
+
     // I think I need to use keyup also as it is not working properly when changing animations
     if( keysPressed['t'] == true ) {
       play = 'drive_fast';
