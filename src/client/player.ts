@@ -24,7 +24,6 @@ export default class Player {
   position: Vector3 | undefined;
   collided: boolean;
   skinnedMesh: THREE.SkinnedMesh[] = [];
-  counter: number;
   score: number;
 
   constructor( game: any, camera: any, options?: any ) {
@@ -33,7 +32,6 @@ export default class Player {
     let filename: any;
     this.action = '';
     this.collided = false;
-    this.counter = 0;
     this.score = 0;
 
     const quadRacers: { name: string; filename: string }[]  = [
@@ -54,20 +52,20 @@ export default class Player {
       this.options = options;
       this.id = options.id;
       this.model = options.model;
-    } 
+    }
     else {
       this.model = game.userModel;
     }
-    
+
     this.game = game;
     this.animations = this.game.animations;
 
     const loader = new GLTFLoader();
     const player = this;
-  
+
     let clips: THREE.AnimationClip[];
     const fps = 30;
-    
+
     const animationsFrameLocations = [
       {
           name: 'jump_down',
@@ -353,7 +351,7 @@ export default class Player {
           //@ts-ignore
           player.initSocket();
         }
-      } 
+      }
       else {
 				player.object.userData.id = player.id;
 				player.object.userData.remotePlayer = true;
@@ -369,19 +367,17 @@ export default class Player {
 
   update( delta: any ){
     this.mixer?.update( delta );
+    this.game.remoteScores = [];
 
     if( this.game.remoteData.length > 0 ) {
       let found = false;
       for( let data of this.game.remoteData ) {
         if( data.id != this.id ) continue;
 
-        if(this.counter == 0) {
-          console.log('a player', this) 
-          this.counter = 1
-        }
         //player found
         this.object?.position.set( data.position.x, data.position.y, data.position.z );
         this.object?.quaternion.set( data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w );
+        this.game.remoteScores.push( { id: data.id, model: data.model, score: data.score } );
 
         if( !this.local ) {
           if( this.action !== data.action ) {
@@ -399,7 +395,7 @@ export default class Player {
               newClip.reset().fadeIn( 0.2 ).setLoop( THREE.LoopOnce, 1 );
               newClip.clampWhenFinished = true;
               newClip.play();
-            } 
+            }
             else {
               newClip.reset().fadeIn( 0.2 ).play();
             }
@@ -419,12 +415,12 @@ export default class Player {
     if ( this.object !== undefined ) {
       if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
       this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
-      
+
       this.skinnedMesh.forEach((mesh: THREE.SkinnedMesh) =>  {
         //@ts-ignore
         mesh.material.opacity = 1;
       })
-     
+
       this.boxHelper?.geometry.computeBoundingBox();
       this.boxHelper?.update();
       this.action = 'idle_02';

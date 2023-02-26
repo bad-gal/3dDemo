@@ -9,7 +9,7 @@ body {
   position: relative;
 }
 
-.menu-title, 
+.menu-title,
 .waiting-room-title
 {
   text-align: center;
@@ -60,4 +60,39 @@ body {
 
 .img-overlay-taken {
   margin-left: -1.5rem;
+}
+
+.score-info {
+  position: absolute;
+  z-index: 100;
+  border: 2px solid white;
+  background: green;
+  font-family: 'Courier New', Courier, monospace;
+  color:black;
+  font-weight: bold;
+  font-size: 1rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.score-info p {
+  margin: 0.5rem;
+}
+
+.score-box {
+  display: flex;
+  flex-wrap: nowrap;
+  width: 80px;
+  text-align: center;
+  border-left: 2px solid white;
+}
+
+.score-box>* {
+  flex: 1 0 80px;
+}
+
+#local-player-score {
+  color: red;
 }
