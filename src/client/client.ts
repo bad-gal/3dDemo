@@ -9,6 +9,7 @@ import ExpelledState from './expelled_state';
 import Coin from './coin';
 import MovingObstacle from './moving_obstacle';
 import GroundObstacle from './ground_obstacle';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -252,6 +253,15 @@ class Client {
       wallHelper4.update();
       wallHelper4.name = 'wall_boundary_4'
       this.scene.add( wallHelper4 );
+
+      // load checkpoint model
+      const loader = new GLTFLoader();
+      loader.load( 'assets/checkpoint.glb', (gltf) => {
+        gltf.scene.name = 'checkpoint';
+        this.scene?.add(gltf.scene);
+        gltf.scene.position.set(16.5, 0.1, 0);
+        gltf.scene.rotation.y = Math.PI / 2;;
+      })
 
       // web render
       this.renderer = new THREE.WebGLRenderer( { antialias: true } );
