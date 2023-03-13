@@ -674,16 +674,18 @@ class Client {
       const remoteBB: Box3 = remotePlayer.boundaryBox;
 
       if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided.value == false ) {
-        // console.log('intersects but not necessarily collided')
         const distance = this.player?.object?.position?.distanceTo( remotePlayer.object.position );
         if(distance !== undefined){
           if( distance < 1 ) {
-            // console.log( 'collision detected!!!!' );
-
             if( this.player !== undefined ) {
-              // console.log('player is going to be set as collided - the distance is', distance)
               this.player.collided.value = true;
               this.player.collided.object = 'player';
+
+              // player loses 30% of their coins
+              if ( this.player.score > 0 ) {
+                this.player.score = this.player.score - ( Math.round(this.player.score * 0.3 ));
+                console.log('player score', this.player.score)
+              }
             }
           }
         }
