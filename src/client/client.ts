@@ -499,10 +499,24 @@ class Client {
 
       this.updateRemotePlayers( mixerUpdateDelta );
 
+      let wallConnected = false;
       for( let i = 0; i < this.wallBoundaryList.length; i++ ) {
-        if ( this.checkWallCollison( this.wallBoundaryList[i], this.player )) {
-          break;
+        if(this.player !== undefined) {
+          if(this.checkWallCollision(this.wallBoundaryList[i], this.player)) {
+            console.log('WALL COLLISION');
+            console.log('velocity',this.player.characterController?.velocity);
+            wallConnected = true;
+            break;
+          }
         }
+      }
+      if (wallConnected == false && this.player?.collided.value == true && this.player?.collided.object == 'wall') {
+        this.player.collided.value = false;
+        this.player.collided.object = '';
+        if(this.player.characterController !== undefined) {
+          this.player.characterController.barrelCollisionCounter = 0;
+        }
+        console.log('no wall collision')
       }
 
       let found = false
@@ -603,10 +617,10 @@ class Client {
 
           const collisionMargin = 0.3;
           const barrelBox = new THREE.Box3().setFromObject(barrelModel.object);
-          const object2Box = new THREE.Box3().setFromObject(playerModel.object);
+          const playerBox = new THREE.Box3().setFromObject(playerModel.object);
 
           // Check if the two objects intersect with a margin for error
-          const collisionDetected = object2Box.intersectsBox(barrelBox.expandByScalar(-collisionMargin));
+          const collisionDetected =playerBox.intersectsBox(barrelBox.expandByScalar(-collisionMargin));
 
           if(collisionDetected) {
             playerModel.collided.value = true;
@@ -620,36 +634,25 @@ class Client {
     return false
   }
 
-  checkWallCollision2(boundaryWall: string, playerModel: any) {
-
-  }
-
-  checkWallCollison( boundaryWall: string, playerModel: any ) {
-    if( playerModel !== undefined && playerModel.boundaryBox !== undefined ) {
+  checkWallCollision(boundaryWall: string, playerModel: any) {
+    if(playerModel.collided.value == false) {
       const wallOne = this.scene?.getObjectByName( boundaryWall );
 
       if( wallOne !== undefined ) {
         let wallName = boundaryWall.replace( "_boundary_", "_" );
         let wall = this.scene?.getObjectByName( wallName );
 
-        if( wall !== undefined ) {
-          if ( wall.position.x !== 0 ) {
-            //wall is either to the left or right
-            let distance = Math.abs( wall.position.x - playerModel.object.position.x );
-            if( distance <= 2 ) {
-              const newX = playerModel.object.position.x - (( wall.position.x - playerModel.object.position.x ) *2 )
-              playerModel.object.position.set( newX, playerModel.object.position.y, playerModel.object.position.z )
-              return true;
-            }
-          }
-          else if ( wall.position.z !== 0 ) {
-            //wall is either top or bottom
-            let distance = Math.abs( wall.position.z - playerModel.object.position.z );
-            if( distance <= 2 ) {
-              const newZ = playerModel.object.position.z - (( wall.position.z - playerModel.object.position.z ) *2 )
-              playerModel.object.position.set( playerModel.object.position.x, playerModel.object.position.y, newZ )
-              return true;
-            }
+        if( wall !== undefined && playerModel.object !== undefined) {
+          const collisionMargin = 0.3;
+          const wallBox = new THREE.Box3().setFromObject(wall);
+          const playerBox = new THREE.Box3().setFromObject(playerModel.object);
+
+          const collisionDetected = playerBox.intersectsBox(wallBox.expandByScalar(-collisionMargin));
+
+          if(collisionDetected) {
+            playerModel.collided.value = true;
+            playerModel.collided.object = 'wall';
+            return true;
           }
         }
       }
