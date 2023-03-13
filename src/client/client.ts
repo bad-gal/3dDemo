@@ -44,6 +44,9 @@ class Client {
   fruitObstacles: MovingObstacle[];
   wallBoundaryList: string[];
   coinPickupSound: THREE.Audio | undefined;
+  coinDropSound: THREE.Audio | undefined;
+  collisionSound: THREE.Audio | undefined;
+
   remoteScores: any[];
 
   constructor() {
@@ -182,14 +185,32 @@ class Client {
       this.camera.add( listener );
 
       this.coinPickupSound = new THREE.Audio( listener );
+      this.coinDropSound = new THREE.Audio( listener );
+      this.collisionSound = new THREE.Audio( listener );
 
-      // load a sound and set it as the Audio object's buffer
+      // load sounds and set it as the Audio object's buffer
       const audioLoader = new THREE.AudioLoader();
       audioLoader.load( 'assets/audio/confirmation_001.ogg', ( buffer ) => {
         if (this.coinPickupSound !== undefined) {
           this.coinPickupSound.setBuffer( buffer );
           this.coinPickupSound.setLoop( false );
           this.coinPickupSound.setVolume( 0.5 );
+        }
+      });
+
+      audioLoader.load( 'assets/audio/coin-drop-small.mp3', ( buffer ) => {
+        if ( this.coinDropSound !== undefined ) {
+          this.coinDropSound.setBuffer( buffer );
+          this.coinDropSound.setLoop( false );
+          this.coinDropSound.setVolume( 0.5 );
+        }
+      });
+
+      audioLoader.load( 'assets/audio/impact-small.wav', ( buffer ) => {
+        if ( this.collisionSound !== undefined ) {
+          this.collisionSound.setBuffer( buffer );
+          this.collisionSound.setLoop( false );
+          this.collisionSound.setVolume( 0.5 );
         }
       });
 
@@ -506,6 +527,12 @@ class Client {
             console.log('WALL COLLISION');
             console.log('velocity',this.player.characterController?.velocity);
             wallConnected = true;
+            if ( this.collisionSound?.isPlaying) {
+              this.collisionSound.stop();
+              this.collisionSound?.play();
+            } else {
+              this.collisionSound?.play()
+            }
             break;
           }
         }
@@ -626,6 +653,12 @@ class Client {
             playerModel.collided.value = true;
             playerModel.collided.object = 'barrel';
             playerModel.score += barrelModel.points;
+            if ( this.coinDropSound?.isPlaying) {
+              this.coinDropSound.stop();
+              this.coinDropSound?.play();
+            } else {
+              this.coinDropSound?.play()
+            }
             return true;
           }
         }
