@@ -79,7 +79,6 @@ class App {
       let velZ = randomInt(4, 9);
 
       movingObstacleLocations.push( { type: movingObstacleTypes[index], position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y:0, z:0 } } );
-      //   movingObstacleLocationsClone.push( { type: movingObstacleTypes[index], position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ}, rotation: {x: 0, y:0, z:0} } );
     }
 
     // ===========================================================

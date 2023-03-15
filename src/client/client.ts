@@ -46,6 +46,7 @@ class Client {
   coinPickupSound: THREE.Audio | undefined;
   coinDropSound: THREE.Audio | undefined;
   collisionSound: THREE.Audio | undefined;
+  smallCollisionSound: THREE.Audio | undefined;
   largeCoinDropSound: THREE.Audio | undefined;
 
   remoteScores: any[];
@@ -189,6 +190,7 @@ class Client {
       this.coinDropSound = new THREE.Audio( listener );
       this.collisionSound = new THREE.Audio( listener );
       this.largeCoinDropSound = new THREE.Audio( listener );
+      this.smallCollisionSound = new THREE.Audio( listener );
 
       // load sounds and set it as the Audio object's buffer
       const audioLoader = new THREE.AudioLoader();
@@ -208,11 +210,19 @@ class Client {
         }
       });
 
-      audioLoader.load( 'assets/audio/impact-small.wav', ( buffer ) => {
+      audioLoader.load( 'assets/audio/impact-large.wav', ( buffer ) => {
         if ( this.collisionSound !== undefined ) {
           this.collisionSound.setBuffer( buffer );
           this.collisionSound.setLoop( false );
           this.collisionSound.setVolume( 0.5 );
+        }
+      });
+
+      audioLoader.load( 'assets/audio/impact-small.wav', ( buffer ) => {
+        if ( this.smallCollisionSound !== undefined ) {
+          this.smallCollisionSound.setBuffer( buffer );
+          this.smallCollisionSound.setLoop( false );
+          this.smallCollisionSound.setVolume( 0.5 );
         }
       });
 
@@ -670,12 +680,23 @@ class Client {
           if(collisionDetected) {
             playerModel.collided.value = true;
             playerModel.collided.object = 'barrel';
-            playerModel.score += barrelModel.points;
-            if ( this.coinDropSound?.isPlaying) {
-              this.coinDropSound.stop();
-              this.coinDropSound?.play();
+
+            //play impact sound
+            if ( this.smallCollisionSound?.isPlaying) {
+              this.smallCollisionSound.stop();
+              this.smallCollisionSound?.play();
             } else {
-              this.coinDropSound?.play()
+              this.smallCollisionSound?.play()
+            }
+
+            if (playerModel.score >= Math.abs(barrelModel.points)) {
+              playerModel.score += barrelModel.points;
+              if ( this.coinDropSound?.isPlaying) {
+                this.coinDropSound.stop();
+                this.coinDropSound?.play();
+              } else {
+                this.coinDropSound?.play()
+              }
             }
             return true;
           }
@@ -732,8 +753,24 @@ class Client {
               this.player.collided.value = true;
               this.player.collided.object = 'player';
 
+              //play impact sound
+              if ( this.collisionSound?.isPlaying) {
+                this.collisionSound.stop();
+                this.collisionSound?.play();
+              } else {
+                this.collisionSound?.play()
+              }
+
               // player loses 30% of their coins
               if ( this.player.score > 0 ) {
+
+                if ( this.largeCoinDropSound?.isPlaying) {
+                  this.largeCoinDropSound.stop();
+                  this.largeCoinDropSound?.play();
+                } else {
+                  this.largeCoinDropSound?.play()
+                }
+
                 this.player.score = this.player.score - ( Math.round(this.player.score * 0.3 ));
                 console.log('player score', this.player.score)
               }
@@ -759,15 +796,23 @@ class Client {
           this.player.collided.object = 'fruit';
           console.log('fruit collides with player')
 
-          if ( this.largeCoinDropSound?.isPlaying) {
-            this.largeCoinDropSound.stop();
-            this.largeCoinDropSound?.play();
+          //play impact sound
+          if ( this.collisionSound?.isPlaying) {
+            this.collisionSound.stop();
+            this.collisionSound?.play();
           } else {
-            this.largeCoinDropSound?.play()
+            this.collisionSound?.play()
           }
 
           // player loses 50% of their coins
+          // we only play the coin sound if the player has a positive score
           if ( this.player.score > 0 ) {
+            if ( this.largeCoinDropSound?.isPlaying) {
+              this.largeCoinDropSound.stop();
+              this.largeCoinDropSound?.play();
+            } else {
+              this.largeCoinDropSound?.play()
+            }
             this.player.score = this.player.score - ( Math.round( this.player.score * 0.5 ));
             console.log( 'player score after collision with fruit', this.player.score)
           }

@@ -86,7 +86,6 @@ class App {
             let velY = (0, crypto_1.randomInt)(5, 10);
             let velZ = (0, crypto_1.randomInt)(4, 9);
             movingObstacleLocations.push({ type: movingObstacleTypes[index], position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 } });
-            //   movingObstacleLocationsClone.push( { type: movingObstacleTypes[index], position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ}, rotation: {x: 0, y:0, z:0} } );
         }
         // ===========================================================
         // Ground obstacles (barrels)
