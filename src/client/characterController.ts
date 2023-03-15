@@ -56,7 +56,7 @@ export default class CharacterController {
       let play = '';
 
       if ( collided.value == true ) {
-        if( collided.object == 'player' ){
+        if( collided.object == 'player' || collided.object == 'fruit' ){
           play = "drive_fail_02";
         }
         else if (collided.object == 'barrel' || collided.object == 'wall') {
@@ -99,7 +99,7 @@ export default class CharacterController {
 
         current?.fadeOut( this.fadeDuration );
 
-        if ( collided.value == true && collided.object == 'player') {
+        if ( collided.value == true && (collided.object == 'player' || collided.object == 'fruit' )) {
           toPlay?.reset().fadeIn( this.fadeDuration ).setLoop( THREE.LoopOnce, 1 );
           toPlay!.clampWhenFinished = true
           toPlay?.play();

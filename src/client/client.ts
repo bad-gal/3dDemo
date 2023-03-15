@@ -46,6 +46,7 @@ class Client {
   coinPickupSound: THREE.Audio | undefined;
   coinDropSound: THREE.Audio | undefined;
   collisionSound: THREE.Audio | undefined;
+  largeCoinDropSound: THREE.Audio | undefined;
 
   remoteScores: any[];
 
@@ -187,6 +188,7 @@ class Client {
       this.coinPickupSound = new THREE.Audio( listener );
       this.coinDropSound = new THREE.Audio( listener );
       this.collisionSound = new THREE.Audio( listener );
+      this.largeCoinDropSound = new THREE.Audio( listener );
 
       // load sounds and set it as the Audio object's buffer
       const audioLoader = new THREE.AudioLoader();
@@ -211,6 +213,14 @@ class Client {
           this.collisionSound.setBuffer( buffer );
           this.collisionSound.setLoop( false );
           this.collisionSound.setVolume( 0.5 );
+        }
+      });
+
+      audioLoader.load( 'assets/audio/coin-drop.mp3', ( buffer ) => {
+        if ( this.largeCoinDropSound !== undefined ) {
+          this.largeCoinDropSound.setBuffer( buffer );
+          this.largeCoinDropSound.setLoop( false );
+          this.largeCoinDropSound.setVolume( 0.5 );
         }
       });
 
@@ -515,6 +525,14 @@ class Client {
       this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
 
       this.fruitObstacles.forEach( (fruit, index) => fruit.update(this.fruitObstaclesData[index]));
+      this.checkMovingFruitCollision()
+      if (this.player?.collided.value == true && this.player.collided.object == 'fruit') {
+        this.player.mixer?.addEventListener( 'finished', function() {
+          if ( game.player?.skinnedMesh !== undefined ) {
+            game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
+          }
+        });
+      }
 
       this.barrelObstacles.forEach( barrel => barrel.update( mixerUpdateDelta ));
 
@@ -721,6 +739,39 @@ class Client {
               }
             }
           }
+        }
+      }
+    }
+  }
+
+  checkMovingFruitCollision() {
+    if (this.player !== undefined && this.player.object !== undefined) {
+      const playerBox = new THREE.Box3().setFromObject(this.player.object);
+
+      for ( let i = 0; i < this.fruitObstacles.length; i++ ) {
+        let obstacle = this.fruitObstacles[i];
+
+        if ( obstacle !== undefined && obstacle.object !== undefined) {
+        let fruitBox = new THREE.Box3().setFromObject( obstacle.object );
+
+        if ( playerBox.intersectsBox(fruitBox) && this.player.collided.value == false ) {
+          this.player.collided.value = true;
+          this.player.collided.object = 'fruit';
+          console.log('fruit collides with player')
+
+          if ( this.largeCoinDropSound?.isPlaying) {
+            this.largeCoinDropSound.stop();
+            this.largeCoinDropSound?.play();
+          } else {
+            this.largeCoinDropSound?.play()
+          }
+
+          // player loses 50% of their coins
+          if ( this.player.score > 0 ) {
+            this.player.score = this.player.score - ( Math.round( this.player.score * 0.5 ));
+            console.log( 'player score after collision with fruit', this.player.score)
+          }
+        }
         }
       }
     }
