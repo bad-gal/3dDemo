@@ -22,7 +22,7 @@ export default class Player {
   action: string;
   animationsMap: any;
   position: Vector3 | undefined;
-  collided: boolean;
+  collided: {value: boolean, object: string};
   skinnedMesh: THREE.SkinnedMesh[] = [];
   score: number;
 
@@ -31,7 +31,7 @@ export default class Player {
     let model: string;
     let filename: any;
     this.action = '';
-    this.collided = false;
+    this.collided = { value: false, object: '' };
     this.score = 0;
 
     const quadRacers: { name: string; filename: string }[]  = [
@@ -357,6 +357,7 @@ export default class Player {
 				player.object.userData.remotePlayer = true;
         player.object.userData.position = options.position;
         player.object.userData.collided = player.collided;
+        // player.object.userData.collided.object = player.collided.object;
         this.position = new Vector3( options.position.x, options.position.y, options.position.z );
 
 				const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
@@ -402,6 +403,7 @@ export default class Player {
 
             this.action = data.action;
             this.collided = data.collided;
+            // this.collided.object = data.collided.object;
           }
         }
         found = true;
@@ -411,7 +413,8 @@ export default class Player {
   }
 
   resetCollidedPlayer() {
-    this.collided = false;
+    this.collided.value = false;
+    this.collided.object = '';
     if ( this.object !== undefined ) {
       if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
       this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
@@ -424,7 +427,7 @@ export default class Player {
       this.boxHelper?.geometry.computeBoundingBox();
       this.boxHelper?.update();
       this.action = 'idle_02';
-      this.boundaryBox?.copy( this.boxHelper.geometry.boundingBox ).applyMatrix4( this.boxHelper.matrixWorld );
+      this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
     }
   }
 }
