@@ -94,8 +94,37 @@ class App {
         let groundObstacleTypes = ['barrel', 'barrel_side'];
         let groundObstacleLocations = [];
         for (let i = 0; i < groundObstaclesLength; i++) {
-            let x = (0, crypto_1.randomInt)(-70, 70);
-            let z = (0, crypto_1.randomInt)(-70, 70);
+            const lengthX = 2; //the x length of the barrel
+            const lengthZ = 3; //the z length of the barrel
+            // we don't store y value as it will be set at zero
+            let valuesX = Array.from(Array(141), (_, i) => i + -70).filter(num => num < -2 || num > 2);
+            let x = (0, crypto_1.randomInt)(valuesX[0], valuesX[valuesX.length - 1]);
+            let valuesZ = Array.from(Array(141), (_, i) => i + -70).filter(num => num < -3 || num > 3);
+            let z = (0, crypto_1.randomInt)(valuesZ[0], valuesZ[valuesZ.length - 1]);
+            if (i > 0) {
+                // we need to find new x and z values if they intersect with any of the values
+                // we already have for the barrels
+                let intersected = false;
+                // we keep looping until there are no values intersecting
+                do {
+                    for (let j = 0; j < i; j++) {
+                        let obstacleX = groundObstacleLocations[j].position.x;
+                        let obstacleZ = groundObstacleLocations[j].position.z;
+                        if (((x >= obstacleX && x <= obstacleX + lengthX) || (x + lengthX >= obstacleX && x + lengthX <= obstacleX + lengthX))
+                            && ((z >= obstacleZ && z <= obstacleZ + lengthZ) || (z + lengthZ >= obstacleZ && z + lengthZ <= obstacleZ + lengthZ))) {
+                            intersected = true;
+                            console.log('intersected barrels, we need to change values and repeat');
+                            console.log('obstacle position', groundObstacleLocations[j].position, 'x', x, 'z', z);
+                            x = (0, crypto_1.randomInt)(valuesX[0], valuesX[valuesX.length - 1]);
+                            z = (0, crypto_1.randomInt)(valuesZ[0], valuesZ[valuesZ.length - 1]);
+                            break;
+                        }
+                        else {
+                            intersected = false;
+                        }
+                    }
+                } while (intersected == true);
+            }
             let index = (0, crypto_1.randomInt)(0, 2);
             groundObstacleLocations.push({ type: groundObstacleTypes[index], position: { x: x, z: z } });
         }
@@ -195,6 +224,7 @@ class App {
                 fruitStart = true;
             });
         });
+        console.log('groundObstacles', groundObstacleLocations);
         setInterval(() => {
             this.io.emit('sendQuadRacerList', quadRacerList);
         }, 2000 / FPS);
