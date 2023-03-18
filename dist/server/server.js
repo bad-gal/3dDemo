@@ -55,22 +55,8 @@ class App {
         let startTimer = false;
         const waitingTime = 10; //20;
         let waitingRoomTimeRemaining = waitingTime;
-        // ===========================================================
-        // Coins
-        // store locations of coins to be displayed in game
-        // might be some extra work to do as coins may be too close together in some instances
-        // ===========================================================
-        let coinsLength = (0, crypto_1.randomInt)(300, 500);
-        let coinTypes = ['bronze', 'silver', 'gold'];
-        let coinLocations = [];
-        for (let i = 0; i < coinsLength; i++) {
-            let x = (0, crypto_1.randomInt)(-70, 70);
-            let z = (0, crypto_1.randomInt)(-70, 70);
-            let coinIndex = (0, crypto_1.randomInt)(0, 3);
-            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
-        }
-        // remove any duplicate location values
-        coinLocations = [...new Set(coinLocations)];
+        const PLAY_AREA_MIN = -70;
+        const PLAY_AREA_MAX = 70;
         // ===========================================================
         // Flying obstacles (fruits)
         // ===========================================================
@@ -90,44 +76,58 @@ class App {
         // ===========================================================
         // Ground obstacles (barrels)
         // ===========================================================
-        let groundObstaclesLength = (0, crypto_1.randomInt)(8, 21);
-        let groundObstacleTypes = ['barrel', 'barrel_side'];
-        let groundObstacleLocations = [];
-        for (let i = 0; i < groundObstaclesLength; i++) {
-            const lengthX = 2; //the x length of the barrel
-            const lengthZ = 3; //the z length of the barrel
-            // we don't store y value as it will be set at zero
-            let valuesX = Array.from(Array(141), (_, i) => i + -70).filter(num => num < -2 || num > 2);
-            let x = (0, crypto_1.randomInt)(valuesX[0], valuesX[valuesX.length - 1]);
-            let valuesZ = Array.from(Array(141), (_, i) => i + -70).filter(num => num < -3 || num > 3);
-            let z = (0, crypto_1.randomInt)(valuesZ[0], valuesZ[valuesZ.length - 1]);
+        const groundObstacleTypes = ['barrel', 'barrel_side'];
+        const groundObstacleLocations = [];
+        const BARREL_LENGTH_X = 2;
+        const BARREL_LENGTH_Z = 3;
+        const BARREL_MIN = 8;
+        const BARREL_MAX = 21;
+        for (let i = 0; i < this.generateRandomIntInRange(BARREL_MIN, BARREL_MAX); i++) {
+            let xValues = Array.from(Array(141), (_, i) => i + PLAY_AREA_MIN).filter(num => num < -BARREL_LENGTH_X || num > BARREL_LENGTH_X);
+            let zValues = Array.from(Array(141), (_, i) => i + PLAY_AREA_MIN).filter(num => num < -BARREL_LENGTH_Z || num > BARREL_LENGTH_Z);
+            let x = this.generateRandomIntInRange(xValues[0], xValues[xValues.length - 1]);
+            let z = this.generateRandomIntInRange(zValues[0], zValues[zValues.length - 1]);
             if (i > 0) {
-                // we need to find new x and z values if they intersect with any of the values
-                // we already have for the barrels
                 let intersected = false;
-                // we keep looping until there are no values intersecting
                 do {
                     for (let j = 0; j < i; j++) {
-                        let obstacleX = groundObstacleLocations[j].position.x;
-                        let obstacleZ = groundObstacleLocations[j].position.z;
-                        if (((x >= obstacleX && x <= obstacleX + lengthX) || (x + lengthX >= obstacleX && x + lengthX <= obstacleX + lengthX))
-                            && ((z >= obstacleZ && z <= obstacleZ + lengthZ) || (z + lengthZ >= obstacleZ && z + lengthZ <= obstacleZ + lengthZ))) {
+                        const obstacle = groundObstacleLocations[j];
+                        const obstacleX = obstacle.position.x;
+                        const obstacleZ = obstacle.position.z;
+                        if (((x >= obstacleX && x <= obstacleX + BARREL_LENGTH_X) ||
+                            (x + BARREL_LENGTH_X >= obstacleX && x + BARREL_LENGTH_X <= obstacleX + BARREL_LENGTH_X)) &&
+                            ((z >= obstacleZ && z <= obstacleZ + BARREL_LENGTH_Z) ||
+                                (z + BARREL_LENGTH_Z >= obstacleZ && z + BARREL_LENGTH_Z <= obstacleZ + BARREL_LENGTH_Z))) {
                             intersected = true;
-                            console.log('intersected barrels, we need to change values and repeat');
-                            console.log('obstacle position', groundObstacleLocations[j].position, 'x', x, 'z', z);
-                            x = (0, crypto_1.randomInt)(valuesX[0], valuesX[valuesX.length - 1]);
-                            z = (0, crypto_1.randomInt)(valuesZ[0], valuesZ[valuesZ.length - 1]);
+                            x = this.generateUniqueRandomIntInRange(xValues[0], xValues[xValues.length - 1], [x]);
+                            z = this.generateUniqueRandomIntInRange(zValues[0], zValues[zValues.length - 1], [z]);
                             break;
                         }
                         else {
                             intersected = false;
                         }
                     }
-                } while (intersected == true);
+                } while (intersected);
             }
-            let index = (0, crypto_1.randomInt)(0, 2);
-            groundObstacleLocations.push({ type: groundObstacleTypes[index], position: { x: x, z: z } });
+            const obstacleType = groundObstacleTypes[this.generateRandomIntInRange(0, 1)];
+            groundObstacleLocations.push({ type: obstacleType, position: { x: x, z: z } });
         }
+        // ===========================================================
+        // Coins
+        // store locations of coins to be displayed in game
+        // might be some extra work to do as coins may be too close together in some instances
+        // ===========================================================
+        let coinsLength = (0, crypto_1.randomInt)(300, 500);
+        let coinTypes = ['bronze', 'silver', 'gold'];
+        let coinLocations = [];
+        for (let i = 0; i < coinsLength; i++) {
+            let x = (0, crypto_1.randomInt)(-70, 70);
+            let z = (0, crypto_1.randomInt)(-70, 70);
+            let coinIndex = (0, crypto_1.randomInt)(0, 3);
+            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
+        }
+        // remove any duplicate location values
+        coinLocations = [...new Set(coinLocations)];
         this.io.sockets.on('connection', (socket) => {
             // send list of quadRacers to clients
             socket.emit('quadRacerList', quadRacerList);
@@ -224,7 +224,7 @@ class App {
                 fruitStart = true;
             });
         });
-        console.log('groundObstacles', groundObstacleLocations);
+        console.log('groundObstacles', groundObstacleLocations, 'length', groundObstacleLocations.length);
         setInterval(() => {
             this.io.emit('sendQuadRacerList', quadRacerList);
         }, 2000 / FPS);
@@ -263,6 +263,16 @@ class App {
                 this.io.emit('remoteFruitObstaclesData', this.updateMovingObstacles(0.03, movingObstacleLocations));
             }
         }, 1000 / FPS);
+    }
+    generateRandomIntInRange(start, end) {
+        return Math.floor(Math.random() * (end - start + 1) + start);
+    }
+    generateUniqueRandomIntInRange(start, end, existingValues) {
+        let value;
+        do {
+            value = this.generateRandomIntInRange(start, end);
+        } while (existingValues.includes(value));
+        return value;
     }
     refreshPlayerPositions(playerXPositions, positionMap, socket_id) {
         const leavingPlayerPosition = positionMap.get(socket_id);
