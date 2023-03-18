@@ -39,8 +39,8 @@ class App {
     ];
     let clientStartingPositions = new Map();
     let startTimer = false;
-    const waitingTime = 10;//20;
-    let waitingRoomTimeRemaining = waitingTime;
+    const WAITING_TIME = 10;//20;
+    let waitingRoomTimeRemaining = WAITING_TIME;
     const PLAY_AREA_MIN =  -70;
     const PLAY_AREA_MAX = 70;
 
@@ -74,7 +74,7 @@ class App {
     const BARREL_MIN = 8;
     const BARREL_MAX = 21;
 
-    for( let i = 0; i < this.generateRandomIntInRange(BARREL_MIN, BARREL_MAX); i++ ) {
+    for( let i = 0; i < this.generateRandomIntInRange( BARREL_MIN, BARREL_MAX ); i++ ) {
       let xValues = Array.from( Array(141), (_, i) => i+ PLAY_AREA_MIN ).filter( num => num < -BARREL_LENGTH_X || num > BARREL_LENGTH_X );
       let zValues = Array.from( Array(141), (_, i) => i+ PLAY_AREA_MIN ).filter( num => num < -BARREL_LENGTH_Z || num > BARREL_LENGTH_Z );
       let x = this.generateRandomIntInRange( xValues[0], xValues[xValues.length - 1] );
@@ -112,25 +112,52 @@ class App {
       groundObstacleLocations.push( { type: obstacleType, position: { x: x, z: z } } );
     }
 
-
     // ===========================================================
     // Coins
     // store locations of coins to be displayed in game
-    // might be some extra work to do as coins may be too close together in some instances
     // ===========================================================
-    let coinsLength = randomInt(300, 500);
-    let coinTypes = ['bronze', 'silver', 'gold'];
+    const coinTypes = ['bronze', 'silver', 'gold'];
     let coinLocations = []
+    const COINS_MIN = 300;
+    const COINS_MAX = 500;
 
-    for(let i = 0; i < coinsLength; i++) {
-      let x = randomInt(-70, 70);
-      let z = randomInt(-70, 70);
-      let coinIndex = randomInt(0, 3);
-      coinLocations.push( {x: x, z: z, type: coinTypes[coinIndex] } )
+    for ( let i = 0; i < this.generateRandomIntInRange( COINS_MIN, COINS_MAX ); i++ ) {
+      let x = this.generateRandomIntInRange( PLAY_AREA_MIN, PLAY_AREA_MAX );
+      let z = this.generateRandomIntInRange( PLAY_AREA_MIN, PLAY_AREA_MAX );
+
+      // we need to make sure that the coin is not intersecting with barrels
+      let intersected = false;
+
+      do {
+        for( let j = 0; j < groundObstacleLocations.length; j++ ) {
+          const obstacle = groundObstacleLocations[j];
+          const obstacleX = obstacle.position.x;
+          const obstacleZ = obstacle.position.z;
+
+          if (
+            (( x >= obstacleX && x <= obstacleX + BARREL_LENGTH_X ) ||
+              ( x + BARREL_LENGTH_X >= obstacleX && x + BARREL_LENGTH_X <= obstacleX + BARREL_LENGTH_X )) &&
+            (( z >= obstacleZ && z <= obstacleZ + BARREL_LENGTH_Z ) ||
+              ( z + BARREL_LENGTH_Z >= obstacleZ && z + BARREL_LENGTH_Z <= obstacleZ + BARREL_LENGTH_Z ))
+          ) {
+            intersected = true;
+            x = this.generateUniqueRandomIntInRange( PLAY_AREA_MIN, PLAY_AREA_MAX, [x]);
+            z = this.generateUniqueRandomIntInRange( PLAY_AREA_MIN, PLAY_AREA_MAX, [z]);
+            break;
+          }
+          else {
+            intersected = false;
+          }
+        }
+      }
+      while ( intersected )
+
+      let coinIndex = this.generateRandomIntInRange( 0, coinTypes.length - 1 );
+      coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } )
     }
 
     // remove any duplicate location values
-    coinLocations = [...new Set(coinLocations)]
+    coinLocations = [...new Set( coinLocations )]
 
     this.io.sockets.on( 'connection', ( socket: ISocket ) => {
       // send list of quadRacers to clients
@@ -162,7 +189,7 @@ class App {
         // if there are no players, can we reset waitingRoomTimeRemaining to waitingTime
         // this way if the server is still running new players can join a new game
         if ( playerCount == 0 && waitingRoomTimeRemaining == 0 ) {
-          waitingRoomTimeRemaining = waitingTime;
+          waitingRoomTimeRemaining = WAITING_TIME;
         }
       });
 
