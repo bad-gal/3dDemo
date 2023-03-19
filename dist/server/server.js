@@ -32,7 +32,6 @@ const http_1 = __importDefault(require("http"));
 const socket_io_1 = require("socket.io");
 const path_1 = __importDefault(require("path"));
 const process_1 = __importDefault(require("process"));
-const crypto_1 = require("crypto");
 dotenv.config();
 const port = process_1.default.env.PORT;
 const FPS = 30;
@@ -60,19 +59,7 @@ class App {
         // ===========================================================
         // Flying obstacles (fruits)
         // ===========================================================
-        let movingObstaclesLength = (0, crypto_1.randomInt)(14, 29);
-        let movingObstacleTypes = ['strawberry', 'apple', 'banana', 'cherry', 'pear'];
-        let movingObstacleLocations = [];
-        for (let i = 0; i < movingObstaclesLength; i++) {
-            let x = (0, crypto_1.randomInt)(-70, 70);
-            let y = (0, crypto_1.randomInt)(1, 4);
-            let z = (0, crypto_1.randomInt)(-70, 70);
-            let index = (0, crypto_1.randomInt)(0, 5);
-            let velX = (0, crypto_1.randomInt)(5, 8);
-            let velY = (0, crypto_1.randomInt)(5, 10);
-            let velZ = (0, crypto_1.randomInt)(4, 9);
-            movingObstacleLocations.push({ type: movingObstacleTypes[index], position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 } });
-        }
+        const movingObstacleLocations = this.createMovingObstacles(PLAY_AREA_MIN, PLAY_AREA_MAX);
         // ===========================================================
         // Ground obstacles (barrels)
         // ===========================================================
@@ -245,7 +232,6 @@ class App {
                 fruitStart = true;
             });
         });
-        console.log('groundObstacles', groundObstacleLocations, 'length', groundObstacleLocations.length);
         setInterval(() => {
             this.io.emit('sendQuadRacerList', quadRacerList);
         }, 2000 / FPS);
@@ -284,6 +270,49 @@ class App {
                 this.io.emit('remoteFruitObstaclesData', this.updateMovingObstacles(0.03, movingObstacleLocations));
             }
         }, 1000 / FPS);
+    }
+    createMovingObstacles(PLAY_AREA_MIN, PLAY_AREA_MAX) {
+        const MOVING_OBJECT_MIN = 14;
+        const MOVING_OBJECT_MAX = 29;
+        const SIZE = 2; //all fruits except apple have the same x,z size
+        const APPLE_SIZE = 3;
+        const MOVING_OBJECT_TYPES = ['strawberry', 'apple', 'banana', 'cherry', 'pear'];
+        const movingObstacleLocations = [];
+        for (let i = 0; i < this.generateRandomIntInRange(MOVING_OBJECT_MIN, MOVING_OBJECT_MAX); i++) {
+            let x = this.generateRandomIntInRange(PLAY_AREA_MIN, PLAY_AREA_MAX);
+            let y = this.generateRandomIntInRange(1, 4);
+            let z = this.generateRandomIntInRange(PLAY_AREA_MIN, PLAY_AREA_MAX);
+            let velX = this.generateRandomIntInRange(5, 8);
+            let velY = this.generateRandomIntInRange(5, 10);
+            let velZ = this.generateRandomIntInRange(4, 9);
+            const objectType = MOVING_OBJECT_TYPES[this.generateRandomIntInRange(0, MOVING_OBJECT_TYPES.length - 1)];
+            if (i > 0) {
+                let intersected = false;
+                do {
+                    for (let j = 0; j < i; j++) {
+                        const obstacle = movingObstacleLocations[j];
+                        const obstacleX = obstacle.position.x;
+                        const obstacleZ = obstacle.position.z;
+                        const obstacleSize = obstacle.type == 'apple' ? APPLE_SIZE : SIZE;
+                        const size = objectType == 'apple' ? APPLE_SIZE : SIZE;
+                        if (((x >= obstacleX && x <= obstacleX + obstacleSize) ||
+                            (x + size >= obstacleX && x + size <= obstacleX + obstacleSize)) &&
+                            ((z >= obstacleZ && z <= obstacleZ + obstacleSize) ||
+                                (z + size >= obstacleZ && z + size <= obstacleZ + obstacleSize))) {
+                            intersected = true;
+                            x = this.generateUniqueRandomIntInRange(PLAY_AREA_MIN, PLAY_AREA_MAX, [x]);
+                            z = this.generateUniqueRandomIntInRange(PLAY_AREA_MIN, PLAY_AREA_MAX, [z]);
+                            break;
+                        }
+                        else {
+                            intersected = false;
+                        }
+                    }
+                } while (intersected);
+            }
+            movingObstacleLocations.push({ type: objectType, position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 } });
+        }
+        return movingObstacleLocations;
     }
     generateRandomIntInRange(start, end) {
         return Math.floor(Math.random() * (end - start + 1) + start);
