@@ -48,6 +48,7 @@ class Client {
   collisionSound: THREE.Audio | undefined;
   smallCollisionSound: THREE.Audio | undefined;
   largeCoinDropSound: THREE.Audio | undefined;
+  backgroundMusic: THREE.Audio | undefined;
 
   remoteScores: any[];
 
@@ -191,6 +192,7 @@ class Client {
       this.collisionSound = new THREE.Audio( listener );
       this.largeCoinDropSound = new THREE.Audio( listener );
       this.smallCollisionSound = new THREE.Audio( listener );
+      this.backgroundMusic = new THREE.Audio( listener );
 
       // load sounds and set it as the Audio object's buffer
       const audioLoader = new THREE.AudioLoader();
@@ -231,6 +233,15 @@ class Client {
           this.largeCoinDropSound.setBuffer( buffer );
           this.largeCoinDropSound.setLoop( false );
           this.largeCoinDropSound.setVolume( 0.5 );
+        }
+      });
+
+      audioLoader.load( 'assets/audio/song.mp3', ( buffer ) => {
+        if ( this.backgroundMusic !== undefined ) {
+          this.backgroundMusic.setBuffer( buffer );
+          this.backgroundMusic.setLoop( true );
+          this.backgroundMusic.setVolume( 0.1 );
+          this.backgroundMusic.play();
         }
       });
 
@@ -585,6 +596,7 @@ class Client {
           }
         }
       }
+
       if (found == false && this.player?.collided.value == true && this.player?.collided.object == 'barrel') {
         this.player.collided.value = false;
         this.player.collided.object = '';
