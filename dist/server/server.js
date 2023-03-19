@@ -190,7 +190,7 @@ class App {
                 this.io.emit('remoteData', pack);
             }
             if (fruitStart == true) {
-                this.io.emit('remoteFruitObstaclesData', this.updateMovingObstacles(0.03, movingObstacleLocations));
+                this.io.emit('remoteFruitObstaclesData', this.updateMovingObstacles(0.03, PLAY_AREA_MIN, PLAY_AREA_MAX, movingObstacleLocations));
             }
         }, 1000 / FPS);
     }
@@ -329,16 +329,19 @@ class App {
             return a - b;
         });
     }
-    updateMovingObstacles(delta, movingObstacles) {
+    updateMovingObstacles(delta, minPlayArea, maxPlayArea, movingObstacles) {
         let bounds = {
-            minX: -70, minY: 0.25, minZ: -70,
-            maxX: 70, maxY: 11, maxZ: 70,
+            minX: minPlayArea, minY: 0.25, minZ: minPlayArea,
+            maxX: maxPlayArea, maxY: 11, maxZ: maxPlayArea,
         };
+        const SIZE = 2; //all fruits except apple have the same x,z size
+        const APPLE_SIZE = 3;
         for (let i = 0; i < movingObstacles.length; i++) {
             let element = movingObstacles[i];
             let currentPosX = element.position.x;
             let currentPosY = element.position.y;
             let currentPosZ = element.position.z;
+            let type = element.type;
             if (currentPosX >= bounds.maxX) {
                 element.velocity.x = -element.velocity.x;
             }
@@ -361,6 +364,34 @@ class App {
             let newPositionX = element.velocity.x * delta + currentPosX;
             let newPositionY = element.velocity.y * delta + currentPosY;
             let newPositionZ = element.velocity.z * delta + currentPosZ;
+            //reverse the velocity it obstacles collide
+            for (let j = 0; j < movingObstacles.length; j++) {
+                if (i === j)
+                    continue;
+                const obstacle = movingObstacles[j];
+                const obstacleX = obstacle.position.x;
+                const obstacleY = obstacle.position.y;
+                const obstacleZ = obstacle.position.z;
+                let obstacleVelX = obstacle.velocity.x;
+                let obstacleVelY = obstacle.velocity.y;
+                let obstacleVelZ = obstacle.velocity.z;
+                const obstacleType = obstacle.type;
+                const obstacleSize = obstacleType == 'apple' ? APPLE_SIZE : SIZE;
+                const size = element.type == 'apple' ? APPLE_SIZE : SIZE;
+                if (((newPositionX >= obstacleX && newPositionX <= obstacleX + obstacleSize) ||
+                    (newPositionX + size >= obstacleX && newPositionX + size <= obstacleX + obstacleSize)) &&
+                    ((newPositionY >= obstacleY && newPositionY <= obstacleY + obstacleSize) ||
+                        (newPositionY + size >= obstacleY && newPositionY + size <= obstacleY + obstacleSize)) &&
+                    ((newPositionZ >= obstacleZ && newPositionZ <= obstacleZ + obstacleSize) ||
+                        (newPositionZ + size >= obstacleZ && newPositionZ + size <= obstacleZ + obstacleSize))) {
+                    element.velocity.x = -element.velocity.x;
+                    element.velocity.y = -element.velocity.y;
+                    element.velocity.z = -element.velocity.z;
+                    movingObstacles[j].velocity.x = -obstacleVelX;
+                    movingObstacles[j].velocity.y = -obstacleVelY;
+                    movingObstacles[j].velocity.z = -obstacleVelZ;
+                }
+            }
             // calculate the amount to rotate in the model
             const rotationAmount = 2 * Math.PI * (delta / 2);
             const rotationValue = movingObstacles[i].rotation.x + rotationAmount;
@@ -372,14 +403,12 @@ class App {
                 movingObstacles[i].rotation.y = 0;
                 movingObstacles[i].rotation.z = 0;
             }
-            // console.log( 'newPositions', newPositionX, newPositionY, newPositionZ )
             movingObstacles[i].position.x = newPositionX;
             movingObstacles[i].position.y = newPositionY;
             movingObstacles[i].position.z = newPositionZ;
             movingObstacles[i].velocity.x = element.velocity.x;
             movingObstacles[i].velocity.y = element.velocity.y;
             movingObstacles[i].velocity.z = element.velocity.z;
-            // console.log('array', movingObstacles)
         }
         ;
         return movingObstacles;
