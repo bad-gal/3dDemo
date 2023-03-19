@@ -46,7 +46,7 @@ export default class MovingObstacle {
       const mesh = gltf.scene.children[0]
       const box = new THREE.Box3().setFromObject(mesh);
       this.boxHelper = new THREE.Box3Helper(box, new THREE.Color(0xffbbaa))
-      this.boxHelper.visible = true
+      this.boxHelper.visible = false;
       gltf.scene.add(this.boxHelper)
     });
   }
