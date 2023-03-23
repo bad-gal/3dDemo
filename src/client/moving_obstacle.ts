@@ -8,6 +8,7 @@ export default class MovingObstacle {
   points: number;
   boxHelper: THREE.Box3Helper | undefined;
   velocity: THREE.Vector3;
+  isVisible: boolean = false;
 
   constructor( game: any, data: { type: string, position: {x: number, y: number, z: number}, velocity: {x: number, y: number, z: number} }) {
     this.game = game;
@@ -48,12 +49,21 @@ export default class MovingObstacle {
       this.boxHelper = new THREE.Box3Helper(box, new THREE.Color(0xffbbaa))
       this.boxHelper.visible = false;
       gltf.scene.add(this.boxHelper)
+      gltf.scene.visible = this.isVisible;
     });
   }
 
-  update(data: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number }}){
-    this.object?.position.set( data.position.x, data.position.y, data.position.z);
-    this.velocity.set(data.velocity.x, data.velocity.y, data.velocity.z);
-    this.object?.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
+  update(data: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number }}, visibility: boolean){
+    if ( this.isVisible !== visibility )  {
+      this.isVisible = visibility;
+
+      if (this.object !== undefined)  { this.object.visible = visibility; }
+    }
+
+    if ( this.isVisible == true ) {
+      this.object?.position.set( data.position.x, data.position.y, data.position.z);
+      this.velocity.set(data.velocity.x, data.velocity.y, data.velocity.z);
+      this.object?.rotation.set(data.rotation.x, data.rotation.y, data.rotation.z);
+    }
   }
 }

@@ -96,3 +96,12 @@ body {
 #local-player-score {
   color: red;
 }
+
+.timer-info {
+  position: absolute;
+  z-index: 101;
+  right: 5%;
+  color: orange;
+  font-size: 1rem;
+  font-weight: bold;;
+}

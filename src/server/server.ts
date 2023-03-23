@@ -27,6 +27,7 @@ class App {
     this.server = new http.Server( app );
     this.io = new Server( this.server );
 
+    let gameTimerStart = false;
     let fruitStart = false;
 
     let playerXPositions : Array<number> = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
@@ -38,10 +39,13 @@ class App {
     ];
     let clientStartingPositions = new Map();
     let startTimer = false;
-    const WAITING_TIME = 10;//20;
+    const WAITING_TIME = 10;
     let waitingRoomTimeRemaining = WAITING_TIME;
     const PLAY_AREA_MIN =  -70;
     const PLAY_AREA_MAX = 70;
+    const MOVING_OBSTACLE_INTERVAL_TIME = 30;
+    let GAME_TIMER = 120;
+    let fruitTimerOn = false;
 
     const movingObstacleLocations = this.createMovingObstacles(PLAY_AREA_MIN, PLAY_AREA_MAX);
     const { groundObstacleLocations, BARREL_LENGTH_X, BARREL_LENGTH_Z } = this.createGroundObstacles(PLAY_AREA_MIN);
@@ -159,7 +163,7 @@ class App {
 
       // begin updating fruit
       socket.on('fruitStart', function() {
-        fruitStart = true;
+        gameTimerStart = true;
       });
     });
 
@@ -181,6 +185,28 @@ class App {
       }
     }, 1000);
 
+    // game timer
+    setInterval(() => {
+      if ( fruitTimerOn ) {
+        if ( GAME_TIMER <= 0 ) {
+          clearTimeout( GAME_TIMER );
+          fruitTimerOn = false;
+        }
+        else {
+          if ( fruitTimerOn ) GAME_TIMER--;
+          if ( GAME_TIMER % MOVING_OBSTACLE_INTERVAL_TIME == 0 ) {
+            console.log('30 second interval')
+            fruitStart = fruitStart == true ? false : true;
+            this.io.emit( 'setVisibilityMoveableObjects', fruitStart ); // send visibility to clients
+            // remember that fruit start is initially set to false, so first printout should say true
+            console.log('fruit start', fruitStart)
+          }
+        }
+        this.io.emit( 'gameTimer', GAME_TIMER );
+        console.log('temp timer: ', GAME_TIMER);
+      }
+    }, 1000 );
+
     setInterval(() => {
       let pack = [];
 
@@ -199,12 +225,15 @@ class App {
       });
 
 
-      if(pack.length > 0) {
+      if( pack.length > 0 ) {
         this.io.emit('remoteData', pack);
       }
 
-      if (fruitStart == true) {
+      if ( gameTimerStart == true) {
         this.io.emit( 'remoteFruitObstaclesData', this.updateMovingObstacles(0.03, PLAY_AREA_MIN, PLAY_AREA_MAX, movingObstacleLocations ))
+        if ( !fruitTimerOn ) {
+          fruitTimerOn = true;
+        }
       }
 
     }, 1000 / FPS );
@@ -301,8 +330,8 @@ class App {
   }
 
   private createMovingObstacles(PLAY_AREA_MIN: number, PLAY_AREA_MAX: number) {
-    const MOVING_OBJECT_MIN = 14;
-    const MOVING_OBJECT_MAX = 29;
+    const MOVING_OBJECT_MIN = 30;
+    const MOVING_OBJECT_MAX = 60;
     const SIZE = 2; //all fruits except apple have the same x,z size
     const APPLE_SIZE = 3;
 
@@ -312,7 +341,8 @@ class App {
     for (let i = 0; i < this.generateRandomIntInRange(MOVING_OBJECT_MIN, MOVING_OBJECT_MAX); i++) {
       let x = this.generateRandomIntInRange(PLAY_AREA_MIN, PLAY_AREA_MAX);
       let y = this.generateRandomIntInRange(1, 4);
-      let z = this.generateRandomIntInRange(PLAY_AREA_MIN, PLAY_AREA_MAX);
+      let randomNumber = Math.random();
+      let z = randomNumber > 0.5 ? PLAY_AREA_MAX : PLAY_AREA_MIN
 
       let velX = this.generateRandomIntInRange(5, 8);
       let velY = this.generateRandomIntInRange(5, 10);
@@ -437,6 +467,9 @@ class App {
           ((newPositionZ >= obstacleZ && newPositionZ <= obstacleZ + obstacleSize) ||
             (newPositionZ + size >= obstacleZ && newPositionZ + size <= obstacleZ + obstacleSize))
         ) {
+          // might need to adjust the position also so that they are no longer intersected
+          // need to know what the position of each of the objects are and the distance between the two
+          // taking into account the size of the object
           element.velocity.x = -element.velocity.x;
           element.velocity.y = -element.velocity.y;
           element.velocity.z = -element.velocity.z;
