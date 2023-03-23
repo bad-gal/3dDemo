@@ -49,6 +49,8 @@ class Client {
   smallCollisionSound: THREE.Audio | undefined;
   largeCoinDropSound: THREE.Audio | undefined;
   backgroundMusic: THREE.Audio | undefined;
+  gameTimer: string = '';
+  fruitVisibility = false;
 
   remoteScores: any[];
 
@@ -240,8 +242,8 @@ class Client {
         if ( this.backgroundMusic !== undefined ) {
           this.backgroundMusic.setBuffer( buffer );
           this.backgroundMusic.setLoop( true );
-          this.backgroundMusic.setVolume( 0.1 );
-          this.backgroundMusic.play();
+          this.backgroundMusic.setVolume( 0.02 );
+          // this.backgroundMusic.play();
         }
       });
 
@@ -332,6 +334,10 @@ class Client {
   onPlayState() {
     this.player = new PlayerLocal( this, this.camera, this.socket );
 
+    this.socket.on('gameTimer', (data: number) => {
+      this.gameTimer = this.formatGameTimer(data);
+    });
+
     this.socket.on( 'removeCoin', ( data: any ) => {
       for (let i = this.coins.length - 1; i >=0; i--) {
         let coin = this.coins[i];
@@ -343,6 +349,11 @@ class Client {
         }
       }
 		});
+
+    this.socket.on( 'setVisibilityMoveableObjects', ( visibility: boolean) => {
+      console.log('fruits visibility is ', visibility);
+      this.fruitVisibility = visibility;
+    });
 
     for ( let i = 0; i < this.coinLocations.length; i++ ) {
       this.coins.push( new Coin( this, this.coinLocations[i] ));
@@ -375,87 +386,88 @@ class Client {
     });
 
     this.createScorePanel();
+    this.displayTimer();
     this.animate();
   };
 
-  createScorePanel(){
-    // create title
-    const scorePanelTitle = document.createElement( "p" );
-    scorePanelTitle.className = ( 'score-panel-title');
-    const titleText = document.createTextNode( "Scores" );
-    scorePanelTitle.appendChild( titleText );
+  displayTimer() {
+    const timerPanel = document.getElementById( 'game-time-info' );
+    if ( timerPanel !== null ) {
+      timerPanel.innerText = this.gameTimer;
+    }
+  }
+
+  updateDisplayTimer() {
+    let timerText = document.getElementById('game-time-info');
+    if( timerText !== null ) timerText.innerText = this.gameTimer;
+  }
+
+  createScorePanel() {
     const scorePanel = document.getElementById("score-info");
-    if( scorePanel !== null) scorePanel.appendChild( scorePanelTitle );
+    if (!scorePanel) {
+      return;
+    }
+
+    // create title
+    const scorePanelTitle = document.createElement("p");
+    scorePanelTitle.className = "score-panel-title";
+    scorePanelTitle.textContent = "Scores";
+    scorePanel.appendChild(scorePanelTitle);
 
     // create local player panel
-    let localPlayerPanel = document.createElement( "div" );
-    localPlayerPanel.className = ( 'score-box' );
-    let playerTitle = document.createElement( "div" );
-    let playerTitleHeader = document.createElement( "p" );
+    const localPlayerPanel = document.createElement("div");
+    localPlayerPanel.className = "score-box";
+    const playerTitle = document.createElement("div");
 
-    if ( this.player !== undefined ) {
-      let img = document.createElement( 'img' );
-      img.src = "assets/icons/" + this.player.model + ".ico"
-      playerTitleHeader.appendChild(img);
+    if (this.player) {
+      const img = document.createElement("img");
+      img.src = `assets/icons/${this.player.model}.ico`;
+      playerTitle.appendChild(img);
     }
 
-    playerTitle.appendChild(playerTitleHeader);
-
-    let localPlayerScoreText = document.createElement("p")
-    localPlayerScoreText.id = ( 'local-player-score' );
-    let playerScoreText = document.createTextNode( (this.player!.score).toString() );
-    localPlayerScoreText.appendChild( playerScoreText );
+    const localPlayerScoreText = document.createElement("p");
+    localPlayerScoreText.id = "local-player-score";
+    localPlayerScoreText.textContent = `${this.player?.score ?? ""}`;
     playerTitle.appendChild(localPlayerScoreText);
     localPlayerPanel.appendChild(playerTitle);
-    if( scorePanel !== null) scorePanel.appendChild(localPlayerPanel)
+    scorePanel.appendChild(localPlayerPanel);
   }
 
-  updateScorePanel(){
-    let localPlayerScore = document.getElementById('local-player-score');
-    if(localPlayerScore !== null) {
-      localPlayerScore.innerText = this.player!.score.toString();
+  updateScorePanel() {
+    const localPlayerScore = document.getElementById('local-player-score');
+    if (localPlayerScore) {
+      localPlayerScore.innerText = `${this.player?.score ?? ""}`;
     }
 
-    //remote players
-    if (this.remoteScores.length > 0) {
-      const scorePanel = document.getElementById("score-info");
+    const scorePanel = document.getElementById("score-info");
+    if (!scorePanel) return;
 
-      for(let i = 0; i < this.remoteScores.length; i++) {
+    for (const remoteScore of this.remoteScores) {
+      const remotePanel = document.getElementById(remoteScore.id);
+      if (!remotePanel) {
+        const remotePlayerPanel = document.createElement("div");
+        remotePlayerPanel.className = "score-box";
 
-        //skip if there is already an element that matches the remote player id
-        let remotePanel = document.getElementById( this.remoteScores[i].id);
+        const remoteTitle = document.createElement("div");
+        const remoteTitleHeader = document.createElement("p");
 
-        if (remotePanel === null) {
-          let remotePlayerPanel = document.createElement( "div" );
-          remotePlayerPanel.className = ( "score-box" );
+        const img = document.createElement("img");
+        img.src = `assets/icons/${remoteScore.model}.ico`;
 
-          let remoteTitle = document.createElement( 'div' );
-          let remoteTitleHeader = document.createElement( 'p' );
+        remoteTitleHeader.appendChild(img);
+        remoteTitle.appendChild(remoteTitleHeader);
 
-          let img = document.createElement( 'img' );
-          img.src = "assets/icons/" + this.remoteScores[i].model + ".ico"
+        const remotePlayerScoreText = document.createElement("p");
+        remotePlayerScoreText.id = remoteScore.id;
+        remotePlayerScoreText.textContent = `${remoteScore.score}`;
 
-          remoteTitleHeader.appendChild(img);
-          remoteTitle.appendChild(remoteTitleHeader);
-
-          let remotePlayerScoreText = document.createElement( 'p' );
-          remotePlayerScoreText.id = ( this.remoteScores[i].id );
-          let playerScoreText = document.createTextNode( (this.remoteScores[i].score).toString() );
-          remotePlayerScoreText.appendChild( playerScoreText );
-
-          remoteTitle.appendChild(remotePlayerScoreText);
-          remotePlayerPanel.appendChild(remoteTitle);
-          if( scorePanel !== null) scorePanel.appendChild(remotePlayerPanel);
-        }
-        else {
-          remotePanel.innerText = this.remoteScores[i].score.toString();
-        }
+        remoteTitle.appendChild(remotePlayerScoreText);
+        remotePlayerPanel.appendChild(remoteTitle);
+        scorePanel.appendChild(remotePlayerPanel);
+      } else {
+        remotePanel.textContent = `${remoteScore.score}`;
       }
     }
-  }
-
-  updateMovingObstacles( delta: number ) {
-
   }
 
   updateRemotePlayers( delta: number ) {
@@ -524,6 +536,7 @@ class Client {
   animate() {
     const game = this;
 
+    this.updateDisplayTimer();
     this.updateScorePanel();
 
     if ( this.currentState === this.GAMESTATES.PLAY ) {
@@ -545,8 +558,10 @@ class Client {
 
       this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
 
-      this.fruitObstacles.forEach( (fruit, index) => fruit.update(this.fruitObstaclesData[index]));
-      this.checkMovingFruitCollision()
+      this.fruitObstacles.forEach( (fruit, index) => fruit.update(this.fruitObstaclesData[index], this.fruitVisibility));
+
+      this.checkMovingFruitCollision();
+
       if (this.player?.collided.value == true && this.player.collided.object == 'fruit') {
         this.player.mixer?.addEventListener( 'finished', function() {
           if ( game.player?.skinnedMesh !== undefined ) {
@@ -794,41 +809,43 @@ class Client {
   }
 
   checkMovingFruitCollision() {
-    if (this.player !== undefined && this.player.object !== undefined) {
-      const playerBox = new THREE.Box3().setFromObject(this.player.object);
+    if (this.fruitVisibility) {
+      if (this.player !== undefined && this.player.object !== undefined) {
+        const playerBox = new THREE.Box3().setFromObject(this.player.object);
 
-      for ( let i = 0; i < this.fruitObstacles.length; i++ ) {
-        let obstacle = this.fruitObstacles[i];
+        for ( let i = 0; i < this.fruitObstacles.length; i++ ) {
+          let obstacle = this.fruitObstacles[i];
 
-        if ( obstacle !== undefined && obstacle.object !== undefined) {
-        let fruitBox = new THREE.Box3().setFromObject( obstacle.object );
+          if ( obstacle !== undefined && obstacle.object !== undefined) {
+          let fruitBox = new THREE.Box3().setFromObject( obstacle.object );
 
-        if ( playerBox.intersectsBox(fruitBox) && this.player.collided.value == false ) {
-          this.player.collided.value = true;
-          this.player.collided.object = 'fruit';
-          console.log('fruit collides with player')
+            if ( playerBox.intersectsBox(fruitBox) && this.player.collided.value == false ) {
+              this.player.collided.value = true;
+              this.player.collided.object = 'fruit';
+              console.log('fruit collides with player')
 
-          //play impact sound
-          if ( this.collisionSound?.isPlaying) {
-            this.collisionSound.stop();
-            this.collisionSound?.play();
-          } else {
-            this.collisionSound?.play()
-          }
+              //play impact sound
+              if ( this.collisionSound?.isPlaying) {
+                this.collisionSound.stop();
+                this.collisionSound?.play();
+              } else {
+                this.collisionSound?.play()
+              }
 
-          // player loses 50% of their coins
-          // we only play the coin sound if the player has a positive score
-          if ( this.player.score > 0 ) {
-            if ( this.largeCoinDropSound?.isPlaying) {
-              this.largeCoinDropSound.stop();
-              this.largeCoinDropSound?.play();
-            } else {
-              this.largeCoinDropSound?.play()
+              // player loses 50% of their coins
+              // we only play the coin sound if the player has a positive score
+              if ( this.player.score > 0 ) {
+                if ( this.largeCoinDropSound?.isPlaying) {
+                  this.largeCoinDropSound.stop();
+                  this.largeCoinDropSound?.play();
+                } else {
+                  this.largeCoinDropSound?.play()
+                }
+                this.player.score = this.player.score - ( Math.round( this.player.score * 0.5 ));
+                console.log( 'player score after collision with fruit', this.player.score)
+              }
             }
-            this.player.score = this.player.score - ( Math.round( this.player.score * 0.5 ));
-            console.log( 'player score after collision with fruit', this.player.score)
           }
-        }
         }
       }
     }
@@ -861,6 +878,20 @@ class Client {
       }
       game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );
     }, 300)
+  }
+
+  formatGameTimer(timer: number): string {
+    if (timer < 10) {
+      return `0:0${timer}`;
+    } else if (timer < 60) {
+      return `0:${timer}`;
+    } else if (timer < 70) {
+      return `1:0${timer - 60}`;
+    } else if (timer < 120) {
+      return `1:${timer - 60}`;
+    } else {
+      return '2:00';
+    }
   }
 }
 
