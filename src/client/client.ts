@@ -42,7 +42,6 @@ class Client {
   barrelObstaclesData: { type: string, position: { x: number, z: number } }[];
   fruitObstaclesData: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number}, rotation: { x: number, y: number, z: number } }[];
   fruitObstacles: MovingObstacle[];
-  wallBoundaryList: string[];
   coinPickupSound: THREE.Audio | undefined;
   coinDropSound: THREE.Audio | undefined;
   collisionSound: THREE.Audio | undefined;
@@ -81,10 +80,6 @@ class Client {
       "camouflage rider", "green rider", "lime rider", "mustard rider",
       "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
       "blue rider",
-    ];
-
-    this.wallBoundaryList = [
-      'wall_boundary_1', 'wall_boundary_2', 'wall_boundary_3', 'wall_boundary_4'
     ];
 
     this.socket.once('connect', () => {
@@ -246,67 +241,6 @@ class Client {
           // this.backgroundMusic.play();
         }
       });
-
-      // Create wall objects around the plane mesh
-      const wallGeometry = new THREE.BoxGeometry(150, 5, 1);  // width, height, depth of wall
-      const wallMaterial = new THREE.MeshBasicMaterial({color: 0x000000}); // black color
-      const wall = new THREE.Mesh(wallGeometry, wallMaterial);
-
-      wall.position.set(0, 0, 75);
-      wall.name = 'wall_1'
-      this.scene.add(wall);
-
-      const wallHelper = new THREE.BoxHelper( wall, 0xf542dd );
-      wallHelper.visible = true;
-      let boundaryBox = new THREE.Box3();
-      boundaryBox.setFromObject( wallHelper );
-      wallHelper.geometry.computeBoundingBox();
-      wallHelper.update();
-      wallHelper.name = 'wall_boundary_1'
-      this.scene.add( wallHelper );
-
-      const wall2 = wall.clone();
-      wall2.position.set(0, 0, -75);
-      wall2.name = 'wall_2'
-      this.scene.add(wall2);
-
-      const wallHelper2 = new THREE.BoxHelper( wall2, 0xf542dd );
-      wallHelper2.visible = true;
-      let boundaryBox2 = new THREE.Box3();
-      boundaryBox2.setFromObject( wallHelper2 );
-      wallHelper2.geometry.computeBoundingBox();
-      wallHelper2.update();
-      wallHelper2.name = 'wall_boundary_2'
-      this.scene.add( wallHelper2 );
-
-      const wall3 = wall.clone();
-      wall3.rotation.y = Math.PI/2;
-      wall3.position.set(-75, 0, 0);
-      wall3.name = 'wall_3'
-      this.scene.add(wall3);
-
-      const wallHelper3 = new THREE.BoxHelper( wall3, 0xf542dd );
-      wallHelper3.visible = true;
-      let boundaryBox3 = new THREE.Box3();
-      boundaryBox3.setFromObject( wallHelper3 );
-      wallHelper3.geometry.computeBoundingBox();
-      wallHelper3.update();
-      wallHelper3.name = 'wall_boundary_3'
-      this.scene.add( wallHelper3 );
-
-      const wall4 = wall3.clone();
-      wall4.position.set(75, 0, 0);
-      wall4.name = 'wall_4'
-      this.scene.add(wall4);
-
-      const wallHelper4 = new THREE.BoxHelper( wall4, 0xf542dd );
-      wallHelper4.visible = true;
-      let boundaryBox4 = new THREE.Box3();
-      boundaryBox4.setFromObject( wallHelper4 );
-      wallHelper4.geometry.computeBoundingBox();
-      wallHelper4.update();
-      wallHelper4.name = 'wall_boundary_4'
-      this.scene.add( wallHelper4 );
 
       // load checkpoint model
       const loader = new GLTFLoader();
@@ -574,32 +508,6 @@ class Client {
 
       this.updateRemotePlayers( mixerUpdateDelta );
 
-      let wallConnected = false;
-      for( let i = 0; i < this.wallBoundaryList.length; i++ ) {
-        if(this.player !== undefined) {
-          if(this.checkWallCollision(this.wallBoundaryList[i], this.player)) {
-            console.log('WALL COLLISION');
-            console.log('velocity',this.player.characterController?.velocity);
-            wallConnected = true;
-            if ( this.collisionSound?.isPlaying) {
-              this.collisionSound.stop();
-              this.collisionSound?.play();
-            } else {
-              this.collisionSound?.play()
-            }
-            break;
-          }
-        }
-      }
-      if (wallConnected == false && this.player?.collided.value == true && this.player?.collided.object == 'wall') {
-        this.player.collided.value = false;
-        this.player.collided.object = '';
-        if(this.player.characterController !== undefined) {
-          this.player.characterController.barrelCollisionCounter = 0;
-        }
-        console.log('no wall collision')
-      }
-
       let found = false
       for(let i = 0; i < this.barrelObstacles.length; i++) {
         if(this.player !== undefined) {
@@ -731,32 +639,6 @@ class Client {
       }
     }
     return false
-  }
-
-  checkWallCollision(boundaryWall: string, playerModel: any) {
-    if(playerModel.collided.value == false) {
-      const wallOne = this.scene?.getObjectByName( boundaryWall );
-
-      if( wallOne !== undefined ) {
-        let wallName = boundaryWall.replace( "_boundary_", "_" );
-        let wall = this.scene?.getObjectByName( wallName );
-
-        if( wall !== undefined && playerModel.object !== undefined) {
-          const collisionMargin = 0.3;
-          const wallBox = new THREE.Box3().setFromObject(wall);
-          const playerBox = new THREE.Box3().setFromObject(playerModel.object);
-
-          const collisionDetected = playerBox.intersectsBox(wallBox.expandByScalar(-collisionMargin));
-
-          if(collisionDetected) {
-            playerModel.collided.value = true;
-            playerModel.collided.object = 'wall';
-            return true;
-          }
-        }
-      }
-    }
-    return false;
   }
 
   checkCollisions() {
