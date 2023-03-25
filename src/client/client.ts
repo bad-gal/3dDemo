@@ -10,6 +10,7 @@ import Coin from './coin';
 import MovingObstacle from './moving_obstacle';
 import GroundObstacle from './ground_obstacle';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { clone } from 'three/examples/jsm/utils/SkeletonUtils';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -48,7 +49,6 @@ class Client {
   collisionSound: THREE.Audio | undefined;
   smallCollisionSound: THREE.Audio | undefined;
   largeCoinDropSound: THREE.Audio | undefined;
-  backgroundMusic: THREE.Audio | undefined;
   gameTimer: string = '';
   fruitVisibility = false;
 
@@ -162,8 +162,6 @@ class Client {
       this.scene.background = new THREE.Color( 0x0d820d );
       this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
 
-      this.createWalls();
-
       // lighting
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
       hemiLight.position.set( 0, 20, 0 );
@@ -171,90 +169,12 @@ class Client {
       this.scene.add( hemiLight );
 
       // ground
-      const scale = new THREE.Vector3(100, 1, 100);
-      const mesh = new THREE.Mesh( new THREE.BoxGeometry( 5000, 0, 5000 ), new THREE.MeshPhongMaterial( { color: 0x000000 } ));
-      mesh.position.set( -1000, -0.5, 0 )
-      mesh.scale.set( scale.x, scale.y, scale.z )
-      mesh.name = 'ground mesh';
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      this.scene.add( mesh );
+      this.createTrack(this.scene);
 
-      // grid
-      const grid = new THREE.GridHelper( 150, 120, 0x0d820d, "green" );
-      grid.name = 'ground grid';
-      this.scene.add( grid );
+      this.createWalls();
 
       // audio listener
-      const listener = new THREE.AudioListener();
-      this.camera.add( listener );
-
-      this.coinPickupSound = new THREE.Audio( listener );
-      this.coinDropSound = new THREE.Audio( listener );
-      this.collisionSound = new THREE.Audio( listener );
-      this.largeCoinDropSound = new THREE.Audio( listener );
-      this.smallCollisionSound = new THREE.Audio( listener );
-      this.backgroundMusic = new THREE.Audio( listener );
-
-      // load sounds and set it as the Audio object's buffer
-      const audioLoader = new THREE.AudioLoader();
-      audioLoader.load( 'assets/audio/confirmation_001.ogg', ( buffer ) => {
-        if (this.coinPickupSound !== undefined) {
-          this.coinPickupSound.setBuffer( buffer );
-          this.coinPickupSound.setLoop( false );
-          this.coinPickupSound.setVolume( 0.5 );
-        }
-      });
-
-      audioLoader.load( 'assets/audio/coin-drop-small.mp3', ( buffer ) => {
-        if ( this.coinDropSound !== undefined ) {
-          this.coinDropSound.setBuffer( buffer );
-          this.coinDropSound.setLoop( false );
-          this.coinDropSound.setVolume( 0.5 );
-        }
-      });
-
-      audioLoader.load( 'assets/audio/impact-large.wav', ( buffer ) => {
-        if ( this.collisionSound !== undefined ) {
-          this.collisionSound.setBuffer( buffer );
-          this.collisionSound.setLoop( false );
-          this.collisionSound.setVolume( 0.5 );
-        }
-      });
-
-      audioLoader.load( 'assets/audio/impact-small.wav', ( buffer ) => {
-        if ( this.smallCollisionSound !== undefined ) {
-          this.smallCollisionSound.setBuffer( buffer );
-          this.smallCollisionSound.setLoop( false );
-          this.smallCollisionSound.setVolume( 0.5 );
-        }
-      });
-
-      audioLoader.load( 'assets/audio/coin-drop.mp3', ( buffer ) => {
-        if ( this.largeCoinDropSound !== undefined ) {
-          this.largeCoinDropSound.setBuffer( buffer );
-          this.largeCoinDropSound.setLoop( false );
-          this.largeCoinDropSound.setVolume( 0.5 );
-        }
-      });
-
-      audioLoader.load( 'assets/audio/song.mp3', ( buffer ) => {
-        if ( this.backgroundMusic !== undefined ) {
-          this.backgroundMusic.setBuffer( buffer );
-          this.backgroundMusic.setLoop( true );
-          this.backgroundMusic.setVolume( 0.02 );
-          // this.backgroundMusic.play();
-        }
-      });
-
-      // load checkpoint model
-      const loader = new GLTFLoader();
-      loader.load( 'assets/checkpoint.glb', (gltf) => {
-        gltf.scene.name = 'checkpoint';
-        this.scene?.add(gltf.scene);
-        gltf.scene.position.set(16.5, 0.1, 0);
-        gltf.scene.rotation.y = Math.PI / 2;;
-      })
+      this.createAudio();
 
       // web render
       this.renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -269,6 +189,335 @@ class Client {
       this.onPlayState();
     }
   };
+
+  createAudio() {
+    const listener = new THREE.AudioListener();
+    this.camera.add(listener);
+
+    this.coinPickupSound = new THREE.Audio(listener);
+    this.coinDropSound = new THREE.Audio(listener);
+    this.collisionSound = new THREE.Audio(listener);
+    this.largeCoinDropSound = new THREE.Audio(listener);
+    this.smallCollisionSound = new THREE.Audio(listener);
+
+    // load sounds and set it as the Audio object's buffer
+    const audioLoader = new THREE.AudioLoader();
+    audioLoader.load('assets/audio/confirmation_001.ogg', (buffer) => {
+      if (this.coinPickupSound !== undefined) {
+        this.coinPickupSound.setBuffer(buffer);
+        this.coinPickupSound.setLoop(false);
+        this.coinPickupSound.setVolume(0.5);
+      }
+    });
+
+    audioLoader.load('assets/audio/coin-drop-small.mp3', (buffer) => {
+      if (this.coinDropSound !== undefined) {
+        this.coinDropSound.setBuffer(buffer);
+        this.coinDropSound.setLoop(false);
+        this.coinDropSound.setVolume(0.5);
+      }
+    });
+
+    audioLoader.load('assets/audio/impact-large.wav', (buffer) => {
+      if (this.collisionSound !== undefined) {
+        this.collisionSound.setBuffer(buffer);
+        this.collisionSound.setLoop(false);
+        this.collisionSound.setVolume(0.5);
+      }
+    });
+
+    audioLoader.load('assets/audio/impact-small.wav', (buffer) => {
+      if (this.smallCollisionSound !== undefined) {
+        this.smallCollisionSound.setBuffer(buffer);
+        this.smallCollisionSound.setLoop(false);
+        this.smallCollisionSound.setVolume(0.5);
+      }
+    });
+
+    audioLoader.load('assets/audio/coin-drop.mp3', (buffer) => {
+      if (this.largeCoinDropSound !== undefined) {
+        this.largeCoinDropSound.setBuffer(buffer);
+        this.largeCoinDropSound.setLoop(false);
+        this.largeCoinDropSound.setVolume(0.5);
+      }
+    });
+  }
+
+  createWalls() {
+    const geometry = new THREE.BoxGeometry( 20, 2, 2 );
+    const material = new THREE.MeshBasicMaterial( { color: 0x3b030f });
+    let wallZ = 20;
+    for (let i = 0; i < 2; i++ ) {
+      let wall = new THREE.Mesh( geometry, material );
+      wall.position.set( 8.5, 1, wallZ );
+      wall.name = 'wall_' + i;
+      this.scene?.add( wall );
+      wallZ += -375;
+    }
+  }
+
+  private createTrack(scene: THREE.Scene) {
+    const geometry = new THREE.PlaneGeometry(20, 100);
+    const geometry2 = new THREE.PlaneGeometry(20, 140);
+    const geometry4 = new THREE.PlaneGeometry(20, 120);
+    const material = new THREE.MeshBasicMaterial({ color: 0x0f0f0e, side: THREE.DoubleSide });
+    // const material3 = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
+
+    //==========================
+    //    TRACKS
+    //==========================
+
+    //main runway
+    const plane = new THREE.Mesh(geometry4, material);
+    plane.rotation.x = Math.PI / 2;
+    plane.position.set(8.5, 0, -38);
+    plane.name = 'track';
+    scene.add(plane);
+
+    // first horizontal runway
+    const plane2 = new THREE.Mesh(geometry2, material);
+    plane2.rotation.x = Math.PI / 2;
+    plane2.rotation.z = Math.PI / 2;
+    plane2.position.set(8.5, 0, -108);
+    plane2.name = 'track';
+    scene.add(plane2);
+
+    // right runway
+    const planeRight = new THREE.Mesh(geometry, material);
+    planeRight.rotation.x = Math.PI / 2;
+    planeRight.position.set(68.5, 0, -168);
+    planeRight.name = 'track';
+    scene.add(planeRight);
+
+    // left runway
+    const planeLeft = new THREE.Mesh(geometry, material);
+    planeLeft.rotation.x = Math.PI / 2;
+    planeLeft.position.set(-51.5, 0, -168);
+    planeLeft.name = 'track';
+    scene.add(planeLeft);
+
+    // second horizontal runway
+    const plane5 = new THREE.Mesh(geometry2, material);
+    plane5.rotation.x = Math.PI / 2;
+    plane5.rotation.z = Math.PI / 2;
+    plane5.position.set(8.5, 0, -228);
+    plane5.name = 'track';
+    scene.add(plane5);
+
+    // final runway
+    const plane6 = new THREE.Mesh(geometry4, material);
+    plane6.rotation.x = Math.PI / 2;
+    plane6.position.set(8.5, 0, -298);
+    plane6.name = 'track';
+    scene.add(plane6);
+
+    // load checkpoint model
+    const loader = new GLTFLoader();
+    loader.load('assets/checkpoint.glb', (gltf) => {
+      gltf.scene.name = 'checkpoint';
+      scene?.add(gltf.scene);
+      gltf.scene.position.set(16.5, 0.1, 0);
+      gltf.scene.rotation.y = Math.PI / 2;
+
+      // clone the model
+      const checkpoint = clone(gltf.scene);
+      checkpoint.position.set(16.5, 0.1, -333);
+      scene?.add(checkpoint);
+    });
+
+    //==========================
+    //  CENTRAL ROAD MARKINGS
+    //==========================
+
+    const geometry3 = new THREE.PlaneGeometry(0.2, 1)
+    const material2 = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+
+    // main runway markings
+    let markZ = -3;
+    for ( let i = 0; i < 32; i++ ){
+      let roadMark = new THREE.Mesh(geometry3, material2)
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.position.set(8.5, 0.01, markZ);
+      scene.add(roadMark);
+      markZ -= 3;
+    }
+
+    // left runway markings
+    let markX = -120;
+    for ( let i = 0; i < 33; i++ ){
+      let roadMark = new THREE.Mesh(geometry3, material2)
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.position.set(-51.5, 0.01, markX);
+      scene.add(roadMark);
+      markX -= 3;
+    }
+
+    // right runway markings
+    markX = -120;
+    for ( let i = 0; i < 33; i++ ){
+      let roadMark = new THREE.Mesh(geometry3, material2)
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.position.set(68.5, 0.01, markX);
+      scene.add(roadMark);
+      markX -= 3;
+    }
+
+    // first horizontal runway markings
+    markX = -60;
+    for ( let i = 0; i < 46; i++ ){
+      let roadMark = new THREE.Mesh(geometry3, material2)
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(markX, 0.01, -108);
+      scene.add(roadMark);
+      markX +=3;
+    }
+
+    // second horizontal runway markings
+    markX = -60;
+    for ( let i = 0; i < 46; i++ ){
+      let roadMark = new THREE.Mesh(geometry3, material2)
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(markX, 0.01, -228);
+      scene.add(roadMark);
+      markX +=3;
+    }
+
+    // final runway markings
+    markZ = -240;
+    for ( let i = 0; i < 31; i++ ){
+      let roadMark = new THREE.Mesh(geometry3, material2)
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.position.set(8.5, 0.01, markZ);
+      scene.add(roadMark);
+      markZ -= 3;
+    }
+
+    //==========================
+    //  TURN MARKINGS
+    //==========================
+
+    //main runway
+    let lineX = -0.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -98);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+    lineX = -0.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -97);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+
+    // runway left top
+    lineX = -50.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -119);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+    lineX = -50.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -118);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+
+    //runway left bottom
+    lineX = -52.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -217);
+      scene.add(roadMark);
+      lineX -= 1.5
+    }
+    lineX = -52.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -218);
+      scene.add(roadMark);
+      lineX -= 1.5
+    }
+
+    //runway right top
+    lineX = 77.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -119);
+      scene.add(roadMark);
+      lineX -= 1.5
+    }
+    lineX = 77.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -118);
+      scene.add(roadMark);
+      lineX -= 1.5
+    }
+
+    //runway right bottom
+    lineX = 60
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -218);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+    lineX = 60
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -217);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+
+    //final runway top
+    lineX = 9.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -238);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+    lineX = 9.5
+    for ( let i = 0; i < 6; i++ ) {
+      let roadMark = new THREE.Mesh( geometry3, material2 )
+      roadMark.rotation.x = Math.PI / 2;
+      roadMark.rotation.z = Math.PI / 2;
+      roadMark.position.set(lineX, 0.01, -239);
+      scene.add(roadMark);
+      lineX += 1.5
+    }
+  }
 
   onPlayState() {
     this.player = new PlayerLocal( this, this.camera, this.socket );
@@ -502,26 +751,6 @@ class Client {
       }
       console.log('no wall collision')
     }
-
-    //THIS COULD WORK WITH SOME TWEAKING. WE SHOULD BE ABLE TO DETECT IF THE PLAYER IS ON THE PLANE, IF NOT THEY FALL
-    //WHEN THE Y VALUE REACHES 4.5, WE RESET THE PLAYER AND THEY GO BACK TO THE BEGINNING
-
-    // this.boxPosition.x -= 0.1;
-
-
-    // if(this.boxPosition.x >= 0) {
-    //   this.onPlane = true;
-    // } else {
-    //   this.boxPosition.y = 0.5;
-    //   this.boxVelocity.y *= -0.9;
-    //   this.boxVelocity.add(this.boxAcceleration);
-    // this.boxPosition.add(this.boxVelocity);
-    //   this.onPlane = false;
-    // }
-
-    // if(!this.onPlane) this.boxPosition.y += this.boxVelocity.y * 0.01;
-    // this.box.position.copy(this.boxPosition);
-    // console.log(this.boxPosition)
 
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
