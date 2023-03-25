@@ -36,6 +36,7 @@ class Client {
   quadRacerList: any;
   quadRacerFullList: string[];
   userModel: string;
+  wallList: string[];
   coins: Coin[];
   coinLocations: any[];
   barrelObstacles: GroundObstacle[];
@@ -81,6 +82,8 @@ class Client {
       "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
       "blue rider",
     ];
+
+    this.wallList = ['wall_0', 'wall_1'];
 
     this.socket.once('connect', () => {
       console.log(this.socket.id)
@@ -158,6 +161,8 @@ class Client {
       // background and fog
       this.scene.background = new THREE.Color( 0x0d820d );
       this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
+
+      this.createWalls();
 
       // lighting
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -473,6 +478,51 @@ class Client {
     this.updateDisplayTimer();
     this.updateScorePanel();
 
+    let wallConnected = false;
+    for ( let i = 0; i < this.wallList.length; i++ ) {
+      if ( this.player !== undefined ) {
+        if ( this.checkWallCollision( this.wallList[i] )) {
+          console.log('wall collision');
+          wallConnected = true;
+          if ( this.collisionSound?.isPlaying ) {
+            this.collisionSound.stop();
+            this.collisionSound.play();
+          } else {
+            this.collisionSound?.play();
+          }
+          break;
+        }
+      }
+    }
+    if ( !wallConnected && this.player?.collided && this.player.collided.object == 'wall' ) {
+      this.player.collided.value = false;
+      this.player.collided.object = '';
+      if ( this.player.characterController !== undefined ) {
+        this.player.characterController.barrelCollisionCounter = 0;
+      }
+      console.log('no wall collision')
+    }
+
+    //THIS COULD WORK WITH SOME TWEAKING. WE SHOULD BE ABLE TO DETECT IF THE PLAYER IS ON THE PLANE, IF NOT THEY FALL
+    //WHEN THE Y VALUE REACHES 4.5, WE RESET THE PLAYER AND THEY GO BACK TO THE BEGINNING
+
+    // this.boxPosition.x -= 0.1;
+
+
+    // if(this.boxPosition.x >= 0) {
+    //   this.onPlane = true;
+    // } else {
+    //   this.boxPosition.y = 0.5;
+    //   this.boxVelocity.y *= -0.9;
+    //   this.boxVelocity.add(this.boxAcceleration);
+    // this.boxPosition.add(this.boxVelocity);
+    //   this.onPlane = false;
+    // }
+
+    // if(!this.onPlane) this.boxPosition.y += this.boxVelocity.y * 0.01;
+    // this.box.position.copy(this.boxPosition);
+    // console.log(this.boxPosition)
+
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
 
@@ -597,6 +647,27 @@ class Client {
         return coinBoundingBox.intersectsBox(playerBoundingBox);
       }
     }
+  }
+
+  checkWallCollision( wall: string ) {
+    if( this.player !== undefined && this.player.object !== undefined && this.player?.collided.value == false ) {
+      const wallObject = this.scene?.getObjectByName( wall );
+
+      if( wallObject !== undefined ) {
+        const collisionMargin = 0.3;
+        const wallBox = new THREE.Box3().setFromObject( wallObject );
+        const playerBox = new THREE.Box3().setFromObject( this.player.object );
+
+        const collisionDetected = playerBox.intersectsBox( wallBox.expandByScalar( -collisionMargin ));
+
+        if ( collisionDetected ) {
+          this.player.collided.value = true;
+          this.player.collided.object = 'wall';
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   checkBarrelCollision(barrelModel: GroundObstacle, playerModel: PlayerLocal) {

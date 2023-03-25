@@ -59,7 +59,7 @@ export default class CharacterController {
         if( collided.object == 'player' || collided.object == 'fruit' ){
           play = "drive_fail_02";
         }
-        else if (collided.object == 'barrel') {
+        else if ( collided.object == 'barrel' || collided.object == 'wall' ) {
           play = "idle_02";
 
           // the player is colliding with a stationary object, we apply
