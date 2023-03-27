@@ -49,6 +49,8 @@ class Client {
   collisionSound: THREE.Audio | undefined;
   smallCollisionSound: THREE.Audio | undefined;
   largeCoinDropSound: THREE.Audio | undefined;
+  revivePlayerSound: THREE.Audio | undefined;
+  playerFallenSound: THREE.Audio | undefined;
   gameTimer: string = '';
   fruitVisibility = false;
 
@@ -194,11 +196,13 @@ class Client {
     const listener = new THREE.AudioListener();
     this.camera.add(listener);
 
-    this.coinPickupSound = new THREE.Audio(listener);
-    this.coinDropSound = new THREE.Audio(listener);
-    this.collisionSound = new THREE.Audio(listener);
-    this.largeCoinDropSound = new THREE.Audio(listener);
-    this.smallCollisionSound = new THREE.Audio(listener);
+    this.coinPickupSound = new THREE.Audio( listener );
+    this.coinDropSound = new THREE.Audio( listener );
+    this.collisionSound = new THREE.Audio( listener );
+    this.largeCoinDropSound = new THREE.Audio( listener );
+    this.smallCollisionSound = new THREE.Audio( listener );
+    this.revivePlayerSound = new THREE.Audio( listener );
+    this.playerFallenSound = new THREE.Audio( listener );
 
     // load sounds and set it as the Audio object's buffer
     const audioLoader = new THREE.AudioLoader();
@@ -241,6 +245,23 @@ class Client {
         this.largeCoinDropSound.setVolume(0.5);
       }
     });
+
+    audioLoader.load('assets/audio/mixkit-fairy-glitter-867.wav', (buffer) => {
+      if (this.revivePlayerSound !== undefined) {
+        this.revivePlayerSound.setBuffer(buffer);
+        this.revivePlayerSound.setLoop(false);
+        this.revivePlayerSound.setVolume(0.5);
+      }
+    });
+
+    audioLoader.load('assets/audio/mixkit-cartoon-falling-eco-407.wav', (buffer) => {
+      if (this.playerFallenSound !== undefined) {
+        this.playerFallenSound.setBuffer(buffer);
+        this.playerFallenSound.setLoop(false);
+        this.playerFallenSound.setVolume(0.5);
+      }
+    });
+
   }
 
   createWalls() {
@@ -261,7 +282,6 @@ class Client {
     const geometry2 = new THREE.PlaneGeometry(20, 140);
     const geometry4 = new THREE.PlaneGeometry(20, 120);
     const material = new THREE.MeshBasicMaterial({ color: 0x0f0f0e, side: THREE.DoubleSide });
-    // const material3 = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide });
 
     //==========================
     //    TRACKS
@@ -727,6 +747,32 @@ class Client {
     this.updateDisplayTimer();
     this.updateScorePanel();
 
+    if ( this.isPlayerOnTracks() == false ) {
+      if ( this.player !== undefined ) {
+        if ( !this.player.falling) {
+          this.player.falling = true;
+
+          if ( this.playerFallenSound?.isPlaying ) {
+            this.playerFallenSound.stop();
+            this.playerFallenSound.play();
+          } else {
+            this.playerFallenSound?.play();
+          }
+        }
+
+        if ( this.player.object !== undefined && this.player.object.position.y < -2.5 ) {
+          this.player.resetFallenPlayer();
+
+          if ( this.revivePlayerSound?.isPlaying ) {
+            this.revivePlayerSound.stop();
+            this.revivePlayerSound.play();
+          } else {
+            this.revivePlayerSound?.play();
+          }
+        }
+      }
+    }
+
     let wallConnected = false;
     for ( let i = 0; i < this.wallList.length; i++ ) {
       if ( this.player !== undefined ) {
@@ -758,7 +804,7 @@ class Client {
       requestAnimationFrame( function(){ game.animate() } );
 
       if ( this.player?.characterController !== undefined ) {
-        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
+        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling );
         // run blink animation after player on player collision
         if( this.player.collided.value == true && this.player.collided.object == 'player') {
           this.player.mixer?.addEventListener( 'finished', function() {
@@ -864,6 +910,31 @@ class Client {
 
   render() {
     this.renderer.render( this.scene, this.camera );
+  }
+
+  isPlayerOnTracks() {
+    if ( this.player !== undefined && this.player.object !== undefined ) {
+      const playerBox = new THREE.Box3().setFromObject( this.player.object );
+      const collisionMargin = 0.3;
+      let tracks = this.scene?.getObjectsByProperty( 'name', 'track' );
+
+      if ( tracks !== undefined ) {
+        for( let i = 0; i < tracks.length; i++ ) {
+          const trackBox = new THREE.Box3().setFromObject( tracks[i] );
+          let collisionDetected = playerBox.intersectsBox( trackBox.expandByScalar( -collisionMargin ));
+
+          if ( collisionDetected ) {
+            // console.log('player is on track');
+            return true;
+          }
+        }
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return true;
+    }
   }
 
   checkCoinCollsion( coinModel:any, playerModel:any ) {
@@ -1056,6 +1127,14 @@ class Client {
       if ( iteratorIndex >= numberOfIterations ) {
         // console.log('we have finished with the blinking', player)
         player.resetCollidedPlayer();
+
+        if ( game.revivePlayerSound?.isPlaying ) {
+          game.revivePlayerSound.stop();
+          game.revivePlayerSound.play();
+        } else {
+          game.revivePlayerSound?.play();
+        }
+
         return;
       }
       game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );

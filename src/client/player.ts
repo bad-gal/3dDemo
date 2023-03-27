@@ -25,6 +25,7 @@ export default class Player {
   collided: {value: boolean, object: string};
   skinnedMesh: THREE.SkinnedMesh[] = [];
   score: number;
+  falling: boolean;
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
@@ -32,6 +33,7 @@ export default class Player {
     let filename: any;
     this.action = '';
     this.collided = { value: false, object: '' };
+    this.falling = false;
     this.score = 0;
 
     const quadRacers: { name: string; filename: string }[]  = [
@@ -403,12 +405,24 @@ export default class Player {
 
             this.action = data.action;
             this.collided = data.collided;
-            // this.collided.object = data.collided.object;
           }
         }
         found = true;
       }
       if( !found ) this.game.remotePlayer( this );
+    }
+  }
+
+  resetFallenPlayer() {
+    this.falling = false;
+
+    if ( this.object !== undefined ) {
+      if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
+      this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
+      this.boxHelper?.geometry.computeBoundingBox();
+      this.boxHelper?.update();
+      this.action = 'idle_02';
+      this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
     }
   }
 
