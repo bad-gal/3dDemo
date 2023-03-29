@@ -48,18 +48,34 @@ export default class CharacterController {
     this.toggleDrive = !this.toggleDrive;
   };
 
-  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {} ) {
+  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {}, falling: boolean ) {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
     let inputVector = new THREE.Vector3();
 
-    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided.value == true ) {
+    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided.value == true || falling == true ) {
       let play = '';
 
-      if ( collided.value == true ) {
+      if ( falling == true ) {
+        play = 'turn_360';
+
+        const _R = this.model.quaternion.clone();
+        const acc = this.acceleration.clone();
+
+        this.model.quaternion.copy( _R );
+        this.velocity.y -= (acc.y * 4 ) * delta;
+
+        const downwards = new THREE.Vector3( 0, 1, 0 );
+        downwards.applyQuaternion( this.model.quaternion );
+        downwards.normalize();
+
+        downwards.multiplyScalar( this.velocity.y * delta );
+        this.model.position.add (downwards );
+      }
+      else if ( collided.value == true ) {
         if( collided.object == 'player' || collided.object == 'fruit' ){
           play = "drive_fail_02";
         }
-        else if (collided.object == 'barrel' || collided.object == 'wall') {
+        else if ( collided.object == 'barrel' || collided.object == 'wall' ) {
           play = "idle_02";
 
           // the player is colliding with a stationary object, we apply
@@ -201,6 +217,8 @@ export default class CharacterController {
 
       this.model.position.add( forward );
       this.model.position.add (sideways );
+
+      console.log(this.model.position)
     }
 
     // I think I need to use keyup also as it is not working properly when changing animations
@@ -222,6 +240,8 @@ export default class CharacterController {
     } else if( keysPressed['4'] == true ) {
       play = 'drive_trick_04';
       console.log('I want to play trick 4');
+    } else if ( keysPressed['5'] == true) {
+      play = 'turn_360';
     } else if (play === ''){
       play = 'idle_02';
       this.velocity = new Vector3();
