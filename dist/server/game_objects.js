@@ -273,32 +273,12 @@ class GameObjects {
         return coinLocations;
     }
     createNewMovingObstacles() {
-        const MOVING_OBJECT_MIN = 10;
-        const MOVING_OBJECT_MAX = 30;
+        const MOVING_OBJECT_MIN = 12;
+        const MOVING_OBJECT_MAX = 20;
         const MOVING_OBJECT_TYPES = ['strawberry', 'apple', 'banana', 'cherry', 'pear'];
         const movingObstacleLocations = [];
         // ************** TRACK ONE - MAIN RUNWAY ***************
-        let trackOneX = [];
-        let trackOneZ = [];
-        for (let i = 0; i < this.generateRandomIntInRange(MOVING_OBJECT_MIN, MOVING_OBJECT_MAX); i++) {
-            for (let i = -10; i < 25; i++) {
-                trackOneX.push(i);
-            }
-            for (let i = 6; i > -90; i--) {
-                trackOneZ.push(i);
-            }
-            let randX = Math.floor(Math.random() * trackOneX.length);
-            let randZ = Math.floor(Math.floor(Math.random() * trackOneZ.length));
-            let x = trackOneX[randX];
-            let y = this.generateRandomIntInRange(1, 4);
-            let z = trackOneZ[randZ];
-            let velX = this.generateRandomIntInRange(5, 8);
-            let velY = this.generateRandomIntInRange(5, 10);
-            let velZ = this.generateRandomIntInRange(4, 9);
-            const objectType = MOVING_OBJECT_TYPES[this.generateRandomIntInRange(0, MOVING_OBJECT_TYPES.length - 1)];
-            // need to do intersection check here
-            movingObstacleLocations.push({ type: objectType, position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 }, playArea: { minX: -20, maxX: 30, minZ: -100, maxZ: 8 } });
-        }
+        // no fruits on track one
         // ************** TRACK TWO - FIRST HORIZONAL RUNWAY ***************
         let trackTwoX = [];
         let trackTwoZ = [];

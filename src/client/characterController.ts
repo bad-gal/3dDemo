@@ -78,10 +78,10 @@ export default class CharacterController {
       else if ( trackCompleted == true ) {
         this.model.position.set( this.startingPosition.x, this.startingPosition.y, this.model.position.z );
         if (this.counter == 0) {
-          this.model.rotateY(MathUtils.degToRad(180));
+          this.model.rotateY(MathUtils.degToRad(-185));
           this.counter = 1;
         }
-        if (this.counter <= 500) {
+        if (this.counter <= 250) {
           play = 'salto';
           this.counter += 1;
         } else {
