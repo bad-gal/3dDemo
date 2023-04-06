@@ -45,7 +45,6 @@ class App {
     const WAITING_TIME = 15;
     let waitingRoomTimeRemaining = WAITING_TIME;
 
-    const MOVING_OBSTACLE_INTERVAL_TIME = 30;
     let GAME_TIMER = 120;
     let fruitTimerOn = false;
 
@@ -190,16 +189,19 @@ class App {
     // game timer
     setInterval(() => {
       if ( fruitTimerOn ) {
+        if ( !fruitStart ) {
+          fruitStart = true;
+          this.io.emit( 'setVisibilityMoveableObjects', fruitStart ); // send visibility to clients
+        }
+
         if ( GAME_TIMER <= 0 ) {
           clearTimeout( GAME_TIMER );
           fruitTimerOn = false;
+          fruitStart = false;
+          this.io.emit( 'setVisibilityMoveableObjects', fruitStart );
         }
         else {
           if ( fruitTimerOn ) GAME_TIMER--;
-          if ( GAME_TIMER % MOVING_OBSTACLE_INTERVAL_TIME == 0 ) {
-            fruitStart = fruitStart == true ? false : true;
-            this.io.emit( 'setVisibilityMoveableObjects', fruitStart ); // send visibility to clients
-          }
         }
         this.io.emit( 'gameTimer', GAME_TIMER );
       }
