@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as MathUtils from 'three/src/math/MathUtils'
 import { Vector3 } from 'three';
 
 export default class CharacterController {
@@ -20,6 +21,8 @@ export default class CharacterController {
   acceleration = new THREE.Vector3( 1, 0.25, 20.0 );
   velocity = new THREE.Vector3();
   barrelCollisionCounter = 0;
+  startingPosition = new THREE.Vector3();
+  counter = 0;
 
   constructor(
     model: THREE.Group,
@@ -35,6 +38,7 @@ export default class CharacterController {
     this.animationsMap = animationsMap;
     this.currentAction = currentAction;
     this.model.position.add( new Vector3( initialPosition.x, initialPosition.y, initialPosition.z ) );
+    this.startingPosition.set( initialPosition.x, initialPosition.y, initialPosition.z );
 
     this.animationsMap.forEach(( value, key ) => {
       if( key === currentAction ) {
@@ -48,11 +52,11 @@ export default class CharacterController {
     this.toggleDrive = !this.toggleDrive;
   };
 
-  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {}, falling: boolean ) {
+  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {}, falling: boolean, trackCompleted: boolean ) {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
     let inputVector = new THREE.Vector3();
 
-    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided.value == true || falling == true ) {
+    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided.value == true || falling == true || trackCompleted == true ) {
       let play = '';
 
       if ( falling == true ) {
@@ -70,6 +74,20 @@ export default class CharacterController {
 
         downwards.multiplyScalar( this.velocity.y * delta );
         this.model.position.add (downwards );
+      }
+      else if ( trackCompleted == true ) {
+        this.model.position.set( this.startingPosition.x, this.startingPosition.y, this.model.position.z );
+        if (this.counter == 0) {
+          this.model.rotateY(MathUtils.degToRad(180));
+          this.counter = 1;
+        }
+        if (this.counter <= 500) {
+          play = 'salto';
+          this.counter += 1;
+        } else {
+          play = "idle_02";
+        }
+
       }
       else if ( collided.value == true ) {
         if( collided.object == 'player' || collided.object == 'fruit' ){
@@ -218,7 +236,7 @@ export default class CharacterController {
       this.model.position.add( forward );
       this.model.position.add (sideways );
 
-      console.log(this.model.position)
+      // console.log(this.model.position)
     }
 
     // I think I need to use keyup also as it is not working properly when changing animations
@@ -241,7 +259,19 @@ export default class CharacterController {
       play = 'drive_trick_04';
       console.log('I want to play trick 4');
     } else if ( keysPressed['5'] == true) {
-      play = 'turn_360';
+      play = 'drive_trick_05';
+    } else if ( keysPressed['6'] == true) {
+      play = 'drive_trick_06';
+    } else if ( keysPressed['7'] == true) {
+      play = 'drive_trick_07';
+    } else if ( keysPressed['8'] == true) {
+      play = 'drive_trick_08';
+    } else if ( keysPressed['9'] == true) {
+      play = 'drive_trick_09';
+    } else if ( keysPressed['0'] == true) {
+      play = 'drive_trick_10';
+    } else if ( keysPressed['p'] == true) {
+      play = 'salto';
     } else if (play === ''){
       play = 'idle_02';
       this.velocity = new Vector3();
