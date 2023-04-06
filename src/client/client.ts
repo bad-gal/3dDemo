@@ -53,6 +53,7 @@ class Client {
   playerFallenSound: THREE.Audio | undefined;
   gameTimer: string = '';
   fruitVisibility = false;
+  checkpointReached = false;
 
   remoteScores: any[];
 
@@ -773,6 +774,8 @@ class Client {
       }
     }
 
+    this.completedCourse()
+
     let wallConnected = false;
     for ( let i = 0; i < this.wallList.length; i++ ) {
       if ( this.player !== undefined ) {
@@ -804,7 +807,7 @@ class Client {
       requestAnimationFrame( function(){ game.animate() } );
 
       if ( this.player?.characterController !== undefined ) {
-        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling );
+        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling, this.checkpointReached );
         // run blink animation after player on player collision
         if( this.player.collided.value == true && this.player.collided.object == 'player') {
           this.player.mixer?.addEventListener( 'finished', function() {
@@ -924,7 +927,6 @@ class Client {
           let collisionDetected = playerBox.intersectsBox( trackBox.expandByScalar( -collisionMargin ));
 
           if ( collisionDetected ) {
-            // console.log('player is on track');
             return true;
           }
         }
@@ -1062,7 +1064,7 @@ class Client {
   }
 
   checkMovingFruitCollision() {
-    if (this.fruitVisibility) {
+    if ( this.fruitVisibility && !this.checkpointReached) {
       if (this.player !== undefined && this.player.object !== undefined) {
         const playerBox = new THREE.Box3().setFromObject(this.player.object);
 
@@ -1152,6 +1154,19 @@ class Client {
       return `1:${timer - 60}`;
     } else {
       return '2:00';
+    }
+  }
+
+  completedCourse() {
+    if ( !this.checkpointReached ) {
+      if ( this.player !== undefined && this.player.characterController !== undefined) {
+        if ( this.player.characterController.model.position.x >= 0 && this.player.characterController.model.position.x <= 18 &&
+          this.player.characterController.model.position.z >= -350 && this.player.characterController.model.position.z <= -335 ) {
+            this.player.score += 1000;
+            console.log('checkpoint reached')
+            this.checkpointReached = true;
+          }
+      }
     }
   }
 }
