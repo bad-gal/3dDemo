@@ -3,6 +3,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import CharacterController from './characterController';
 import ThirdPersonCameraController from './third_person_camera_controller';
 import { SkinnedMesh, Vector3 } from 'three';
+import PhysicsBody from './physicsBody';
+import { ShapeType } from 'three-to-cannon';
+import * as CANNON from 'cannon-es';
 
 export default class Player {
   local: boolean;
@@ -26,6 +29,7 @@ export default class Player {
   skinnedMesh: THREE.SkinnedMesh[] = [];
   score: number;
   falling: boolean;
+  riderPhysicsBody: CANNON.Body;
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
@@ -35,6 +39,7 @@ export default class Player {
     this.collided = { value: false, object: '' };
     this.falling = false;
     this.score = 0;
+    this.riderPhysicsBody = new CANNON.Body;
 
     const quadRacers: { name: string; filename: string }[]  = [
       { name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb" },
@@ -322,6 +327,12 @@ export default class Player {
       if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
 
+        const mass = 1;
+        const body = new PhysicsBody(object.scene, ShapeType.HULL, mass);
+        this.riderPhysicsBody = body.createBody();
+        console.log("RIDER", this.riderPhysicsBody)
+        game.physicsWorld.addBody(this.riderPhysicsBody);
+
         // create player boundary box for collision detection
         const geometry = new THREE.BoxGeometry( 0.75, 2.5, 0.75 );
         const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
@@ -341,7 +352,7 @@ export default class Player {
 
       if( player.local ) {
         this.action = 'idle_02';
-        let characterController = new CharacterController( object.scene, mixer, this.animationsMap, camera, this.action, this.position );
+        let characterController = new CharacterController( object.scene, mixer, this.animationsMap, camera, this.action, this.position, this.riderPhysicsBody );
         let thirdPersonCamera = new ThirdPersonCameraController( { target: characterController } );
         player.characterController = characterController;
         player.thirdPersonCamera = thirdPersonCamera;

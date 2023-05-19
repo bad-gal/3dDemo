@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as MathUtils from 'three/src/math/MathUtils'
 import { Vector3 } from 'three';
+import * as CANNON from 'cannon-es';
 
 export default class CharacterController {
   model: THREE.Group;
@@ -19,10 +20,12 @@ export default class CharacterController {
   driveFastVelocity = 5;
   driveBasicVelocity = 2;
   acceleration = new THREE.Vector3( 1, 0.25, 20.0 );
-  velocity = new THREE.Vector3();
+  velocityY = -9.82;
+  velocity = new THREE.Vector3(0, 0, 0);
   barrelCollisionCounter = 0;
   startingPosition = new THREE.Vector3();
   counter = 0;
+  riderPhysicsBody = new CANNON.Body();
 
   constructor(
     model: THREE.Group,
@@ -31,7 +34,9 @@ export default class CharacterController {
     THREE.AnimationAction>,
     camera: THREE.Camera,
     currentAction: string,
-    initialPosition: any ) {
+    initialPosition: any,
+    riderPhysicsBody: CANNON.Body
+  ) {
 
     this.model = model;
     this.mixer = mixer;
@@ -39,6 +44,7 @@ export default class CharacterController {
     this.currentAction = currentAction;
     this.model.position.add( new Vector3( initialPosition.x, initialPosition.y, initialPosition.z ) );
     this.startingPosition.set( initialPosition.x, initialPosition.y, initialPosition.z );
+    this.riderPhysicsBody = riderPhysicsBody;
 
     this.animationsMap.forEach(( value, key ) => {
       if( key === currentAction ) {
@@ -56,71 +62,8 @@ export default class CharacterController {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
     let inputVector = new THREE.Vector3();
 
-    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true || collided.value == true || falling == true || trackCompleted == true ) {
+    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true ) {
       let play = '';
-
-      if ( falling == true ) {
-        play = 'turn_360';
-
-        const _R = this.model.quaternion.clone();
-        const acc = this.acceleration.clone();
-
-        this.model.quaternion.copy( _R );
-        this.velocity.y -= (acc.y * 4 ) * delta;
-
-        const downwards = new THREE.Vector3( 0, 1, 0 );
-        downwards.applyQuaternion( this.model.quaternion );
-        downwards.normalize();
-
-        downwards.multiplyScalar( this.velocity.y * delta );
-        this.model.position.add (downwards );
-      }
-      else if ( trackCompleted == true ) {
-        this.model.position.set( this.startingPosition.x, this.startingPosition.y, this.model.position.z );
-        if (this.counter == 0) {
-          this.model.rotateY(MathUtils.degToRad(-185));
-          this.counter = 1;
-        }
-        if (this.counter <= 250) {
-          play = 'salto';
-          this.counter += 1;
-        } else {
-          play = "idle_02";
-        }
-
-      }
-      else if ( collided.value == true ) {
-        if( collided.object == 'player' || collided.object == 'fruit' ){
-          play = "drive_fail_02";
-        }
-        else if ( collided.object == 'barrel' || collided.object == 'wall' ) {
-          play = "idle_02";
-
-          // the player is colliding with a stationary object, we apply
-          // enough reverse velocity so that the player bounces off the
-          // object immediately so it no longer collides with it
-          if( this.barrelCollisionCounter == 0) {
-            this.velocity.multiplyScalar(6.0);
-            this.velocity.negate();
-
-            const forward = new THREE.Vector3( 0, 0, this.velocity.z );
-            forward.applyQuaternion( this.model.quaternion );
-            forward.normalize();
-
-            const sideways = new THREE.Vector3( this.velocity.x, 0, 0 );
-            sideways.applyQuaternion( this.model.quaternion );
-            sideways.normalize();
-
-            sideways.multiplyScalar( this.velocity.x * delta );
-            forward.multiplyScalar( this.velocity.z * delta );
-
-            this.model.position.add( forward );
-            this.model.position.add (sideways );
-
-            this.barrelCollisionCounter = 1;
-          }
-        }
-      }
 
       if ( play == '' ) {
         play = 'idle_02';
@@ -132,18 +75,8 @@ export default class CharacterController {
         const current = this.animationsMap.get( this.currentAction );
 
         current?.fadeOut( this.fadeDuration );
-
-        if ( collided.value == true && (collided.object == 'player' || collided.object == 'fruit' )) {
-          toPlay?.reset().fadeIn( this.fadeDuration ).setLoop( THREE.LoopOnce, 1 );
-          toPlay!.clampWhenFinished = true
-          toPlay?.play();
-          this.velocity = new Vector3();
-          this.currentAction = play;
-        }
-        else {
-          toPlay?.reset().fadeIn( this.fadeDuration ).play();
-          this.currentAction = play;
-        }
+        toPlay?.reset().fadeIn( this.fadeDuration ).play();
+        this.currentAction = play;
       }
       this.mixer.update( delta );
       inputVector.applyQuaternion( this.camera.quaternion );
@@ -151,8 +84,28 @@ export default class CharacterController {
     else {
       this.userInput( delta, keysPressed );
     }
-
   };
+
+  updatePhysicsBody() {
+    this.riderPhysicsBody.position.set(
+      this.model.position.x,
+      this.model.position.y,
+      this.model.position.z
+    );
+
+    this.riderPhysicsBody.quaternion.set(
+      this.model.quaternion.x,
+      this.model.quaternion.y,
+      this.model.quaternion.z,
+      this.model.quaternion.w
+    );
+
+    this.riderPhysicsBody.velocity.set(
+      this.velocity.x,
+      this.velocity.y,
+      this.velocity.z
+    );
+  }
 
   checkActiveKeys( key: boolean ) {
     return key == false;
@@ -218,6 +171,8 @@ export default class CharacterController {
       moveRight = true;
     }
 
+
+
     if ( moveBackward !== false || moveForward !== false || moveLeft !== false || moveRight !== false ) {
       this.model.quaternion.copy( _R );
       inputVector.applyQuaternion( this.camera.quaternion );
@@ -235,8 +190,6 @@ export default class CharacterController {
 
       this.model.position.add( forward );
       this.model.position.add (sideways );
-
-      // console.log(this.model.position)
     }
 
     // I think I need to use keyup also as it is not working properly when changing animations

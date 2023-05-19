@@ -42,7 +42,7 @@ class App {
     ];
     let clientStartingPositions = new Map();
     let startTimer = false;
-    const WAITING_TIME = 15;
+    const WAITING_TIME = 5;
     let waitingRoomTimeRemaining = WAITING_TIME;
 
     let GAME_TIMER = 120;

@@ -6,11 +6,19 @@ import { io } from 'socket.io-client';
 import MenuState from './menu_state';
 import WaitingState from './waiting_state';
 import ExpelledState from './expelled_state';
-import Coin from './coin';
-import MovingObstacle from './moving_obstacle';
-import GroundObstacle from './ground_obstacle';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils';
+import * as CANNON from 'cannon-es'
+import CannonDebugRenderer from 'cannon-es-debugger';
+import RaceTrack from './racetrack';
+
+// https://fertile-soil-productions.itch.io/modular-racekart-track
+// https://github.com/donmccurdy/three-to-cannon
+// https://discourse.threejs.org/t/how-can-i-make-colliders-from-glb-objects-with-cannon-js/17059/4
+// https://pmndrs.github.io/cannon-es/docs/index.html
+// https://pmndrs.github.io/cannon-es/docs/modules.html
+
+
 
 class Client {
   player: PlayerLocal | undefined;
@@ -37,13 +45,6 @@ class Client {
   quadRacerList: any;
   quadRacerFullList: string[];
   userModel: string;
-  wallList: string[];
-  coins: Coin[];
-  coinLocations: any[];
-  barrelObstacles: GroundObstacle[];
-  barrelObstaclesData: { type: string, position: { x: number, z: number } }[];
-  fruitObstaclesData: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number}, rotation: { x: number, y: number, z: number } }[];
-  fruitObstacles: MovingObstacle[];
   coinPickupSound: THREE.Audio | undefined;
   coinDropSound: THREE.Audio | undefined;
   collisionSound: THREE.Audio | undefined;
@@ -54,6 +55,11 @@ class Client {
   gameTimer: string = '';
   fruitVisibility = false;
   checkpointReached = false;
+  physicsWorld  = new CANNON.World({
+    gravity: new CANNON.Vec3(0, -9.82, 0), // m/s²
+  });
+
+  cannonDebugRenderer: undefined;
 
   remoteScores: any[];
 
@@ -73,12 +79,6 @@ class Client {
     this.BLINK_AMOUNT = 11;
     this.initPlayerId;
     this.userModel = '';
-    this.coins = [];
-    this.coinLocations = [];
-    this.fruitObstacles = []
-    this.fruitObstaclesData = [];
-    this.barrelObstacles = [];
-    this.barrelObstaclesData = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
       "camouflage rider", "green rider", "lime rider", "mustard rider",
@@ -86,25 +86,8 @@ class Client {
       "blue rider",
     ];
 
-    this.wallList = ['wall_0', 'wall_1'];
-
     this.socket.once('connect', () => {
       console.log(this.socket.id)
-    })
-
-    // get the coin locations from the server
-    this.socket.on( 'coinLocations', ( data: any ) => {
-      this.coinLocations = data;
-    });
-
-    // get the ground obstacle locations from the server
-    this.socket.on( 'groundObstacleLocations', (data: { type: string, position: { x: number, z: number } }[] ) => {
-      this.barrelObstaclesData = data;
-    });
-
-    // get the fruit obstacle locations from the server
-    this.socket.on('fruitObstaclesDataInitial', (data: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number}, rotation: { x: number, y: number, z: number } }[]) => {
-      this.fruitObstaclesData = data;
     });
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
@@ -154,16 +137,13 @@ class Client {
       const scorePanel = document.getElementById("score-info");
       if ( scorePanel !== null ) scorePanel.style.visibility='visible';
 
-      // set up 3D space
       // camera
       this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
       this.camera.position.set( -5, 3, 10);
       this.camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
 
       this.scene = new THREE.Scene();
-      // background and fog
-      this.scene.background = new THREE.Color( 0x0d820d );
-      this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
+      this.scene.background = new THREE.Color(0xffffff);
 
       // lighting
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -171,13 +151,7 @@ class Client {
       hemiLight.name = 'hemiLight';
       this.scene.add( hemiLight );
 
-      // ground
-      this.createTrack(this.scene);
-
-      this.createWalls();
-
-      // audio listener
-      this.createAudio();
+      this.createRaceTrack(this.scene, this.physicsWorld);
 
       // web render
       this.renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -188,10 +162,18 @@ class Client {
       document.body.style.overflow = 'hidden';
       document.body.appendChild( this.renderer.domElement );
 
+      // Debug Renderer for Physics
+      this.cannonDebugRenderer = new (CannonDebugRenderer  as any)(this.scene, this.physicsWorld);
+
       this.currentState = this.GAMESTATES.PLAY;
       this.onPlayState();
     }
   };
+
+  createRaceTrack(scene: THREE.Scene, physicsWorld: CANNON.World) {
+    const raceTrack = new RaceTrack(scene, physicsWorld);
+    raceTrack.create();
+  }
 
   createAudio() {
     const listener = new THREE.AudioListener();
@@ -547,40 +529,40 @@ class Client {
       this.gameTimer = this.formatGameTimer(data);
     });
 
-    this.socket.on( 'removeCoin', ( data: any ) => {
-      for (let i = this.coins.length - 1; i >=0; i--) {
-        let coin = this.coins[i];
-        if(coin.object !== undefined && coin.object.parent !== null) {
-          if ( coin.object?.position.x == data[0].x && coin.object?.position.z == data[0].z ) {
-            this?.scene?.remove( coin.object.parent.remove(coin.object));
-            this.coins.splice(i, 1);
-          }
-        }
-      }
-		});
+    // this.socket.on( 'removeCoin', ( data: any ) => {
+    //   for (let i = this.coins.length - 1; i >=0; i--) {
+    //     let coin = this.coins[i];
+    //     if(coin.object !== undefined && coin.object.parent !== null) {
+    //       if ( coin.object?.position.x == data[0].x && coin.object?.position.z == data[0].z ) {
+    //         this?.scene?.remove( coin.object.parent.remove(coin.object));
+    //         this.coins.splice(i, 1);
+    //       }
+    //     }
+    //   }
+		// });
 
-    this.socket.on( 'setVisibilityMoveableObjects', ( visibility: boolean) => {
-      console.log('fruits visibility is ', visibility);
-      this.fruitVisibility = visibility;
-    });
+    // this.socket.on( 'setVisibilityMoveableObjects', ( visibility: boolean) => {
+    //   console.log('fruits visibility is ', visibility);
+    //   this.fruitVisibility = visibility;
+    // });
 
-    for ( let i = 0; i < this.coinLocations.length; i++ ) {
-      this.coins.push( new Coin( this, this.coinLocations[i] ));
-    }
+    // for ( let i = 0; i < this.coinLocations.length; i++ ) {
+    //   this.coins.push( new Coin( this, this.coinLocations[i] ));
+    // }
 
-    for( let i = 0; i < this.fruitObstaclesData.length; i++) {
-      this.fruitObstacles.push( new MovingObstacle(this, this.fruitObstaclesData[i]))
-    }
+    // for( let i = 0; i < this.fruitObstaclesData.length; i++) {
+    //   this.fruitObstacles.push( new MovingObstacle(this, this.fruitObstaclesData[i]))
+    // }
 
-    for ( let i = 0; i < this.barrelObstaclesData.length; i++ ) {
-      this.barrelObstacles.push( new GroundObstacle( this, this.barrelObstaclesData[i]));
-    }
+    // for ( let i = 0; i < this.barrelObstaclesData.length; i++ ) {
+    //   this.barrelObstacles.push( new GroundObstacle( this, this.barrelObstaclesData[i]));
+    // }
 
-    this.socket.emit('fruitStart');
+    // this.socket.emit('fruitStart');
 
-    this.socket.on('remoteFruitObstaclesData', (data:any)=> {
-      this.fruitObstaclesData = data;
-    })
+    // this.socket.on('remoteFruitObstaclesData', (data:any)=> {
+    //   this.fruitObstaclesData = data;
+    // })
 
     document.addEventListener( 'keydown', ( e ) => {
       if ( this.player?.characterController ) {
@@ -742,64 +724,30 @@ class Client {
     return players[0];
   }
 
+  updatePhysics() {
+    if (this.physicsWorld !== undefined){
+      // Run the simulation independently of framerate every 1 / 60 ms
+      this.physicsWorld.fixedStep();
+      if(this.counter === 0) {
+        console.log('physicsWorld', this.physicsWorld)
+        this.counter = 1;
+      }
+
+      this.player?.characterController?.updatePhysicsBody();
+    }
+  }
+
   animate() {
     const game = this;
+
+    this.updatePhysics();
 
     this.updateDisplayTimer();
     this.updateScorePanel();
 
-    if ( this.isPlayerOnTracks() == false ) {
-      if ( this.player !== undefined ) {
-        if ( !this.player.falling) {
-          this.player.falling = true;
-
-          if ( this.playerFallenSound?.isPlaying ) {
-            this.playerFallenSound.stop();
-            this.playerFallenSound.play();
-          } else {
-            this.playerFallenSound?.play();
-          }
-        }
-
-        if ( this.player.object !== undefined && this.player.object.position.y < -2.5 ) {
-          this.player.resetFallenPlayer();
-
-          if ( this.revivePlayerSound?.isPlaying ) {
-            this.revivePlayerSound.stop();
-            this.revivePlayerSound.play();
-          } else {
-            this.revivePlayerSound?.play();
-          }
-        }
-      }
-    }
+    if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
 
     this.completedCourse()
-
-    let wallConnected = false;
-    for ( let i = 0; i < this.wallList.length; i++ ) {
-      if ( this.player !== undefined ) {
-        if ( this.checkWallCollision( this.wallList[i] )) {
-          console.log('wall collision');
-          wallConnected = true;
-          if ( this.collisionSound?.isPlaying ) {
-            this.collisionSound.stop();
-            this.collisionSound.play();
-          } else {
-            this.collisionSound?.play();
-          }
-          break;
-        }
-      }
-    }
-    if ( !wallConnected && this.player?.collided && this.player.collided.object == 'wall' ) {
-      this.player.collided.value = false;
-      this.player.collided.object = '';
-      if ( this.player.characterController !== undefined ) {
-        this.player.characterController.barrelCollisionCounter = 0;
-      }
-      console.log('no wall collision')
-    }
 
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
@@ -818,66 +766,7 @@ class Client {
         }
       }
 
-      this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
-
-      this.fruitObstacles.forEach( (fruit, index) => fruit.update(this.fruitObstaclesData[index], this.fruitVisibility));
-
-      this.checkMovingFruitCollision();
-
-      if (this.player?.collided.value == true && this.player.collided.object == 'fruit') {
-        this.player.mixer?.addEventListener( 'finished', function() {
-          if ( game.player?.skinnedMesh !== undefined ) {
-            game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
-          }
-        });
-      }
-
-      this.barrelObstacles.forEach( barrel => barrel.update( mixerUpdateDelta ));
-
       this.updateRemotePlayers( mixerUpdateDelta );
-
-      let found = false
-      for(let i = 0; i < this.barrelObstacles.length; i++) {
-        if(this.player !== undefined) {
-          if (this.checkBarrelCollision(this.barrelObstacles[i], this.player)){
-            console.log('PLAYER COLLIDED WITH BARREL')
-            console.log('velocity',this.player.characterController?.velocity)
-            found = true;
-            break;
-          }
-        }
-      }
-
-      if (found == false && this.player?.collided.value == true && this.player?.collided.object == 'barrel') {
-        this.player.collided.value = false;
-        this.player.collided.object = '';
-        if(this.player.characterController !== undefined) {
-          this.player.characterController.barrelCollisionCounter = 0;
-        }
-        console.log('no barrel collision')
-      }
-
-      for (let i = this.coins.length - 1; i >=0; i--) {
-        if ( this.checkCoinCollsion(this.coins[i], this.player)){
-          let coin = this.coins[i];
-          if(coin.object !== undefined && coin.object.parent !== null) {
-            let coinPosition = { x: coin.object.position.x, z: coin.object.position.z}
-            if ( this.player !== undefined) {
-              if ( this.coinPickupSound?.isPlaying ) {
-                this.coinPickupSound.stop();
-                this.coinPickupSound?.play();
-              } else {
-                this.coinPickupSound?.play();
-              }
-
-              this.player.score += coin.points;
-            }
-            this.socket.emit('updateCoins', coinPosition);
-            game?.scene?.remove( coin.object.parent.remove(coin.object));
-            this.coins.splice(i, 1);
-          }
-        }
-      }
 
       if ( this.remotePlayers !== undefined ) {
         this.checkCollisions();
@@ -951,69 +840,6 @@ class Client {
     }
   }
 
-  checkWallCollision( wall: string ) {
-    if( this.player !== undefined && this.player.object !== undefined && this.player?.collided.value == false ) {
-      const wallObject = this.scene?.getObjectByName( wall );
-
-      if( wallObject !== undefined ) {
-        const collisionMargin = 0.3;
-        const wallBox = new THREE.Box3().setFromObject( wallObject );
-        const playerBox = new THREE.Box3().setFromObject( this.player.object );
-
-        const collisionDetected = playerBox.intersectsBox( wallBox.expandByScalar( -collisionMargin ));
-
-        if ( collisionDetected ) {
-          this.player.collided.value = true;
-          this.player.collided.object = 'wall';
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  checkBarrelCollision(barrelModel: GroundObstacle, playerModel: PlayerLocal) {
-    if(playerModel.collided.value == false) {
-
-      if ( barrelModel !== undefined && playerModel !== undefined ){
-        if(barrelModel.object !== undefined && playerModel.object !== undefined){
-
-          const collisionMargin = 0.3;
-          const barrelBox = new THREE.Box3().setFromObject(barrelModel.object);
-          const playerBox = new THREE.Box3().setFromObject(playerModel.object);
-
-          // Check if the two objects intersect with a margin for error
-          const collisionDetected =playerBox.intersectsBox(barrelBox.expandByScalar(-collisionMargin));
-
-          if(collisionDetected) {
-            playerModel.collided.value = true;
-            playerModel.collided.object = 'barrel';
-
-            //play impact sound
-            if ( this.smallCollisionSound?.isPlaying) {
-              this.smallCollisionSound.stop();
-              this.smallCollisionSound?.play();
-            } else {
-              this.smallCollisionSound?.play()
-            }
-
-            if (playerModel.score >= Math.abs(barrelModel.points)) {
-              playerModel.score += barrelModel.points;
-              if ( this.coinDropSound?.isPlaying) {
-                this.coinDropSound.stop();
-                this.coinDropSound?.play();
-              } else {
-                this.coinDropSound?.play()
-              }
-            }
-            return true;
-          }
-        }
-      }
-    }
-    return false
-  }
-
   checkCollisions() {
     this.player?.boxHelper?.geometry.computeBoundingBox();
     this.player?.boxHelper?.update();
@@ -1035,69 +861,9 @@ class Client {
               this.player.collided.value = true;
               this.player.collided.object = 'player';
 
-              //play impact sound
-              if ( this.collisionSound?.isPlaying) {
-                this.collisionSound.stop();
-                this.collisionSound?.play();
-              } else {
-                this.collisionSound?.play()
-              }
-
-              // player loses 30% of their coins
               if ( this.player.score > 0 ) {
-
-                if ( this.largeCoinDropSound?.isPlaying) {
-                  this.largeCoinDropSound.stop();
-                  this.largeCoinDropSound?.play();
-                } else {
-                  this.largeCoinDropSound?.play()
-                }
-
                 this.player.score = this.player.score - ( Math.round(this.player.score * 0.3 ));
                 console.log('player score', this.player.score)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  checkMovingFruitCollision() {
-    if ( this.fruitVisibility && !this.checkpointReached) {
-      if (this.player !== undefined && this.player.object !== undefined) {
-        const playerBox = new THREE.Box3().setFromObject(this.player.object);
-
-        for ( let i = 0; i < this.fruitObstacles.length; i++ ) {
-          let obstacle = this.fruitObstacles[i];
-
-          if ( obstacle !== undefined && obstacle.object !== undefined) {
-          let fruitBox = new THREE.Box3().setFromObject( obstacle.object );
-
-            if ( playerBox.intersectsBox(fruitBox) && this.player.collided.value == false ) {
-              this.player.collided.value = true;
-              this.player.collided.object = 'fruit';
-              console.log('fruit collides with player')
-
-              //play impact sound
-              if ( this.collisionSound?.isPlaying) {
-                this.collisionSound.stop();
-                this.collisionSound?.play();
-              } else {
-                this.collisionSound?.play()
-              }
-
-              // player loses 50% of their coins
-              // we only play the coin sound if the player has a positive score
-              if ( this.player.score > 0 ) {
-                if ( this.largeCoinDropSound?.isPlaying) {
-                  this.largeCoinDropSound.stop();
-                  this.largeCoinDropSound?.play();
-                } else {
-                  this.largeCoinDropSound?.play()
-                }
-                this.player.score = this.player.score - ( Math.round( this.player.score * 0.5 ));
-                console.log( 'player score after collision with fruit', this.player.score)
               }
             }
           }
@@ -1127,16 +893,7 @@ class Client {
       iteratorIndex++;
 
       if ( iteratorIndex >= numberOfIterations ) {
-        // console.log('we have finished with the blinking', player)
         player.resetCollidedPlayer();
-
-        if ( game.revivePlayerSound?.isPlaying ) {
-          game.revivePlayerSound.stop();
-          game.revivePlayerSound.play();
-        } else {
-          game.revivePlayerSound?.play();
-        }
-
         return;
       }
       game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );
