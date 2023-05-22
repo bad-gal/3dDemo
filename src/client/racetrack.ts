@@ -4,7 +4,6 @@ import PhysicsBody from './physicsBody';
 import { ShapeType } from 'three-to-cannon';
 import { Vector3, MathUtils } from 'three';
 
-
 export default class RaceTrack {
   scene : THREE.Scene;
   physicsWorld : CANNON.World;
@@ -32,7 +31,6 @@ export default class RaceTrack {
     groundBody.position.set( 8, -1, -10 );
     this.physicsWorld.addBody( groundBody );
 
-
     loader.load( "assets/racetrack_grass_plain.glb", ( object ) => {
       object.scene.name = "grass_area";
       object.scene.rotateOnWorldAxis( new Vector3( 0, 1, 0 ), MathUtils.degToRad(90) );
@@ -40,15 +38,8 @@ export default class RaceTrack {
       object.scene.position.set( -2, 0, -3 );
       this.scene.add( object.scene );
 
-      const body = new PhysicsBody( object.scene, ShapeType.HULL );
-      const result = body.createBody();
-      result.quaternion.set(
-        object.scene.quaternion.x,
-        object.scene.quaternion.y,
-        object.scene.quaternion.z,
-        object.scene.quaternion.w
-      )
-      this.physicsWorld.addBody( result );
+      const body = new PhysicsBody( object.scene, 'grass area single tree', 'grass', ShapeType.HULL );
+      this.physicsWorld.addBody( body.createCustomBody() );
     });
 
     loader.load( "assets/racetrack_grass_with_trees_1.glb", ( object ) => {
@@ -58,15 +49,8 @@ export default class RaceTrack {
       object.scene.position.set( 8, 0, -3 );
       this.scene.add( object.scene );
 
-      const body = new PhysicsBody( object.scene, ShapeType.HULL );
-      const result = body.createBody();
-      result.quaternion.set(
-        object.scene.quaternion.x,
-        object.scene.quaternion.y,
-        object.scene.quaternion.z,
-        object.scene.quaternion.w
-      )
-      this.physicsWorld.addBody( result );
+      const body = new PhysicsBody( object.scene, 'grass area with trees', 'grass', ShapeType.HULL );
+      this.physicsWorld.addBody( body.createCustomBody() );
     });
   }
 }

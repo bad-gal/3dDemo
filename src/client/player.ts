@@ -20,8 +20,8 @@ export default class Player {
   deleted: undefined;
   characterController: CharacterController | undefined;
   thirdPersonCamera: ThirdPersonCameraController | undefined;
-  boundaryBox: any;
-  boxHelper: any;
+  // boundaryBox: any;
+  // boxHelper: any;
   action: string;
   animationsMap: any;
   position: Vector3 | undefined;
@@ -299,8 +299,11 @@ export default class Player {
     this.animationsMap = new Map();
     filename = quadRacers.find( racer => racer.name === this.model )?.filename;
 
+    //TODO: Refactor the line below: if filename exists then name WILL NOT be undefined
+    let modelName = quadRacers.find( racer => racer.name === this.model )?.name;
+
     loader.load( filename, ( object ) => {
-      object.scene.name = model;
+      object.scene.name = this.model;
       const mixer = new THREE.AnimationMixer( object.scene );
       clips = object.animations;
       let clipAction;
@@ -324,30 +327,36 @@ export default class Player {
         }
       })
 
+      if(modelName === undefined) modelName = "undefined";
+
       if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
 
         const mass = 1;
-        const body = new PhysicsBody(object.scene, ShapeType.HULL, mass);
-        this.riderPhysicsBody = body.createBody();
+        const body = new PhysicsBody(object.scene, modelName, 'player', ShapeType.HULL, mass);
+        this.riderPhysicsBody = body.createCustomBody();
         console.log("RIDER", this.riderPhysicsBody)
         game.physicsWorld.addBody(this.riderPhysicsBody);
 
+        this.riderPhysicsBody.addEventListener("collide", (e: { body: { id: string; }; }) => {
+          console.log("The box collided with body #" + e.body.id);
+        });
+
         // create player boundary box for collision detection
-        const geometry = new THREE.BoxGeometry( 0.75, 2.5, 0.75 );
-        const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
+        // const geometry = new THREE.BoxGeometry( 0.75, 2.5, 0.75 );
+        // const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
 
-        this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
-        this.boxHelper.visible = false;
+        // this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
+        // this.boxHelper.visible = false;
 
-        this.boundaryBox = new THREE.Box3();
-        this.boundaryBox.setFromObject( this.boxHelper );
+        // this.boundaryBox = new THREE.Box3();
+        // this.boundaryBox.setFromObject( this.boxHelper );
 
-        object.scene.add( this.boxHelper );
+        // object.scene.add( this.boxHelper );
 
-        this.boxHelper?.geometry.computeBoundingBox();
-        this.boxHelper?.update();
-        this.boundaryBox?.copy( this.boxHelper.geometry.boundingBox ).applyMatrix4( this.boxHelper.matrixWorld );
+        // this.boxHelper?.geometry.computeBoundingBox();
+        // this.boxHelper?.update();
+        // this.boundaryBox?.copy( this.boxHelper.geometry.boundingBox ).applyMatrix4( this.boxHelper.matrixWorld );
       }
 
       if( player.local ) {
@@ -424,35 +433,35 @@ export default class Player {
     }
   }
 
-  resetFallenPlayer() {
-    this.falling = false;
+  // resetFallenPlayer() {
+  //   this.falling = false;
 
-    if ( this.object !== undefined ) {
-      if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
-      this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
-      this.boxHelper?.geometry.computeBoundingBox();
-      this.boxHelper?.update();
-      this.action = 'idle_02';
-      this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
-    }
-  }
+  //   if ( this.object !== undefined ) {
+  //     if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
+  //     this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
+  //     this.boxHelper?.geometry.computeBoundingBox();
+  //     this.boxHelper?.update();
+  //     this.action = 'idle_02';
+  //     this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
+  //   }
+  // }
 
-  resetCollidedPlayer() {
-    this.collided.value = false;
-    this.collided.object = '';
-    if ( this.object !== undefined ) {
-      if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
-      this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
+  // resetCollidedPlayer() {
+  //   this.collided.value = false;
+  //   this.collided.object = '';
+  //   if ( this.object !== undefined ) {
+  //     if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
+  //     this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
 
-      this.skinnedMesh.forEach((mesh: THREE.SkinnedMesh) =>  {
-        //@ts-ignore
-        mesh.material.opacity = 1;
-      })
+  //     this.skinnedMesh.forEach((mesh: THREE.SkinnedMesh) =>  {
+  //       //@ts-ignore
+  //       mesh.material.opacity = 1;
+  //     })
 
-      this.boxHelper?.geometry.computeBoundingBox();
-      this.boxHelper?.update();
-      this.action = 'idle_02';
-      this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
-    }
-  }
+  //     this.boxHelper?.geometry.computeBoundingBox();
+  //     this.boxHelper?.update();
+  //     this.action = 'idle_02';
+  //     this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
+  //   }
+  // }
 }

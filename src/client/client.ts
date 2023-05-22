@@ -757,33 +757,33 @@ class Client {
       if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling, this.checkpointReached );
         // run blink animation after player on player collision
-        if( this.player.collided.value == true && this.player.collided.object == 'player') {
-          this.player.mixer?.addEventListener( 'finished', function() {
-            if ( game.player?.skinnedMesh !== undefined ) {
-              game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
-            }
-          });
-        }
+        // if( this.player.collided.value == true && this.player.collided.object == 'player') {
+        //   this.player.mixer?.addEventListener( 'finished', function() {
+        //     if ( game.player?.skinnedMesh !== undefined ) {
+        //       game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
+        //     }
+        //   });
+        // }
       }
 
       this.updateRemotePlayers( mixerUpdateDelta );
 
-      if ( this.remotePlayers !== undefined ) {
-        this.checkCollisions();
-        this.remotePlayers.forEach(( rPlayer: Player ) => {
-          // run blink animation after player on player collision
-          if( rPlayer.collided.value == true && rPlayer.collided.object == 'player') {
-            rPlayer.mixer?.addEventListener( 'finished', function() {
-              game.onBlinkPlayer( game.BLINK_AMOUNT, rPlayer?.skinnedMesh, rPlayer );
-            });
-          }
-        });
-      }
+      // if ( this.remotePlayers !== undefined ) {
+      //   this.checkCollisions();
+      //   this.remotePlayers.forEach(( rPlayer: Player ) => {
+      //     // run blink animation after player on player collision
+      //     if( rPlayer.collided.value == true && rPlayer.collided.object == 'player') {
+      //       rPlayer.mixer?.addEventListener( 'finished', function() {
+      //         game.onBlinkPlayer( game.BLINK_AMOUNT, rPlayer?.skinnedMesh, rPlayer );
+      //       });
+      //     }
+      //   });
+      // }
 
       if( this.player?.mixer != undefined ) {
-          this.player.boxHelper?.geometry.computeBoundingBox();
-          this.player.boxHelper?.update();
-          this.player.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
+          // this.player.boxHelper?.geometry.computeBoundingBox();
+          // this.player.boxHelper?.update();
+          // this.player.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
 
           this.player.mixer?.update( mixerUpdateDelta );
           this.player.updatePlayerData();
@@ -840,65 +840,65 @@ class Client {
     }
   }
 
-  checkCollisions() {
-    this.player?.boxHelper?.geometry.computeBoundingBox();
-    this.player?.boxHelper?.update();
-    this.player?.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
-    const playerBB = this.player?.boundaryBox;
+  // checkCollisions() {
+  //   this.player?.boxHelper?.geometry.computeBoundingBox();
+  //   this.player?.boxHelper?.update();
+  //   this.player?.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
+  //   const playerBB = this.player?.boundaryBox;
 
-    for( let remotePlayer of this.remotePlayers ) {
-      remotePlayer?.boxHelper?.geometry.computeBoundingBox();
-      remotePlayer?.boxHelper?.update();
-      remotePlayer?.boundaryBox?.copy( remotePlayer.boxHelper.geometry.boundingBox ).applyMatrix4( remotePlayer.boxHelper.matrixWorld );
+  //   for( let remotePlayer of this.remotePlayers ) {
+  //     remotePlayer?.boxHelper?.geometry.computeBoundingBox();
+  //     remotePlayer?.boxHelper?.update();
+  //     remotePlayer?.boundaryBox?.copy( remotePlayer.boxHelper.geometry.boundingBox ).applyMatrix4( remotePlayer.boxHelper.matrixWorld );
 
-      const remoteBB: Box3 = remotePlayer.boundaryBox;
+  //     const remoteBB: Box3 = remotePlayer.boundaryBox;
 
-      if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided.value == false ) {
-        const distance = this.player?.object?.position?.distanceTo( remotePlayer.object.position );
-        if(distance !== undefined){
-          if( distance < 1 ) {
-            if( this.player !== undefined ) {
-              this.player.collided.value = true;
-              this.player.collided.object = 'player';
+  //     if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided.value == false ) {
+  //       const distance = this.player?.object?.position?.distanceTo( remotePlayer.object.position );
+  //       if(distance !== undefined){
+  //         if( distance < 1 ) {
+  //           if( this.player !== undefined ) {
+  //             this.player.collided.value = true;
+  //             this.player.collided.object = 'player';
 
-              if ( this.player.score > 0 ) {
-                this.player.score = this.player.score - ( Math.round(this.player.score * 0.3 ));
-                console.log('player score', this.player.score)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+  //             if ( this.player.score > 0 ) {
+  //               this.player.score = this.player.score - ( Math.round(this.player.score * 0.3 ));
+  //               console.log('player score', this.player.score)
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
 
-  onBlinkPlayer( numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
-    let iterationCounter = 0;
+  // onBlinkPlayer( numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
+  //   let iterationCounter = 0;
 
-    this.setBlink( iterationCounter, numberOfIterations, skinnedMesh, player );
-  }
+  //   this.setBlink( iterationCounter, numberOfIterations, skinnedMesh, player );
+  // }
 
-  changePlayerOpacity( skinnedMesh: THREE.SkinnedMesh[], counter: number ) {
-    skinnedMesh?.forEach( ( mesh ) => {
-      let opacityScale = counter % 2 === 0 ? 0.5 : 1;
-        //@ts-ignore
-        mesh.material.opacity = opacityScale;
-    })
-  }
+  // changePlayerOpacity( skinnedMesh: THREE.SkinnedMesh[], counter: number ) {
+  //   skinnedMesh?.forEach( ( mesh ) => {
+  //     let opacityScale = counter % 2 === 0 ? 0.5 : 1;
+  //       //@ts-ignore
+  //       mesh.material.opacity = opacityScale;
+  //   })
+  // }
 
-  setBlink( iteratorIndex: number, numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
-    const game = this;
-    setTimeout( function() {
-      game.changePlayerOpacity( skinnedMesh, iteratorIndex );
-      iteratorIndex++;
+  // setBlink( iteratorIndex: number, numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
+  //   const game = this;
+  //   setTimeout( function() {
+  //     game.changePlayerOpacity( skinnedMesh, iteratorIndex );
+  //     iteratorIndex++;
 
-      if ( iteratorIndex >= numberOfIterations ) {
-        player.resetCollidedPlayer();
-        return;
-      }
-      game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );
-    }, 300)
-  }
+  //     if ( iteratorIndex >= numberOfIterations ) {
+  //       player.resetCollidedPlayer();
+  //       return;
+  //     }
+  //     game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );
+  //   }, 300)
+  // }
 
   formatGameTimer(timer: number): string {
     if (timer < 10) {
