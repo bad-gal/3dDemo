@@ -20,8 +20,6 @@ export default class Player {
   deleted: undefined;
   characterController: CharacterController | undefined;
   thirdPersonCamera: ThirdPersonCameraController | undefined;
-  // boundaryBox: any;
-  // boxHelper: any;
   action: string;
   animationsMap: any;
   position: Vector3 | undefined;
@@ -33,7 +31,6 @@ export default class Player {
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
-    let model: string;
     let filename: any;
     this.action = '';
     this.collided = { value: false, object: '' };
@@ -332,7 +329,7 @@ export default class Player {
       if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
 
-        const mass = 1;
+        const mass = 5;
         const body = new PhysicsBody(object.scene, modelName, 'player', ShapeType.HULL, mass);
         this.riderPhysicsBody = body.createCustomBody();
         console.log("RIDER", this.riderPhysicsBody)
@@ -341,22 +338,6 @@ export default class Player {
         this.riderPhysicsBody.addEventListener("collide", (e: { body: { id: string; }; }) => {
           console.log("The box collided with body #" + e.body.id);
         });
-
-        // create player boundary box for collision detection
-        // const geometry = new THREE.BoxGeometry( 0.75, 2.5, 0.75 );
-        // const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
-
-        // this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
-        // this.boxHelper.visible = false;
-
-        // this.boundaryBox = new THREE.Box3();
-        // this.boundaryBox.setFromObject( this.boxHelper );
-
-        // object.scene.add( this.boxHelper );
-
-        // this.boxHelper?.geometry.computeBoundingBox();
-        // this.boxHelper?.update();
-        // this.boundaryBox?.copy( this.boxHelper.geometry.boundingBox ).applyMatrix4( this.boxHelper.matrixWorld );
       }
 
       if( player.local ) {

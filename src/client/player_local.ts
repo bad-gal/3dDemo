@@ -55,7 +55,7 @@ export default class PlayerLocal extends Player {
       model: this.model,
       position: this.position,
       quaternion: this.object?.quaternion,
-      velocity: this.characterController?.velocity,
+      velocity: this.characterController?.riderPhysicsBody.velocity,
       action: this.characterController?.currentAction,
       collided: this.collided,
       score: this.score,
@@ -66,9 +66,9 @@ export default class PlayerLocal extends Player {
     if ( this.socket !== undefined ) {
       this.socket.emit( 'update', {
         model: this.model,
-        position: this.characterController?.model.position,
-        quaternion: this.characterController?.model.quaternion,
-        velocity: this.characterController?.velocity,
+        position: this.characterController?.riderPhysicsBody.position,
+        quaternion: this.characterController?.riderPhysicsBody.quaternion,
+        velocity: this.characterController?.riderPhysicsBody.velocity,
         action: this.characterController?.currentAction,
         collided: this.collided,
         score: this.score,

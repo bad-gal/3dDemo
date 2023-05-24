@@ -18,7 +18,7 @@ import RaceTrack from './racetrack';
 // https://pmndrs.github.io/cannon-es/docs/index.html
 // https://pmndrs.github.io/cannon-es/docs/modules.html
 
-
+// TODO: 01/06 - When not updating the player mesh, you can see that left or right rotates the physics body on the y axis
 
 class Client {
   player: PlayerLocal | undefined;
@@ -56,7 +56,7 @@ class Client {
   fruitVisibility = false;
   checkpointReached = false;
   physicsWorld  = new CANNON.World({
-    gravity: new CANNON.Vec3(0, -9.82, 0), // m/s²
+    gravity: new CANNON.Vec3(0, 0, 0), // -9.82 m/s²
   });
 
   cannonDebugRenderer: undefined;
@@ -175,353 +175,6 @@ class Client {
     raceTrack.create();
   }
 
-  createAudio() {
-    const listener = new THREE.AudioListener();
-    this.camera.add(listener);
-
-    this.coinPickupSound = new THREE.Audio( listener );
-    this.coinDropSound = new THREE.Audio( listener );
-    this.collisionSound = new THREE.Audio( listener );
-    this.largeCoinDropSound = new THREE.Audio( listener );
-    this.smallCollisionSound = new THREE.Audio( listener );
-    this.revivePlayerSound = new THREE.Audio( listener );
-    this.playerFallenSound = new THREE.Audio( listener );
-
-    // load sounds and set it as the Audio object's buffer
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load('assets/audio/confirmation_001.ogg', (buffer) => {
-      if (this.coinPickupSound !== undefined) {
-        this.coinPickupSound.setBuffer(buffer);
-        this.coinPickupSound.setLoop(false);
-        this.coinPickupSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/coin-drop-small.mp3', (buffer) => {
-      if (this.coinDropSound !== undefined) {
-        this.coinDropSound.setBuffer(buffer);
-        this.coinDropSound.setLoop(false);
-        this.coinDropSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/impact-large.wav', (buffer) => {
-      if (this.collisionSound !== undefined) {
-        this.collisionSound.setBuffer(buffer);
-        this.collisionSound.setLoop(false);
-        this.collisionSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/impact-small.wav', (buffer) => {
-      if (this.smallCollisionSound !== undefined) {
-        this.smallCollisionSound.setBuffer(buffer);
-        this.smallCollisionSound.setLoop(false);
-        this.smallCollisionSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/coin-drop.mp3', (buffer) => {
-      if (this.largeCoinDropSound !== undefined) {
-        this.largeCoinDropSound.setBuffer(buffer);
-        this.largeCoinDropSound.setLoop(false);
-        this.largeCoinDropSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/mixkit-fairy-glitter-867.wav', (buffer) => {
-      if (this.revivePlayerSound !== undefined) {
-        this.revivePlayerSound.setBuffer(buffer);
-        this.revivePlayerSound.setLoop(false);
-        this.revivePlayerSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/mixkit-cartoon-falling-eco-407.wav', (buffer) => {
-      if (this.playerFallenSound !== undefined) {
-        this.playerFallenSound.setBuffer(buffer);
-        this.playerFallenSound.setLoop(false);
-        this.playerFallenSound.setVolume(0.5);
-      }
-    });
-
-  }
-
-  createWalls() {
-    const geometry = new THREE.BoxGeometry( 20, 2, 2 );
-    const material = new THREE.MeshBasicMaterial( { color: 0x3b030f });
-    let wallZ = 20;
-    for (let i = 0; i < 2; i++ ) {
-      let wall = new THREE.Mesh( geometry, material );
-      wall.position.set( 8.5, 1, wallZ );
-      wall.name = 'wall_' + i;
-      this.scene?.add( wall );
-      wallZ += -375;
-    }
-  }
-
-  private createTrack(scene: THREE.Scene) {
-    const geometry = new THREE.PlaneGeometry(20, 100);
-    const geometry2 = new THREE.PlaneGeometry(20, 140);
-    const geometry4 = new THREE.PlaneGeometry(20, 120);
-    const material = new THREE.MeshBasicMaterial({ color: 0x0f0f0e, side: THREE.DoubleSide });
-
-    //==========================
-    //    TRACKS
-    //==========================
-
-    //main runway
-    const plane = new THREE.Mesh(geometry4, material);
-    plane.rotation.x = Math.PI / 2;
-    plane.position.set(8.5, 0, -38);
-    plane.name = 'track';
-    scene.add(plane);
-
-    // first horizontal runway
-    const plane2 = new THREE.Mesh(geometry2, material);
-    plane2.rotation.x = Math.PI / 2;
-    plane2.rotation.z = Math.PI / 2;
-    plane2.position.set(8.5, 0, -108);
-    plane2.name = 'track';
-    scene.add(plane2);
-
-    // right runway
-    const planeRight = new THREE.Mesh(geometry, material);
-    planeRight.rotation.x = Math.PI / 2;
-    planeRight.position.set(68.5, 0, -168);
-    planeRight.name = 'track';
-    scene.add(planeRight);
-
-    // left runway
-    const planeLeft = new THREE.Mesh(geometry, material);
-    planeLeft.rotation.x = Math.PI / 2;
-    planeLeft.position.set(-51.5, 0, -168);
-    planeLeft.name = 'track';
-    scene.add(planeLeft);
-
-    // second horizontal runway
-    const plane5 = new THREE.Mesh(geometry2, material);
-    plane5.rotation.x = Math.PI / 2;
-    plane5.rotation.z = Math.PI / 2;
-    plane5.position.set(8.5, 0, -228);
-    plane5.name = 'track';
-    scene.add(plane5);
-
-    // final runway
-    const plane6 = new THREE.Mesh(geometry4, material);
-    plane6.rotation.x = Math.PI / 2;
-    plane6.position.set(8.5, 0, -298);
-    plane6.name = 'track';
-    scene.add(plane6);
-
-    // load checkpoint model
-    const loader = new GLTFLoader();
-    loader.load('assets/checkpoint.glb', (gltf) => {
-      gltf.scene.name = 'checkpoint';
-      scene?.add(gltf.scene);
-      gltf.scene.position.set(16.5, 0.1, 0);
-      gltf.scene.rotation.y = Math.PI / 2;
-
-      // clone the model
-      const checkpoint = clone(gltf.scene);
-      checkpoint.position.set(16.5, 0.1, -333);
-      scene?.add(checkpoint);
-    });
-
-    //==========================
-    //  CENTRAL ROAD MARKINGS
-    //==========================
-
-    const geometry3 = new THREE.PlaneGeometry(0.2, 1)
-    const material2 = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-
-    // main runway markings
-    let markZ = -3;
-    for ( let i = 0; i < 32; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(8.5, 0.01, markZ);
-      scene.add(roadMark);
-      markZ -= 3;
-    }
-
-    // left runway markings
-    let markX = -120;
-    for ( let i = 0; i < 33; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(-51.5, 0.01, markX);
-      scene.add(roadMark);
-      markX -= 3;
-    }
-
-    // right runway markings
-    markX = -120;
-    for ( let i = 0; i < 33; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(68.5, 0.01, markX);
-      scene.add(roadMark);
-      markX -= 3;
-    }
-
-    // first horizontal runway markings
-    markX = -60;
-    for ( let i = 0; i < 46; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(markX, 0.01, -108);
-      scene.add(roadMark);
-      markX +=3;
-    }
-
-    // second horizontal runway markings
-    markX = -60;
-    for ( let i = 0; i < 46; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(markX, 0.01, -228);
-      scene.add(roadMark);
-      markX +=3;
-    }
-
-    // final runway markings
-    markZ = -240;
-    for ( let i = 0; i < 31; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(8.5, 0.01, markZ);
-      scene.add(roadMark);
-      markZ -= 3;
-    }
-
-    //==========================
-    //  TURN MARKINGS
-    //==========================
-
-    //main runway
-    let lineX = -0.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -98);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = -0.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -97);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-
-    // runway left top
-    lineX = -50.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -119);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = -50.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -118);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-
-    //runway left bottom
-    lineX = -52.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -217);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-    lineX = -52.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -218);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-
-    //runway right top
-    lineX = 77.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -119);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-    lineX = 77.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -118);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-
-    //runway right bottom
-    lineX = 60
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -218);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = 60
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -217);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-
-    //final runway top
-    lineX = 9.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -238);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = 9.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -239);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-  }
-
   onPlayState() {
     this.player = new PlayerLocal( this, this.camera, this.socket );
 
@@ -529,44 +182,10 @@ class Client {
       this.gameTimer = this.formatGameTimer(data);
     });
 
-    // this.socket.on( 'removeCoin', ( data: any ) => {
-    //   for (let i = this.coins.length - 1; i >=0; i--) {
-    //     let coin = this.coins[i];
-    //     if(coin.object !== undefined && coin.object.parent !== null) {
-    //       if ( coin.object?.position.x == data[0].x && coin.object?.position.z == data[0].z ) {
-    //         this?.scene?.remove( coin.object.parent.remove(coin.object));
-    //         this.coins.splice(i, 1);
-    //       }
-    //     }
-    //   }
-		// });
-
-    // this.socket.on( 'setVisibilityMoveableObjects', ( visibility: boolean) => {
-    //   console.log('fruits visibility is ', visibility);
-    //   this.fruitVisibility = visibility;
-    // });
-
-    // for ( let i = 0; i < this.coinLocations.length; i++ ) {
-    //   this.coins.push( new Coin( this, this.coinLocations[i] ));
-    // }
-
-    // for( let i = 0; i < this.fruitObstaclesData.length; i++) {
-    //   this.fruitObstacles.push( new MovingObstacle(this, this.fruitObstaclesData[i]))
-    // }
-
-    // for ( let i = 0; i < this.barrelObstaclesData.length; i++ ) {
-    //   this.barrelObstacles.push( new GroundObstacle( this, this.barrelObstaclesData[i]));
-    // }
-
-    // this.socket.emit('fruitStart');
-
-    // this.socket.on('remoteFruitObstaclesData', (data:any)=> {
-    //   this.fruitObstaclesData = data;
-    // })
-
     document.addEventListener( 'keydown', ( e ) => {
       if ( this.player?.characterController ) {
         this.keysPressed[e.key] = true;
+        console.log('physics world after key pressed', this.physicsWorld)
       }
     });
 
@@ -575,6 +194,21 @@ class Client {
         this.keysPressed[e.key] = false;
       }
     });
+
+    // this does not display because player is not fully created yet.BUT I notice that
+    // I'm not getting that tilting motion now which is great.
+
+    // Main problem is that when you turn left or right then move forward or backward the player moves sideways
+    // also if you rotate 180 deg and press the up key you go backwards and if you press the down key you go up
+    if( this.player?.characterController ) {
+    // Create a static ground body
+    const groundBody = new CANNON.Body( {  mass: 0 } );
+    const groundShape = new CANNON.Box( new CANNON.Vec3( 32, 1, 32 ) );
+    groundBody.addShape( groundShape );
+
+    groundBody.position.set( 8, -1, -10 );
+    this.physicsWorld.addBody( groundBody );
+    }
 
     this.createScorePanel();
     this.displayTimer();
@@ -733,7 +367,7 @@ class Client {
         this.counter = 1;
       }
 
-      this.player?.characterController?.updatePhysicsBody();
+      this.player?.characterController?.updatePlayerMesh();
     }
   }
 
@@ -756,35 +390,11 @@ class Client {
 
       if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling, this.checkpointReached );
-        // run blink animation after player on player collision
-        // if( this.player.collided.value == true && this.player.collided.object == 'player') {
-        //   this.player.mixer?.addEventListener( 'finished', function() {
-        //     if ( game.player?.skinnedMesh !== undefined ) {
-        //       game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
-        //     }
-        //   });
-        // }
       }
 
       this.updateRemotePlayers( mixerUpdateDelta );
 
-      // if ( this.remotePlayers !== undefined ) {
-      //   this.checkCollisions();
-      //   this.remotePlayers.forEach(( rPlayer: Player ) => {
-      //     // run blink animation after player on player collision
-      //     if( rPlayer.collided.value == true && rPlayer.collided.object == 'player') {
-      //       rPlayer.mixer?.addEventListener( 'finished', function() {
-      //         game.onBlinkPlayer( game.BLINK_AMOUNT, rPlayer?.skinnedMesh, rPlayer );
-      //       });
-      //     }
-      //   });
-      // }
-
       if( this.player?.mixer != undefined ) {
-          // this.player.boxHelper?.geometry.computeBoundingBox();
-          // this.player.boxHelper?.update();
-          // this.player.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
-
           this.player.mixer?.update( mixerUpdateDelta );
           this.player.updatePlayerData();
       }
@@ -799,106 +409,6 @@ class Client {
       this.renderer.render( this.scene, this.camera );
     }
   }
-
-  render() {
-    this.renderer.render( this.scene, this.camera );
-  }
-
-  isPlayerOnTracks() {
-    if ( this.player !== undefined && this.player.object !== undefined ) {
-      const playerBox = new THREE.Box3().setFromObject( this.player.object );
-      const collisionMargin = 0.3;
-      let tracks = this.scene?.getObjectsByProperty( 'name', 'track' );
-
-      if ( tracks !== undefined ) {
-        for( let i = 0; i < tracks.length; i++ ) {
-          const trackBox = new THREE.Box3().setFromObject( tracks[i] );
-          let collisionDetected = playerBox.intersectsBox( trackBox.expandByScalar( -collisionMargin ));
-
-          if ( collisionDetected ) {
-            return true;
-          }
-        }
-        return false;
-      } else {
-        return true;
-      }
-    } else {
-      return true;
-    }
-  }
-
-  checkCoinCollsion( coinModel:any, playerModel:any ) {
-    if ( coinModel !== undefined && playerModel !== undefined ){
-      if(playerModel.boundaryBox !== undefined){
-        const coinBoundingBox = new THREE.Box3().setFromObject(coinModel.boxHelper);
-        const playerBoundingBox = playerModel.boundaryBox;
-
-        //check if the two boxes intersect
-        return coinBoundingBox.intersectsBox(playerBoundingBox);
-      }
-    }
-  }
-
-  // checkCollisions() {
-  //   this.player?.boxHelper?.geometry.computeBoundingBox();
-  //   this.player?.boxHelper?.update();
-  //   this.player?.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
-  //   const playerBB = this.player?.boundaryBox;
-
-  //   for( let remotePlayer of this.remotePlayers ) {
-  //     remotePlayer?.boxHelper?.geometry.computeBoundingBox();
-  //     remotePlayer?.boxHelper?.update();
-  //     remotePlayer?.boundaryBox?.copy( remotePlayer.boxHelper.geometry.boundingBox ).applyMatrix4( remotePlayer.boxHelper.matrixWorld );
-
-  //     const remoteBB: Box3 = remotePlayer.boundaryBox;
-
-  //     if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided.value == false ) {
-  //       const distance = this.player?.object?.position?.distanceTo( remotePlayer.object.position );
-  //       if(distance !== undefined){
-  //         if( distance < 1 ) {
-  //           if( this.player !== undefined ) {
-  //             this.player.collided.value = true;
-  //             this.player.collided.object = 'player';
-
-  //             if ( this.player.score > 0 ) {
-  //               this.player.score = this.player.score - ( Math.round(this.player.score * 0.3 ));
-  //               console.log('player score', this.player.score)
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
-  // onBlinkPlayer( numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
-  //   let iterationCounter = 0;
-
-  //   this.setBlink( iterationCounter, numberOfIterations, skinnedMesh, player );
-  // }
-
-  // changePlayerOpacity( skinnedMesh: THREE.SkinnedMesh[], counter: number ) {
-  //   skinnedMesh?.forEach( ( mesh ) => {
-  //     let opacityScale = counter % 2 === 0 ? 0.5 : 1;
-  //       //@ts-ignore
-  //       mesh.material.opacity = opacityScale;
-  //   })
-  // }
-
-  // setBlink( iteratorIndex: number, numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
-  //   const game = this;
-  //   setTimeout( function() {
-  //     game.changePlayerOpacity( skinnedMesh, iteratorIndex );
-  //     iteratorIndex++;
-
-  //     if ( iteratorIndex >= numberOfIterations ) {
-  //       player.resetCollidedPlayer();
-  //       return;
-  //     }
-  //     game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );
-  //   }, 300)
-  // }
 
   formatGameTimer(timer: number): string {
     if (timer < 10) {
