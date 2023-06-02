@@ -126,7 +126,7 @@ export default class WaitingState {
           // kick out this player
           game.socket.emit( 'kickOutPlayer', game.socket.id );
           game.currentState = game.GAMESTATES.EXPELLED;
-          game.onExpelledState();
+          game.onExpelled();
         }
       }
     });

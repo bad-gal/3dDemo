@@ -1,24 +1,20 @@
 import * as THREE from 'three';
 import Player from './player';
 import PlayerLocal from './player_local';
-import { Box3 } from 'three';
 import { io } from 'socket.io-client';
 import MenuState from './menu_state';
 import WaitingState from './waiting_state';
 import ExpelledState from './expelled_state';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { clone } from 'three/examples/jsm/utils/SkeletonUtils';
 import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from 'cannon-es-debugger';
 import RaceTrack from './racetrack';
 
+// TODO: change how the camera is viewed, you can see why this is necessary when a collision takes place
 // https://fertile-soil-productions.itch.io/modular-racekart-track
 // https://github.com/donmccurdy/three-to-cannon
 // https://discourse.threejs.org/t/how-can-i-make-colliders-from-glb-objects-with-cannon-js/17059/4
 // https://pmndrs.github.io/cannon-es/docs/index.html
 // https://pmndrs.github.io/cannon-es/docs/modules.html
-
-// TODO: 01/06 - When not updating the player mesh, you can see that left or right rotates the physics body on the y axis
 
 class Client {
   player: PlayerLocal | undefined;
@@ -45,39 +41,23 @@ class Client {
   quadRacerList: any;
   quadRacerFullList: string[];
   userModel: string;
-  coinPickupSound: THREE.Audio | undefined;
-  coinDropSound: THREE.Audio | undefined;
-  collisionSound: THREE.Audio | undefined;
-  smallCollisionSound: THREE.Audio | undefined;
-  largeCoinDropSound: THREE.Audio | undefined;
-  revivePlayerSound: THREE.Audio | undefined;
-  playerFallenSound: THREE.Audio | undefined;
   gameTimer: string = '';
-  fruitVisibility = false;
-  checkpointReached = false;
+  cannonDebugRenderer: undefined;
+  remoteScores: any[];
+  groundMaterial = new CANNON.Material("groundMaterial");
+  grassMaterial = new CANNON.Material('grassMaterial' );
   physicsWorld  = new CANNON.World({
-    gravity: new CANNON.Vec3(0, 0, 0), // -9.82 m/s²
+    gravity: new CANNON.Vec3(0, -9.81, 0), // -9.81 m/s²
   });
 
-  cannonDebugRenderer: undefined;
-
-  remoteScores: any[];
-
   constructor() {
-    this.player;
-    this.scene;
     this.remotePlayers = [];
     this.remoteData = [];
     this.remoteScores = [];
     this.initialisingPlayers = [];
-    this.camera;
-    this.renderer;
-    this.clock;
-    this.keysPressed;
     this.clock = new THREE.Clock();
     this.counter = 0;
     this.BLINK_AMOUNT = 11;
-    this.initPlayerId;
     this.userModel = '';
     this.quadRacerList = [];
     this.quadRacerFullList = [
@@ -109,19 +89,16 @@ class Client {
 
   onMenuState() {
     const gameState = new MenuState(this);
-
     gameState.onMenuState();
   };
 
-  onWaitingRoomState() {
+  onWaitingRoom() {
     const gameState = new WaitingState(this);
-
     gameState.onWaitingRoomState();
   }
 
-  onExpelledState() {
+  onExpelled() {
     const gameState = new ExpelledState(this);
-
     gameState.onExpelledState();
   }
 
@@ -151,7 +128,7 @@ class Client {
       hemiLight.name = 'hemiLight';
       this.scene.add( hemiLight );
 
-      this.createRaceTrack(this.scene, this.physicsWorld);
+      this.createRaceTrack(this.scene, this.physicsWorld, this.grassMaterial);
 
       // web render
       this.renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -170,8 +147,8 @@ class Client {
     }
   };
 
-  createRaceTrack(scene: THREE.Scene, physicsWorld: CANNON.World) {
-    const raceTrack = new RaceTrack(scene, physicsWorld);
+  createRaceTrack(scene: THREE.Scene, physicsWorld: CANNON.World, material: CANNON.Material) {
+    const raceTrack = new RaceTrack(scene, physicsWorld, material);
     raceTrack.create();
   }
 
@@ -195,20 +172,12 @@ class Client {
       }
     });
 
-    // this does not display because player is not fully created yet.BUT I notice that
-    // I'm not getting that tilting motion now which is great.
-
-    // Main problem is that when you turn left or right then move forward or backward the player moves sideways
-    // also if you rotate 180 deg and press the up key you go backwards and if you press the down key you go up
-    if( this.player?.characterController ) {
     // Create a static ground body
-    const groundBody = new CANNON.Body( {  mass: 0 } );
+    const groundBody = new CANNON.Body( {  mass: 0, material: this.groundMaterial } );
     const groundShape = new CANNON.Box( new CANNON.Vec3( 32, 1, 32 ) );
     groundBody.addShape( groundShape );
-
     groundBody.position.set( 8, -1, -10 );
     this.physicsWorld.addBody( groundBody );
-    }
 
     this.createScorePanel();
     this.displayTimer();
@@ -368,6 +337,12 @@ class Client {
       }
 
       this.player?.characterController?.updatePlayerMesh();
+
+      // if(this.player?.characterController !== undefined ) {
+      //   if (this.player?.characterController?.riderPhysicsBody.velocity.y > 2) {
+      //     console.log('physicsWorld', this.physicsWorld)
+      //   }
+      // }
     }
   }
 
@@ -381,15 +356,13 @@ class Client {
 
     if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
 
-    this.completedCourse()
-
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
 
       requestAnimationFrame( function(){ game.animate() } );
 
       if ( this.player?.characterController !== undefined ) {
-        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling, this.checkpointReached );
+        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
       }
 
       this.updateRemotePlayers( mixerUpdateDelta );
@@ -424,18 +397,6 @@ class Client {
     }
   }
 
-  completedCourse() {
-    if ( !this.checkpointReached ) {
-      if ( this.player !== undefined && this.player.characterController !== undefined) {
-        if ( this.player.characterController.model.position.x >= 0 && this.player.characterController.model.position.x <= 18 &&
-          this.player.characterController.model.position.z >= -350 && this.player.characterController.model.position.z <= -335 ) {
-            this.player.score += 1000;
-            console.log('checkpoint reached')
-            this.checkpointReached = true;
-          }
-      }
-    }
-  }
 }
 
 new Client();

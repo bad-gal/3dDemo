@@ -330,10 +330,18 @@ export default class Player {
         game.scene.add( object.scene );
 
         const mass = 5;
-        const body = new PhysicsBody(object.scene, modelName, 'player', ShapeType.HULL, mass);
+        const bodyMaterial = new CANNON.Material("bodyMaterial");
+        const body = new PhysicsBody(object.scene, modelName, 'player', ShapeType.HULL, mass, bodyMaterial);
         this.riderPhysicsBody = body.createCustomBody();
         console.log("RIDER", this.riderPhysicsBody)
         game.physicsWorld.addBody(this.riderPhysicsBody);
+
+        const physicsMaterial = new CANNON.ContactMaterial(game.groundMaterial, bodyMaterial, {
+          friction: 0.0, // Use some friction
+          restitution: 0.3 // And some bounciness
+        });
+
+        game.physicsWorld.addContactMaterial(physicsMaterial);
 
         this.riderPhysicsBody.addEventListener("collide", (e: { body: { id: string; }; }) => {
           console.log("The box collided with body #" + e.body.id);

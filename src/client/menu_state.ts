@@ -60,7 +60,7 @@ export default class MenuState {
     
     waitingBtn.addEventListener("click", function() {
       game.currentState = game.GAMESTATES.WAITING_ROOM;
-      game.onWaitingRoomState();
+      game.onWaitingRoom();
     });
   };
 }

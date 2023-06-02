@@ -1,5 +1,6 @@
 import * as CANNON from 'cannon-es';
 import { threeToCannon, ShapeType } from 'three-to-cannon';
+import { Group } from "three";
 
 // Define an interface for the custom data
 interface CustomData {
@@ -16,35 +17,20 @@ class CustomBody extends CANNON.Body {
 }
 
 export default class PhysicsBody {
-  model: THREE.Group;
+  model: Group;
   name: string;
   type: string;
   shape: ShapeType | undefined;
   mass: number;
+  material: CANNON.Material | undefined;
 
-  constructor( model: THREE.Group, name: string, type: string, shape?: ShapeType, mass?: number) {
+  constructor( model: Group, name: string, type: string, shape?: ShapeType, mass?: number, material?: CANNON.Material) {
     this.model = model;
     this.name = name;
     this.type = type;
     this.mass = mass !== undefined ? mass : 0;
+    if (material !== undefined) this.material = material
     if(shape !== undefined) this.shape = shape;
-  }
-
-  createBody():CANNON.Body {
-    // Convert the object mesh into a Cannon.Shape
-    const result = this.shape !== undefined ? threeToCannon(this.model, {type: this.shape}) : threeToCannon(this.model);
-
-    // Add physics to the object
-    const body = new CANNON.Body( { mass: this.mass } );
-    body.addShape(result?.shape as CANNON.Shape, result?.offset, result?.orientation);
-
-    // Set the body position to the mesh position
-    body.position.x = this.model.position.x;
-    body.position.y = this.model.position.y;
-    body.position.z = this.model.position.z;
-
-    // return Cannon.Body to be added to the physics world
-    return body;
   }
 
   createCustomBody():CustomBody {
@@ -52,7 +38,7 @@ export default class PhysicsBody {
     const result = this.shape !== undefined ? threeToCannon(this.model, {type: this.shape}) : threeToCannon(this.model);
 
     // Add physics to the object
-    const body = new CustomBody( { mass: this.mass } );
+    const body = new CustomBody( { mass: this.mass, material: this.material } );
     body.addShape(result?.shape as CANNON.Shape, result?.offset, result?.orientation);
 
     // Set the body position to the mesh position

@@ -47,7 +47,7 @@ export default class CharacterController {
     if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true ) {
       if ( play == '' ) {
         play = 'idle_02';
-        this.velocity = new CANNON.Vec3();
+        this.velocity = new CANNON.Vec3(0, 0, 0);
       }
 
       if (this.currentAction != play) {
@@ -74,6 +74,8 @@ export default class CharacterController {
       this.riderPhysicsBody.quaternion.z,
       this.riderPhysicsBody.quaternion.w
     );
+
+    this.velocity.y = this.riderPhysicsBody.velocity.y;
   }
 
   checkActiveKeys( key: boolean ) {
