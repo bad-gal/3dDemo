@@ -40,15 +40,13 @@ export default class CharacterController {
     });
   };
 
-  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {}, falling: boolean, trackCompleted: boolean ) {
+  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {} ) {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
     let play = '';
 
     if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true ) {
-      if ( play == '' ) {
-        play = 'idle_02';
-        this.velocity = new CANNON.Vec3(0, 0, 0);
-      }
+      play = 'idle_02';
+      this.velocity = new CANNON.Vec3(0, 0, 0);
 
       if (this.currentAction != play) {
         this.playAnimation(play);
@@ -74,12 +72,18 @@ export default class CharacterController {
       this.riderPhysicsBody.quaternion.z,
       this.riderPhysicsBody.quaternion.w
     );
-
-    this.velocity.y = this.riderPhysicsBody.velocity.y;
   }
 
   checkActiveKeys( key: boolean ) {
-    return key == false;
+    return !key;
+  }
+
+  printRider() {
+    let clonedPosition = this.riderPhysicsBody.position.clone();
+    let clonedVelocity = this.riderPhysicsBody.velocity.clone();
+    let clonedRotation = this.riderPhysicsBody.quaternion.clone();
+
+    console.log('position: ', clonedPosition, ' velocity: ', clonedVelocity, ' rotation: ', clonedRotation, ' force: ', this.riderPhysicsBody.force);
   }
 
   userInput( delta: number, keysPressed: { [key: string]: boolean; } = {} ) {

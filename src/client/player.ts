@@ -331,21 +331,32 @@ export default class Player {
 
         const mass = 5;
         const bodyMaterial = new CANNON.Material("bodyMaterial");
-        const body = new PhysicsBody(object.scene, modelName, 'player', ShapeType.HULL, mass, bodyMaterial);
+        const body = new PhysicsBody(object.scene, modelName, 'player', 2, 1, ShapeType.HULL, mass, bodyMaterial);
         this.riderPhysicsBody = body.createCustomBody();
+        this.riderPhysicsBody.linearDamping = 0.94;
+        this.riderPhysicsBody.angularDamping = 0.94;
+        this.riderPhysicsBody.fixedRotation = true;
+
         console.log("RIDER", this.riderPhysicsBody)
         game.physicsWorld.addBody(this.riderPhysicsBody);
 
-        const physicsMaterial = new CANNON.ContactMaterial(game.groundMaterial, bodyMaterial, {
-          friction: 0.0, // Use some friction
-          restitution: 0.3 // And some bounciness
+        const groundMaterial = new CANNON.ContactMaterial(game.groundMaterial, bodyMaterial, {
+          friction: 0.5, // Use some friction
+          restitution: 0.1 // And some bounciness
         });
 
-        game.physicsWorld.addContactMaterial(physicsMaterial);
-
-        this.riderPhysicsBody.addEventListener("collide", (e: { body: { id: string; }; }) => {
-          console.log("The box collided with body #" + e.body.id);
+        const grassMaterial = new CANNON.ContactMaterial(game.grassMaterial, bodyMaterial, {
+          friction: 0.6, // Use some friction
+          restitution: 0.9 // And some bounciness
         });
+
+        // game.physicsWorld.materials
+        game.physicsWorld.addContactMaterial(groundMaterial);
+        game.physicsWorld.addContactMaterial(grassMaterial);
+
+        // this.riderPhysicsBody.addEventListener("collide", (e: { body: { id: string; }; }) => {
+        //   console.log("The player collided with body #" + e.body.id);
+        // });
       }
 
       if( player.local ) {
@@ -364,8 +375,8 @@ export default class Player {
         }
       }
       else {
-				player.object.userData.id = player.id;
-				player.object.userData.remotePlayer = true;
+        player.object.userData.id = player.id;
+        player.object.userData.remotePlayer = true;
         player.object.userData.position = options.position;
         player.object.userData.collided = player.collided;
         // player.object.userData.collided.object = player.collided.object;
@@ -421,36 +432,4 @@ export default class Player {
       if( !found ) this.game.remotePlayer( this );
     }
   }
-
-  // resetFallenPlayer() {
-  //   this.falling = false;
-
-  //   if ( this.object !== undefined ) {
-  //     if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
-  //     this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
-  //     this.boxHelper?.geometry.computeBoundingBox();
-  //     this.boxHelper?.update();
-  //     this.action = 'idle_02';
-  //     this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
-  //   }
-  // }
-
-  // resetCollidedPlayer() {
-  //   this.collided.value = false;
-  //   this.collided.object = '';
-  //   if ( this.object !== undefined ) {
-  //     if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
-  //     this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
-
-  //     this.skinnedMesh.forEach((mesh: THREE.SkinnedMesh) =>  {
-  //       //@ts-ignore
-  //       mesh.material.opacity = 1;
-  //     })
-
-  //     this.boxHelper?.geometry.computeBoundingBox();
-  //     this.boxHelper?.update();
-  //     this.action = 'idle_02';
-  //     this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
-  //   }
-  // }
 }

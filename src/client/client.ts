@@ -9,12 +9,6 @@ import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from 'cannon-es-debugger';
 import RaceTrack from './racetrack';
 
-// TODO: change how the camera is viewed, you can see why this is necessary when a collision takes place
-// https://fertile-soil-productions.itch.io/modular-racekart-track
-// https://github.com/donmccurdy/three-to-cannon
-// https://discourse.threejs.org/t/how-can-i-make-colliders-from-glb-objects-with-cannon-js/17059/4
-// https://pmndrs.github.io/cannon-es/docs/index.html
-// https://pmndrs.github.io/cannon-es/docs/modules.html
 
 class Client {
   player: PlayerLocal | undefined;
@@ -162,7 +156,6 @@ class Client {
     document.addEventListener( 'keydown', ( e ) => {
       if ( this.player?.characterController ) {
         this.keysPressed[e.key] = true;
-        console.log('physics world after key pressed', this.physicsWorld)
       }
     });
 
@@ -173,8 +166,8 @@ class Client {
     });
 
     // Create a static ground body
-    const groundBody = new CANNON.Body( {  mass: 0, material: this.groundMaterial } );
-    const groundShape = new CANNON.Box( new CANNON.Vec3( 32, 1, 32 ) );
+    const groundBody = new CANNON.Body( {  mass: 0, material: this.groundMaterial, collisionFilterGroup: 5 } );
+    const groundShape = new CANNON.Box( new CANNON.Vec3( 500, 1, 500 ) );
     groundBody.addShape( groundShape );
     groundBody.position.set( 8, -1, -10 );
     this.physicsWorld.addBody( groundBody );
@@ -329,6 +322,7 @@ class Client {
 
   updatePhysics() {
     if (this.physicsWorld !== undefined){
+
       // Run the simulation independently of framerate every 1 / 60 ms
       this.physicsWorld.fixedStep();
       if(this.counter === 0) {
@@ -337,12 +331,6 @@ class Client {
       }
 
       this.player?.characterController?.updatePlayerMesh();
-
-      // if(this.player?.characterController !== undefined ) {
-      //   if (this.player?.characterController?.riderPhysicsBody.velocity.y > 2) {
-      //     console.log('physicsWorld', this.physicsWorld)
-      //   }
-      // }
     }
   }
 

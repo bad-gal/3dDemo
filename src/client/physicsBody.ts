@@ -23,11 +23,22 @@ export default class PhysicsBody {
   shape: ShapeType | undefined;
   mass: number;
   material: CANNON.Material | undefined;
+  collisionGroup: number;
+  collisionMask: number;
 
-  constructor( model: Group, name: string, type: string, shape?: ShapeType, mass?: number, material?: CANNON.Material) {
+  constructor(
+      model: Group,
+      name: string,
+      type: string,
+      collisionGroup: number = 1,
+      collisionMask: number = -1,
+      shape?: ShapeType,
+      mass?: number, material?: CANNON.Material) {
     this.model = model;
     this.name = name;
     this.type = type;
+    this.collisionGroup = collisionGroup;
+    this.collisionMask = collisionMask;
     this.mass = mass !== undefined ? mass : 0;
     if (material !== undefined) this.material = material
     if(shape !== undefined) this.shape = shape;
@@ -38,7 +49,7 @@ export default class PhysicsBody {
     const result = this.shape !== undefined ? threeToCannon(this.model, {type: this.shape}) : threeToCannon(this.model);
 
     // Add physics to the object
-    const body = new CustomBody( { mass: this.mass, material: this.material } );
+    const body = new CustomBody( { mass: this.mass, material: this.material, collisionFilterGroup: this.collisionGroup, collisionFilterMask: this.collisionMask } );
     body.addShape(result?.shape as CANNON.Shape, result?.offset, result?.orientation);
 
     // Set the body position to the mesh position
