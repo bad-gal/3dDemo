@@ -354,9 +354,8 @@ export default class Player {
         game.physicsWorld.addContactMaterial(groundMaterial);
         game.physicsWorld.addContactMaterial(grassMaterial);
 
-        // this.riderPhysicsBody.addEventListener("collide", (e: { body: { id: string; }; }) => {
-        //   console.log("The player collided with body #" + e.body.id);
-        // });
+        const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, { friction: 0.5, restitution: 1 });
+        game.physicsWorld.addContactMaterial(riderWallMaterial);
       }
 
       if( player.local ) {

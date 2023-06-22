@@ -8,11 +8,13 @@ export default class RaceTrack {
   scene : Scene;
   physicsWorld : CANNON.World;
   material : CANNON.Material;
+  wallMaterial : CANNON.Material;
 
-  constructor(scene: Scene, physicsWorld: CANNON.World, material: CANNON.Material){
+  constructor(scene: Scene, physicsWorld: CANNON.World, material: CANNON.Material, wallMaterial: CANNON.Material){
     this.scene = scene;
     this.physicsWorld = physicsWorld;
     this.material = material;
+    this.wallMaterial = wallMaterial;
   }
 
   create() {
@@ -51,7 +53,6 @@ export default class RaceTrack {
     });
 
     // create colliders at the sides of the racetrack
-    const trackMaterial = new CANNON.Material;
     const trackBodies = [];
     const trackBoxShapes = [];
 
@@ -93,7 +94,7 @@ export default class RaceTrack {
     ];
 
     for (let i = 0; i < trackPositions.length; i++) {
-      trackBodies.push(new CANNON.Body({mass: 0, material: trackMaterial, collisionFilterGroup: 1}));
+      trackBodies.push(new CANNON.Body({mass: 0, material: this.wallMaterial, collisionFilterGroup: 1}));
     }
 
     for (let i = 0; i < 2; i++) {

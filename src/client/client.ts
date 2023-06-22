@@ -40,6 +40,7 @@ class Client {
   remoteScores: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
+  wallMaterial = new CANNON.Material('wallMaterial')
   physicsWorld  = new CANNON.World({
     gravity: new CANNON.Vec3(0, -9.81, 0), // -9.81 m/s²
   });
@@ -142,7 +143,7 @@ class Client {
   };
 
   createRaceTrack(scene: THREE.Scene, physicsWorld: CANNON.World, material: CANNON.Material) {
-    const raceTrack = new RaceTrack(scene, physicsWorld, material);
+    const raceTrack = new RaceTrack(scene, physicsWorld, material, this.wallMaterial);
     raceTrack.create();
   }
 
