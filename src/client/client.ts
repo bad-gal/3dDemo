@@ -9,7 +9,6 @@ import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from 'cannon-es-debugger';
 import RaceTrack from './racetrack';
 
-
 class Client {
   player: PlayerLocal | undefined;
   scene: THREE.Scene | undefined;
@@ -115,7 +114,11 @@ class Client {
       this.camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
 
       this.scene = new THREE.Scene();
-      this.scene.background = new THREE.Color(0xffffff);
+
+      // background and fog
+      this.scene.background = new THREE.Color( 0x0d820d );
+      this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
+
 
       // lighting
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -286,6 +289,7 @@ class Client {
           if( rplayer === undefined ){
             // initialise remote player
             game.initialisingPlayers.push( new Player( game, game.camera, data ));
+            // TODO: what is the data, how does that effect having a CANNON physicsBody etc
           }
           else{
             //player exists
@@ -343,12 +347,12 @@ class Client {
     this.updateDisplayTimer();
     this.updateScorePanel();
 
-    if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
-
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
 
       requestAnimationFrame( function(){ game.animate() } );
+
+      if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
 
       if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );

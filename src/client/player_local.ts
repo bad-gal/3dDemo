@@ -1,7 +1,6 @@
 import { Vector3 } from "three";
 import Player from "./player";
 
-
 export default class PlayerLocal extends Player {
   socket: any;
 
@@ -20,8 +19,6 @@ export default class PlayerLocal extends Player {
 
 		socket.on( 'remoteData', function( data: any ) {
 			game.remoteData = data;
-      // console.log('remoteData', data)
-      // console.log('game.remoteData', game.remoteData)
 		});
 
     socket.on( 'deletePlayer', function( data: { id: string; } ) {

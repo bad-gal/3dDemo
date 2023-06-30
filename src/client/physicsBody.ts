@@ -59,6 +59,10 @@ export default class PhysicsBody {
       this.model.position.z
     );
 
+    if (this.type == 'player') {
+      console.log('physics player position = ', this.model.position)
+    }
+
     // Set any rotations to the body
     body.quaternion.set(
       this.model.quaternion.x,

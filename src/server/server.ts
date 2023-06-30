@@ -42,7 +42,7 @@ class App {
     ];
     let clientStartingPositions = new Map();
     let startTimer = false;
-    const WAITING_TIME = 5;
+    const WAITING_TIME = 10;
     let waitingRoomTimeRemaining = WAITING_TIME;
 
     let GAME_TIMER = 120;
@@ -64,7 +64,7 @@ class App {
       }
 
       console.log( 'CONNECTED WITH', socket.id )
-      console.log( 'player count', playerCount )
+
       socket.emit( 'setId', { id: socket.id } );
 
       socket.on( 'disconnect', () => {
@@ -134,7 +134,7 @@ class App {
             playerCount++;
           }
 
-        console.log( playerXPositions, 'playerCount',playerCount )
+        console.log( playerXPositions, 'playerCount',playerCount, 'player position', positionX )
         socket.emit( 'playerPosition', { position: { x: positionX, y: 0, z: 0 }} );
       });
 

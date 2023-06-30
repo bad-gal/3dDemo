@@ -55,7 +55,7 @@ class App {
         ];
         let clientStartingPositions = new Map();
         let startTimer = false;
-        const WAITING_TIME = 5;
+        const WAITING_TIME = 10;
         let waitingRoomTimeRemaining = WAITING_TIME;
         let GAME_TIMER = 120;
         let fruitTimerOn = false;
@@ -72,7 +72,6 @@ class App {
                 collided: { value: false, object: '' }
             };
             console.log('CONNECTED WITH', socket.id);
-            console.log('player count', playerCount);
             socket.emit('setId', { id: socket.id });
             socket.on('disconnect', () => {
                 const leavingModel = socket.userData.model;
@@ -131,7 +130,7 @@ class App {
                     clientStartingPositions.set(socket.id, positionX);
                     playerCount++;
                 }
-                console.log(playerXPositions, 'playerCount', playerCount);
+                console.log(playerXPositions, 'playerCount', playerCount, 'player position', positionX);
                 socket.emit('playerPosition', { position: { x: positionX, y: 0, z: 0 } });
             });
             // send coin locations to clients

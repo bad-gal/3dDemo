@@ -354,7 +354,7 @@ export default class Player {
         game.physicsWorld.addContactMaterial(groundMaterial);
         game.physicsWorld.addContactMaterial(grassMaterial);
 
-        const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, { friction: 0.5, restitution: 1 });
+        const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, { friction: 0.5, restitution: 0 });
         game.physicsWorld.addContactMaterial(riderWallMaterial);
       }
 
@@ -381,8 +381,8 @@ export default class Player {
         // player.object.userData.collided.object = player.collided.object;
         this.position = new Vector3( options.position.x, options.position.y, options.position.z );
 
-				const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
-				game.remotePlayers.push( players[0] );
+        const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
+        game.remotePlayers.push( players[0] );
       }
     });
   }
