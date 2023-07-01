@@ -157,15 +157,21 @@ class Client {
       this.gameTimer = this.formatGameTimer(data);
     });
 
+    const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
+
     document.addEventListener( 'keydown', ( e ) => {
       if ( this.player?.characterController ) {
-        this.keysPressed[e.key] = true;
+        if ( PLAYER_KEYS.includes(e.key)) {
+          this.keysPressed[e.key] = true;
+        }
       }
     });
 
     document.addEventListener( 'keyup', ( e ) => {
       if( this.player?.characterController ) {
-        this.keysPressed[e.key] = false;
+        if ( PLAYER_KEYS.includes(e.key)) {
+          this.keysPressed[e.key] = false;
+        }
       }
     });
 

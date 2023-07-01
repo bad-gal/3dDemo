@@ -44,11 +44,11 @@ export default class CharacterController {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
     let play = '';
 
-    if( Object.keys( keysPressed ).length == 0 || noKeysPressed == true ) {
+    if( noKeysPressed === true ) {
       play = 'idle_02';
       this.velocity = new CANNON.Vec3(0, 0, 0);
 
-      if (this.currentAction != play) {
+      if ( this.currentAction !== play ) {
         this.playAnimation(play);
       }
     }
@@ -93,7 +93,7 @@ export default class CharacterController {
     const acc = this.acceleration.clone();
     let inputVector = new THREE.Vector3();
 
-    if ( keysPressed['w'] || keysPressed['ArrowUp'] ) {
+    if ( keysPressed['ArrowUp'] ) {
       if ( this.velocity.z > 0) {
         this.velocity.z = 0;
       }
@@ -104,7 +104,7 @@ export default class CharacterController {
       moveForward = true;
     }
 
-    if ( keysPressed['s'] || keysPressed['ArrowDown'] ) {
+    if ( keysPressed['ArrowDown'] ) {
       if ( this.velocity.z < 0 ) {
         this.velocity.z =  0;
       }
@@ -115,13 +115,13 @@ export default class CharacterController {
       moveBackward = true;
     }
 
-    if ( keysPressed['a'] || keysPressed['ArrowLeft'] ) {
+    if ( keysPressed['ArrowLeft'] ) {
       this.rotatePlayer(delta, 4.0 * Math.PI)
       play = 'drive_turn_left';
       moveLeft = true;
     }
 
-    if ( keysPressed['d'] || keysPressed['ArrowRight'] ) {
+    if ( keysPressed['ArrowRight'] ) {
       this.rotatePlayer(delta, 4.0 * -Math.PI)
       play = 'drive_turn_right';
       moveRight = true;
@@ -146,7 +146,7 @@ export default class CharacterController {
       this.riderPhysicsBody.position.x += sideways.x
       this.riderPhysicsBody.position.z += sideways.z
 
-      if (this.currentAction != play) {
+      if (this.currentAction !== play) {
         this.playAnimation(play);
       }
       this.mixer.update( delta );

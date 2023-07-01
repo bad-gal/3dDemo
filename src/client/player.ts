@@ -412,15 +412,7 @@ export default class Player {
             currentClip.fadeOut( 0.2 );
 
             const newClip = this.animationsMap.get( data.action );
-
-            if( data.action == 'drive_fail_02' ){
-              newClip.reset().fadeIn( 0.2 ).setLoop( THREE.LoopOnce, 1 );
-              newClip.clampWhenFinished = true;
-              newClip.play();
-            }
-            else {
-              newClip.reset().fadeIn( 0.2 ).play();
-            }
+            newClip.reset().fadeIn( 0.2 ).play();
 
             this.action = data.action;
             this.collided = data.collided;

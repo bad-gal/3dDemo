@@ -24,10 +24,19 @@ body {
 }
 
 .timer-para {
+  color: blueviolet;
+}
+
+.instructions-para {
+  color: olivedrab;
+}
+
+.timer-para,
+.instructions-para
+{
   text-align: center;
   font-size: large;
   font-weight: bold;
-  color: blueviolet;
 }
 
 .waiting {
