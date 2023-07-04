@@ -97,6 +97,8 @@ class App {
                 socket.userData.action = data.action;
                 socket.userData.collided = data.collided;
                 socket.userData.score = data.score;
+                socket.userData.physicsPosition = data.physicsPosition;
+                socket.userData.physicsQuaternion = data.physicsQuaternion;
             });
             socket.on('update', function (data) {
                 socket.userData.position = data.position;
@@ -105,6 +107,8 @@ class App {
                 socket.userData.action = data.action;
                 socket.userData.collided = data.collided;
                 socket.userData.score = data.score;
+                socket.userData.physicsPosition = data.physicsPosition;
+                socket.userData.physicsQuaternion = data.physicsQuaternion;
             });
             socket.on('updateQuadRacers', function (data) {
                 quadRacerList = data;
@@ -205,6 +209,8 @@ class App {
                         action: socket.userData.action,
                         collided: socket.userData.collided,
                         score: socket.userData.score,
+                        physicsPosition: socket.userData.physicsPosition,
+                        physicsQuaternion: socket.userData.physicsQuaternion,
                     });
                 }
             });

@@ -28,29 +28,29 @@ export default class RaceTrack {
       this.scene.add(object.scene);
     });
 
-    loader.load("assets/racetrack_trees_fences.glb", (object) => {
-      object.scene.name = "grass_area";
-      object.scene.rotateOnWorldAxis(new Vector3(0, 1, 0), MathUtils.degToRad(90));
-      object.scene.updateMatrix();
-      object.scene.position.set(-80, 0, -3);
-      this.scene.add(object.scene);
+    // loader.load("assets/racetrack_trees_fences.glb", (object) => {
+    //   object.scene.name = "grass_area";
+    //   object.scene.rotateOnWorldAxis(new Vector3(0, 1, 0), MathUtils.degToRad(90));
+    //   object.scene.updateMatrix();
+    //   object.scene.position.set(-80, 0, -3);
+    //   this.scene.add(object.scene);
+    //
+    //   const body = new PhysicsBody(object.scene, 'grass area plain', 'grass', 1, 2, ShapeType.HULL, 0, this.material);
+    //   const result = body.createCustomBody();
+    //   this.physicsWorld.addBody(result);
+    // });
 
-      const body = new PhysicsBody(object.scene, 'grass area plain', 'grass', 1, 2, ShapeType.HULL, 0, this.material);
-      const result = body.createCustomBody();
-      this.physicsWorld.addBody(result);
-    });
-
-    loader.load("assets/racetrack_grass_with_trees.glb", (object) => {
-      object.scene.name = "grass_area";
-      object.scene.rotateOnWorldAxis(new Vector3(0, 1, 0), MathUtils.degToRad(90));
-      object.scene.updateMatrix();
-      object.scene.position.set(18, 0, -3);
-      this.scene.add(object.scene);
-
-      const body = new PhysicsBody(object.scene, 'grass area with trees', 'grass', 1, 2, ShapeType.HULL, 0, this.material);
-      const result = body.createCustomBody();
-      this.physicsWorld.addBody(result);
-    });
+    // loader.load("assets/racetrack_grass_with_trees.glb", (object) => {
+    //   object.scene.name = "grass_area";
+    //   object.scene.rotateOnWorldAxis(new Vector3(0, 1, 0), MathUtils.degToRad(90));
+    //   object.scene.updateMatrix();
+    //   object.scene.position.set(18, 0, -3);
+    //   this.scene.add(object.scene);
+    //
+    //   const body = new PhysicsBody(object.scene, 'grass area with trees', 'grass', 1, 2, ShapeType.HULL, 0, this.material);
+    //   const result = body.createCustomBody();
+    //   this.physicsWorld.addBody(result);
+    // });
 
     // create colliders at the sides of the racetrack
     const trackBodies = [];

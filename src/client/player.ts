@@ -56,6 +56,7 @@ export default class Player {
       this.options = options;
       this.id = options.id;
       this.model = options.model;
+      this.position = new Vector3( options.position.x, options.position.y, options.position.z );
     }
     else {
       this.model = game.userModel;
@@ -322,40 +323,13 @@ export default class Player {
           o.material.transparent = true
           this.skinnedMesh.push(o)
         }
-      })
+      });
 
       if(modelName === undefined) modelName = "undefined";
 
       if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
-
-        const mass = 5;
-        const bodyMaterial = new CANNON.Material("bodyMaterial");
-        const body = new PhysicsBody(object.scene, modelName, 'player', 2, 1, ShapeType.HULL, mass, bodyMaterial);
-        this.riderPhysicsBody = body.createCustomBody();
-        this.riderPhysicsBody.linearDamping = 0.94;
-        this.riderPhysicsBody.angularDamping = 0.94;
-        this.riderPhysicsBody.fixedRotation = true;
-
-        console.log("RIDER", this.riderPhysicsBody)
-        game.physicsWorld.addBody(this.riderPhysicsBody);
-
-        const groundMaterial = new CANNON.ContactMaterial(game.groundMaterial, bodyMaterial, {
-          friction: 0.5, // Use some friction
-          restitution: 0.1 // And some bounciness
-        });
-
-        const grassMaterial = new CANNON.ContactMaterial(game.grassMaterial, bodyMaterial, {
-          friction: 0.6, // Use some friction
-          restitution: 0.9 // And some bounciness
-        });
-
-        // game.physicsWorld.materials
-        game.physicsWorld.addContactMaterial(groundMaterial);
-        game.physicsWorld.addContactMaterial(grassMaterial);
-
-        const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, { friction: 0.5, restitution: 0 });
-        game.physicsWorld.addContactMaterial(riderWallMaterial);
+        this.riderPhysics(object.scene, modelName, game);
       }
 
       if( player.local ) {
@@ -378,13 +352,50 @@ export default class Player {
         player.object.userData.remotePlayer = true;
         player.object.userData.position = options.position;
         player.object.userData.collided = player.collided;
-        // player.object.userData.collided.object = player.collided.object;
-        this.position = new Vector3( options.position.x, options.position.y, options.position.z );
 
-        const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
-        game.remotePlayers.push( players[0] );
+        const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(player), 1);
+        game.remotePlayers.push(players[0]);
       }
     });
+  }
+
+  private riderPhysics(rider: THREE.Group, modelName: string, game: any) {
+    const foundScene = game.scene.getObjectByName( modelName );
+    if (foundScene == undefined) return;
+
+    const mass = 5;
+    const bodyMaterial = new CANNON.Material("bodyMaterial");
+    const body = new PhysicsBody(rider, modelName, 'player', 2, 1, ShapeType.HULL, mass, bodyMaterial);
+    this.riderPhysicsBody = body.createCustomBody();
+    this.riderPhysicsBody.linearDamping = 0.94;
+    this.riderPhysicsBody.angularDamping = 0.94;
+    this.riderPhysicsBody.fixedRotation = true;
+
+    if (this.position !== undefined ) {
+      this.riderPhysicsBody.position.set(this.position.x, this.position.y, this.position.z);
+    }
+
+    game.physicsWorld.addBody(this.riderPhysicsBody);
+
+    const groundMaterial = new CANNON.ContactMaterial(game.groundMaterial, bodyMaterial, {
+      friction: 0.5, // Use some friction
+      restitution: 0.1 // And some bounciness
+    });
+
+    const grassMaterial = new CANNON.ContactMaterial(game.grassMaterial, bodyMaterial, {
+      friction: 0.6, // Use some friction
+      restitution: 0.9 // And some bounciness
+    });
+
+    // game.physicsWorld.materials
+    game.physicsWorld.addContactMaterial(groundMaterial);
+    game.physicsWorld.addContactMaterial(grassMaterial);
+
+    const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, {
+      friction: 0.5,
+      restitution: 0
+    });
+    game.physicsWorld.addContactMaterial(riderWallMaterial);
   }
 
   update( delta: any ){
@@ -392,6 +403,7 @@ export default class Player {
     this.game.remoteScores = [];
 
     if( this.game.remoteData.length > 0 ) {
+      // the length of remoteData should be the number of players in the game
       let found = false;
       for( let data of this.game.remoteData ) {
         if( data.id != this.id ) continue;
@@ -401,12 +413,10 @@ export default class Player {
         this.object?.quaternion.set( data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w );
         this.game.remoteScores.push( { id: data.id, model: data.model, score: data.score } );
 
+        // remote player
         if( !this.local ) {
           if( this.action !== data.action ) {
             if( this.action == '' ) this.action = 'idle_02';
-
-            this.object?.updateMatrix()
-            this.object?.updateMatrixWorld( true );
 
             const currentClip = this.animationsMap.get( this.action );
             currentClip.fadeOut( 0.2 );
@@ -416,6 +426,18 @@ export default class Player {
 
             this.action = data.action;
             this.collided = data.collided;
+
+            // find the matching physics body here and update it
+            let bodies = this.game.physicsWorld.bodies;
+            for(let i = 0; i < bodies.length; i++) {
+              if (bodies[i].customData?.name === data.model) {
+                bodies[i].position.set(data.physicsPosition.x, data.physicsPosition.y, data.physicsPosition.z);
+                bodies[i].quaternion.set(data.physicsQuaternion.x, data.physicsQuaternion.y, data.physicsQuaternion.z, data.physicsQuaternion.w)
+              }
+            }
+
+            this.object?.updateMatrix()
+            this.object?.updateMatrixWorld( true );
           }
         }
         found = true;

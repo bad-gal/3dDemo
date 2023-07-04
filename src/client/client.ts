@@ -295,7 +295,6 @@ class Client {
           if( rplayer === undefined ){
             // initialise remote player
             game.initialisingPlayers.push( new Player( game, game.camera, data ));
-            // TODO: what is the data, how does that effect having a CANNON physicsBody etc
           }
           else{
             //player exists
@@ -307,7 +306,12 @@ class Client {
 
     this.scene?.children.forEach( function( object ) {
       if( object.userData.remotePlayer && game.getRemotePlayerById( object.userData.id ) === undefined ) {
+        let body = game.getRemotePlayerBodyById(object.name);
         game.scene?.remove( object );
+
+        if(body !== undefined ) {
+          game.physicsWorld.removeBody(body);
+        }
       }
     });
 
@@ -316,7 +320,6 @@ class Client {
     this.remotePlayers.forEach( ( player: any ) => {
       player.update( delta );
     });
-    // console.log('REMOTE SCORES', this.remoteScores)
   }
 
   getRemotePlayerById( id: string ) {
@@ -329,6 +332,17 @@ class Client {
     if( players.length == 0 ) return;
 
     return players[0];
+  }
+
+  getRemotePlayerBodyById( model: string ) {
+    let bodies = this.physicsWorld.bodies;
+    for(let i = 0; i < bodies.length; i++) {
+      // @ts-ignore
+      if (bodies[i].customData?.name === model) {
+        return bodies[i];
+      }
+    }
+    return;
   }
 
   updatePhysics() {
