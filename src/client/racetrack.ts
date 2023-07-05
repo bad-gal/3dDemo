@@ -35,7 +35,7 @@ export default class RaceTrack {
     //   object.scene.position.set(-80, 0, -3);
     //   this.scene.add(object.scene);
     //
-    //   const body = new PhysicsBody(object.scene, 'grass area plain', 'grass', 1, 2, ShapeType.HULL, 0, this.material);
+    //   const body = new PhysicsBody(object.scene, 'grass area plain', 'grass', 2, 4, ShapeType.HULL, 0, this.material);
     //   const result = body.createCustomBody();
     //   this.physicsWorld.addBody(result);
     // });
@@ -47,7 +47,7 @@ export default class RaceTrack {
     //   object.scene.position.set(18, 0, -3);
     //   this.scene.add(object.scene);
     //
-    //   const body = new PhysicsBody(object.scene, 'grass area with trees', 'grass', 1, 2, ShapeType.HULL, 0, this.material);
+    //   const body = new PhysicsBody(object.scene, 'grass area with trees', 'grass', 2, 4, ShapeType.HULL, 0, this.material);
     //   const result = body.createCustomBody();
     //   this.physicsWorld.addBody(result);
     // });
@@ -94,7 +94,7 @@ export default class RaceTrack {
     ];
 
     for (let i = 0; i < trackPositions.length; i++) {
-      trackBodies.push(new CANNON.Body({mass: 0, material: this.wallMaterial, collisionFilterGroup: 1}));
+      trackBodies.push(new CANNON.Body({mass: 0, material: this.wallMaterial, collisionFilterGroup: 1, collisionFilterMask: 4}));
     }
 
     for (let i = 0; i < 2; i++) {

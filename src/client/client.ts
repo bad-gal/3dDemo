@@ -176,7 +176,7 @@ class Client {
     });
 
     // Create a static ground body
-    const groundBody = new CANNON.Body( {  mass: 0, material: this.groundMaterial, collisionFilterGroup: 5 } );
+    const groundBody = new CANNON.Body( {  mass: 0, material: this.groundMaterial, collisionFilterGroup: 1, collisionFilterMask: 4 } );
     const groundShape = new CANNON.Box( new CANNON.Vec3( 500, 1, 500 ) );
     groundBody.addShape( groundShape );
     groundBody.position.set( 8, -1, -10 );
