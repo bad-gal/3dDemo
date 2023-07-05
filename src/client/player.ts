@@ -415,6 +415,15 @@ export default class Player {
 
         // remote player
         if( !this.local ) {
+          // find the matching physics body here and update it
+          let bodies = this.game.physicsWorld.bodies;
+          for(let i = 0; i < bodies.length; i++) {
+            if (bodies[i].customData?.name === data.model) {
+              bodies[i].position.set(data.physicsPosition.x, data.physicsPosition.y, data.physicsPosition.z);
+              bodies[i].quaternion.set(data.physicsQuaternion.x, data.physicsQuaternion.y, data.physicsQuaternion.z, data.physicsQuaternion.w)
+            }
+          }
+
           if( this.action !== data.action ) {
             if( this.action == '' ) this.action = 'idle_02';
 
@@ -426,15 +435,6 @@ export default class Player {
 
             this.action = data.action;
             this.collided = data.collided;
-
-            // find the matching physics body here and update it
-            let bodies = this.game.physicsWorld.bodies;
-            for(let i = 0; i < bodies.length; i++) {
-              if (bodies[i].customData?.name === data.model) {
-                bodies[i].position.set(data.physicsPosition.x, data.physicsPosition.y, data.physicsPosition.z);
-                bodies[i].quaternion.set(data.physicsQuaternion.x, data.physicsQuaternion.y, data.physicsQuaternion.z, data.physicsQuaternion.w)
-              }
-            }
 
             this.object?.updateMatrix()
             this.object?.updateMatrixWorld( true );
