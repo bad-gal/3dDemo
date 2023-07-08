@@ -30,18 +30,18 @@ export default class WaitingState {
     menuParagraph.appendChild( paraContent );
     containerDiv.appendChild( menuParagraph );
 
+    const instructionsParagraph = document.createElement( "p" );
+    instructionsParagraph.className = ( 'instructions-para');
+    const instructionsContent = document.createTextNode( "Instructions: use the arrow keys to move your player when the game begins " );
+    instructionsParagraph.appendChild( instructionsContent );
+    containerDiv.appendChild( instructionsParagraph );
+
     const timerParagraph = document.createElement( "p" );
     timerParagraph.className = ( 'timer-para');
     timerParagraph.id = ( 'timer-text' )
     const timerContent = document.createTextNode( " " );
     timerParagraph.appendChild( timerContent );
     containerDiv.appendChild( timerParagraph );
-
-    const instructionsParagraph = document.createElement( "p" );
-    instructionsParagraph.className = ( 'instructions-para');
-    const instructionsContent = document.createTextNode( "Instructions: use the arrow keys to move your player when the game begins " );
-    instructionsParagraph.appendChild( instructionsContent );
-    containerDiv.appendChild( instructionsParagraph );
 
     // list of player images
     let playerImgs = new Map();
