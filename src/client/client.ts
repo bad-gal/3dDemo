@@ -8,6 +8,7 @@ import ExpelledState from './expelled_state';
 import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from 'cannon-es-debugger';
 import RaceTrack from './racetrack';
+import Coin from "./coin";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -37,9 +38,13 @@ class Client {
   gameTimer: string = '';
   cannonDebugRenderer: undefined;
   remoteScores: any[];
+  coins: Coin[];
+  physicsBodiesCull: CANNON.Body[];
+  coinLocations: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
   wallMaterial = new CANNON.Material('wallMaterial')
+  coinMaterial = new CANNON.Material('coinMaterial');
   physicsWorld  = new CANNON.World({
     gravity: new CANNON.Vec3(0, -9.81, 0), // -9.81 m/s²
   });
@@ -53,6 +58,9 @@ class Client {
     this.counter = 0;
     this.BLINK_AMOUNT = 11;
     this.userModel = '';
+    this.coins = [];
+    this.coinLocations = [];
+    this.physicsBodiesCull = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
       "camouflage rider", "green rider", "lime rider", "mustard rider",
@@ -62,6 +70,11 @@ class Client {
 
     this.socket.once('connect', () => {
       console.log(this.socket.id)
+    });
+
+    // get the coin locations from the server
+    this.socket.on( 'coinLocations', ( data: any ) => {
+      this.coinLocations = data;
     });
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
@@ -156,6 +169,22 @@ class Client {
     this.socket.on('gameTimer', (data: number) => {
       this.gameTimer = this.formatGameTimer(data);
     });
+
+    this.socket.on( 'removeCoin', ( data: any ) => {
+      for ( let i = this.coins.length - 1; i >=0; i-- ) {
+        let coin = this.coins[i];
+        if( coin.object !== undefined && coin.object.parent !== null ) {
+          if ( coin.object?.position.x == data[0].x && coin.object?.position.z == data[0].z ) {
+            this?.scene?.remove( coin.object.parent.remove( coin.object ));
+            this.coins.splice( i, 1 );
+          }
+        }
+      }
+    });
+
+    for ( let i = 0; i < this.coinLocations.length; i++ ) {
+      this.coins.push( new Coin( this, this.coinLocations[i], i ));
+    }
 
     const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
 
@@ -356,14 +385,22 @@ class Client {
       }
 
       this.player?.characterController?.updatePlayerMesh();
+      this.removeStrayPhysicsBodies();
     }
   }
 
   animate() {
     const game = this;
 
-    this.updatePhysics();
+    // remove any orphaned physics bodies
+    if(this.physicsBodiesCull.length > 0) {
+      for( let i = 0; i < this.physicsBodiesCull.length; i++) {
+        this.physicsWorld.removeBody(this.physicsBodiesCull[i]);
+      }
+      this.physicsBodiesCull.splice(0);
+    }
 
+    this.updatePhysics();
     this.updateDisplayTimer();
     this.updateScorePanel();
 
@@ -379,6 +416,8 @@ class Client {
       }
 
       this.updateRemotePlayers( mixerUpdateDelta );
+
+      this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
 
       if( this.player?.mixer != undefined ) {
           this.player.mixer?.update( mixerUpdateDelta );
@@ -410,6 +449,45 @@ class Client {
     }
   }
 
+  removeCoin(coinName: string) {
+    const coin = this.scene?.getObjectByName( coinName );
+    if( coin == undefined ) return;
+
+    // tell the server to update coins
+    let coinPosition = { x: coin.position.x, z: coin.position.z }
+    this.socket.emit('updateCoins', coinPosition);
+
+    const coinElement = this.coins.findIndex( el => el.name === coinName );
+    if( coinElement !== -1) {
+      if(this.player !== undefined) this.player.score += this.coins[coinElement].points;
+      this.coins.splice( coinElement, 1);
+    }
+    this.scene?.remove( coin );
+  }
+
+  /**
+   * removes coin physics bodies that have resulted from remote players removing a coin
+   */
+  removeStrayPhysicsBodies() {
+    let coinCull = [];
+
+    if( this.physicsWorld === undefined ) return;
+
+    // @ts-ignore
+    const coinBodies = this.physicsWorld.bodies.filter( body => body.customData?.type === 'coin' );
+
+    for( let i = 0; i < coinBodies.length; i++ ) {
+      // @ts-ignore
+      const found = this.coins.find(coin => coin.object !== undefined && coin.object.name === coinBodies[i].customData?.name);
+      if( found === undefined ) {
+        coinCull.push( coinBodies[i] );
+      }
+    }
+
+    for( let i = 0; i < coinCull.length; i++ ) {
+      this.physicsWorld.removeBody( coinCull[i] );
+    }
+  }
 }
 
 new Client();

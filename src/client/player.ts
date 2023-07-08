@@ -6,6 +6,7 @@ import { SkinnedMesh, Vector3 } from 'three';
 import PhysicsBody from './physicsBody';
 import { ShapeType } from 'three-to-cannon';
 import * as CANNON from 'cannon-es';
+import AudioManager from "./audioManager";
 
 export default class Player {
   local: boolean;
@@ -338,6 +339,24 @@ export default class Player {
         let thirdPersonCamera = new ThirdPersonCameraController( { target: characterController } );
         player.characterController = characterController;
         player.thirdPersonCamera = thirdPersonCamera;
+        let audioManager = new AudioManager( game.camera );
+
+        this.riderPhysicsBody.addEventListener("collide", ( e: any ) => {
+          const other = e.body;
+          if( other.customData !== undefined ) {
+            const otherType = other.customData.type;
+            switch ( otherType ) {
+              case 'coin':
+                audioManager.playCoinSound();
+                game.removeCoin(other.customData.name, other);
+                game.physicsBodiesCull.push(other);
+                break;
+              case 'player':
+                console.log('player collided with another player');
+                break;
+            }
+          }
+         });
 
         // without the ignore we get TS2339: Property 'initSocket' does not exist on type 'Player'
         // even though initSocket is a valid property of PlayerLocal which extends Player
@@ -365,7 +384,7 @@ export default class Player {
 
     const mass = 5;
     const bodyMaterial = new CANNON.Material("bodyMaterial");
-    const body = new PhysicsBody(rider, modelName, 'player', 4, 1 | 4, ShapeType.HULL, mass, bodyMaterial);
+    const body = new PhysicsBody(rider, modelName, 'player', 4, 1 | 4 | 8, ShapeType.HULL, mass, bodyMaterial);
     this.riderPhysicsBody = body.createCustomBody();
     this.riderPhysicsBody.linearDamping = 0.94;
     this.riderPhysicsBody.angularDamping = 0.94;
@@ -387,9 +406,15 @@ export default class Player {
       restitution: 0.9 // And some bounciness
     });
 
+    const coinMaterial = new CANNON.ContactMaterial( game.coinMaterial, bodyMaterial, {
+      friction: 0,
+      restitution: 0
+    });
+
     // game.physicsWorld.materials
-    game.physicsWorld.addContactMaterial(groundMaterial);
-    game.physicsWorld.addContactMaterial(grassMaterial);
+    game.physicsWorld.addContactMaterial( groundMaterial );
+    game.physicsWorld.addContactMaterial( grassMaterial );
+    game.physicsWorld.addContactMaterial( coinMaterial );
 
     const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, {
       friction: 0.5,
