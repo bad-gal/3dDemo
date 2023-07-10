@@ -44,8 +44,8 @@ class App {
         this.server = new http_1.default.Server(app);
         this.io = new socket_io_1.Server(this.server);
         let gameObjects = new game_objects_1.default();
-        let gameTimerStart = false;
-        let fruitStart = false;
+        let gameTimerStart = false; // when true, we have received the go-ahead that the game has started
+        let startTimer = false; // when true, we are in the waiting room
         let playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
         let playerCount = 0;
         let quadRacerList = [
@@ -54,14 +54,13 @@ class App {
             "blue rider",
         ];
         let clientStartingPositions = new Map();
-        let startTimer = false;
-        const WAITING_TIME = 10;
-        let waitingRoomTimeRemaining = WAITING_TIME;
         let GAME_TIMER = 120;
-        let fruitTimerOn = false;
+        const WAITING_TIME = 5;
+        let waitingRoomTimeRemaining = WAITING_TIME;
         const movingObstacleLocations = gameObjects.createNewMovingObstacles();
         const groundObstacleLocations = gameObjects.createNewGroundObstacles();
         const coinLocations = gameObjects.createNewCoinLocations(groundObstacleLocations);
+        const movingSphereLocations = gameObjects.createMovingSpheres();
         this.io.sockets.on('connection', (socket) => {
             // send list of quadRacers to clients
             socket.emit('quadRacerList', quadRacerList);
@@ -156,8 +155,10 @@ class App {
             });
             // send flying obstacles to clients
             socket.emit('fruitObstaclesDataInitial', movingObstacleLocations);
-            // begin updating fruit
-            socket.on('fruitStart', function () {
+            // send moving sphere locations to clients
+            socket.emit('movingSphereLocations', movingSphereLocations);
+            // when we receive the instruction to begin game
+            socket.on('beginGame', function () {
                 gameTimerStart = true;
             });
         });
@@ -179,20 +180,13 @@ class App {
         }, 1000);
         // game timer
         setInterval(() => {
-            if (fruitTimerOn) {
-                if (!fruitStart) {
-                    fruitStart = true;
-                    this.io.emit('setVisibilityMoveableObjects', fruitStart); // send visibility to clients
-                }
+            if (gameTimerStart) {
                 if (GAME_TIMER <= 0) {
                     clearTimeout(GAME_TIMER);
-                    fruitTimerOn = false;
-                    fruitStart = false;
-                    this.io.emit('setVisibilityMoveableObjects', fruitStart);
+                    gameTimerStart = false;
                 }
                 else {
-                    if (fruitTimerOn)
-                        GAME_TIMER--;
+                    GAME_TIMER--;
                 }
                 this.io.emit('gameTimer', GAME_TIMER);
             }
@@ -218,10 +212,7 @@ class App {
                 this.io.emit('remoteData', pack);
             }
             if (gameTimerStart == true) {
-                this.io.emit('remoteFruitObstaclesData', gameObjects.updateMovingObstacles(0.03, movingObstacleLocations));
-                if (!fruitTimerOn) {
-                    fruitTimerOn = true;
-                }
+                this.io.emit('remoteMovingSphereData', gameObjects.updateMovingSphere(0.03, movingSphereLocations));
             }
         }, 1000 / FPS);
     }

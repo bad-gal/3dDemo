@@ -152,10 +152,10 @@ class GameObjects {
         // ************** TRACK ONE - MAIN RUNWAY ***************
         let trackOneX = [];
         let trackOneZ = [];
-        for (let i = 1; i < 18; i++) {
+        for (let i = 0; i < 6; i++) {
             trackOneX.push(i);
         }
-        for (let i = 2; i > -121; i--) {
+        for (let i = -3; i > -60; i--) {
             trackOneZ.push(i);
         }
         for (let i = 0; i < this.generateRandomIntInRange(COINS_MIN, COINS_MAX); i++) {
@@ -167,90 +167,90 @@ class GameObjects {
             coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
         }
         // ************** TRACK TWO - FIRST HORIZONAL RUNWAY ***************
-        let trackTwoX = [];
-        let trackTwoZ = [];
-        for (let i = -60; i < 78; i++) {
-            trackTwoX.push(i);
-        }
-        for (let i = -99; i > -118; i--) {
-            trackTwoZ.push(i);
-        }
-        for (let i = 0; i < this.generateRandomIntInRange(LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX); i++) {
-            let randX = Math.floor(Math.random() * trackTwoX.length);
-            let randZ = Math.floor(Math.floor(Math.random() * trackTwoZ.length));
-            let x = trackTwoX[randX];
-            let z = trackTwoZ[randZ];
-            let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
-        }
+        // let trackTwoX = [];
+        // let trackTwoZ = [];
+        //
+        // for ( let i = -60; i < 78; i++ ) { trackTwoX.push( i ); }
+        // for ( let i = -99; i > -118; i--) { trackTwoZ.push( i ); }
+        //
+        // for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
+        //   let randX = Math.floor( Math.random() * trackTwoX.length );
+        //   let randZ = Math.floor( Math.floor( Math.random() * trackTwoZ.length ));
+        //
+        //   let x = trackTwoX[randX];
+        //   let z = trackTwoZ[randZ];
+        //
+        //   let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
+        //   coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
+        // }
         // ************** TRACK THREE  - RIGHT RUNWAY ***************
-        let trackThreeX = [];
-        let trackThreeZ = [];
-        for (let i = 60; i < 78; i++) {
-            trackThreeX.push(i);
-        }
-        for (let i = -117; i > -218; i--) {
-            trackThreeZ.push(i);
-        }
-        for (let i = 0; i < this.generateRandomIntInRange(LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX); i++) {
-            let randX = Math.floor(Math.random() * trackThreeX.length);
-            let randZ = Math.floor(Math.floor(Math.random() * trackThreeZ.length));
-            let x = trackThreeX[randX];
-            let z = trackThreeZ[randZ];
-            let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
-        }
+        // let trackThreeX = [];
+        // let trackThreeZ = [];
+        //
+        // for ( let i = 60; i < 78; i++ ) { trackThreeX.push( i ); }
+        // for ( let i = -117; i > -218; i--) { trackThreeZ.push( i ); }
+        //
+        // for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
+        //   let randX = Math.floor( Math.random() * trackThreeX.length );
+        //   let randZ = Math.floor( Math.floor( Math.random() * trackThreeZ.length ));
+        //
+        //   let x = trackThreeX[randX];
+        //   let z = trackThreeZ[randZ];
+        //
+        //   let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
+        //   coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
+        // }
         // ************** TRACK FOUR  - LEFT RUNWAY ***************
-        let trackFourX = [];
-        let trackFourZ = [];
-        for (let i = -60; i < -41; i++) {
-            trackFourX.push(i);
-        }
-        for (let i = -118; i > -217; i--) {
-            trackFourZ.push(i);
-        }
-        for (let i = 0; i < this.generateRandomIntInRange(LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX); i++) {
-            let randX = Math.floor(Math.random() * trackFourX.length);
-            let randZ = Math.floor(Math.floor(Math.random() * trackFourZ.length));
-            let x = trackFourX[randX];
-            let z = trackFourZ[randZ];
-            let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
-        }
+        // let trackFourX = [];
+        // let trackFourZ = [];
+        //
+        // for ( let i = -60; i < -41; i++ ) { trackFourX.push( i ); }
+        // for ( let i = -118; i > -217; i--) { trackFourZ.push( i ); }
+        //
+        // for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
+        //   let randX = Math.floor( Math.random() * trackFourX.length );
+        //   let randZ = Math.floor( Math.floor( Math.random() * trackFourZ.length ));
+        //
+        //   let x = trackFourX[randX];
+        //   let z = trackFourZ[randZ];
+        //
+        //   let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
+        //   coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
+        // }
         // ************** TRACK FIVE  - SECOND HORIZONTAL RUNWAY ***************
-        let trackFiveX = [];
-        let trackFiveZ = [];
-        for (let i = -58; i < 78; i++) {
-            trackFiveX.push(i);
-        }
-        for (let i = -220; i > -237; i--) {
-            trackFiveZ.push(i);
-        }
-        for (let i = 0; i < this.generateRandomIntInRange(LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX); i++) {
-            let randX = Math.floor(Math.random() * trackFiveX.length);
-            let randZ = Math.floor(Math.floor(Math.random() * trackFiveZ.length));
-            let x = trackFiveX[randX];
-            let z = trackFiveZ[randZ];
-            let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
-        }
+        // let trackFiveX = [];
+        // let trackFiveZ = [];
+        //
+        // for ( let i = -58; i < 78; i++ ) { trackFiveX.push( i ); }
+        // for ( let i = -220; i > -237; i--) { trackFiveZ.push( i ); }
+        //
+        // for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
+        //   let randX = Math.floor( Math.random() * trackFiveX.length );
+        //   let randZ = Math.floor( Math.floor( Math.random() * trackFiveZ.length ));
+        //
+        //   let x = trackFiveX[randX];
+        //   let z = trackFiveZ[randZ];
+        //
+        //   let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
+        //   coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
+        // }
         // ************** TRACK SIX  - FINAL RUNWAY ***************
-        let trackSixX = [];
-        let trackSixZ = [];
-        for (let i = 0; i < 18; i++) {
-            trackSixX.push(i);
-        }
-        for (let i = -238; i > -332; i--) {
-            trackSixZ.push(i);
-        }
-        for (let i = 0; i < this.generateRandomIntInRange(LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX); i++) {
-            let randX = Math.floor(Math.random() * trackSixX.length);
-            let randZ = Math.floor(Math.floor(Math.random() * trackSixZ.length));
-            let x = trackSixX[randX];
-            let z = trackSixZ[randZ];
-            let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-            coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
-        }
+        // let trackSixX = [];
+        // let trackSixZ = [];
+        //
+        // for ( let i = 0; i < 18; i++ ) { trackSixX.push( i ); }
+        // for ( let i = -238; i > -332; i--) { trackSixZ.push( i ); }
+        //
+        // for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
+        //   let randX = Math.floor( Math.random() * trackSixX.length );
+        //   let randZ = Math.floor( Math.floor( Math.random() * trackSixZ.length ));
+        //
+        //   let x = trackSixX[randX];
+        //   let z = trackSixZ[randZ];
+        //
+        //   let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
+        //   coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
+        // }
         // remove any duplicate location values
         coinLocations = [...new Set(coinLocations)];
         // remove any coins that are intersected with barrels
@@ -386,6 +386,43 @@ class GameObjects {
         }
         return movingObstacleLocations;
     }
+    createMovingSpheres() {
+        const sphereTypes = ['blue-trap-sphere', 'green-trap-sphere', 'red-trap-sphere'];
+        let sphereNames = [];
+        for (let i = 0; i < 6; i++) {
+            let index = this.generateRandomIntInRange(0, sphereTypes.length - 1);
+            sphereNames.push(sphereTypes[index]);
+        }
+        return [
+            { direction: 1, rotationZ: 0, angle: 1.9, name: sphereNames[0], position: { x: 2, y: 6, z: -6 } },
+            { direction: 1, rotationZ: 0, angle: 3.4, name: sphereNames[1], position: { x: 2, y: 6, z: -9 } },
+            { direction: 1, rotationZ: 0, angle: 2.7, name: sphereNames[2], position: { x: 2, y: 6, z: -27 } },
+            { direction: 1, rotationZ: 0, angle: 1.5, name: sphereNames[3], position: { x: 2, y: 6, z: -30 } },
+            { direction: 1, rotationZ: 0, angle: 3.8, name: sphereNames[4], position: { x: 2, y: 6, z: -77 } },
+            { direction: 1, rotationZ: 0, angle: 2.2, name: sphereNames[5], position: { x: 2, y: 6, z: -80 } },
+        ];
+    }
+    ;
+    updateMovingSphere(delta, movingSpheres) {
+        const toRadians = (angle) => angle * (Math.PI / 180);
+        let minAngle = toRadians(-45);
+        let maxAngle = toRadians(45);
+        for (let i = 0; i < movingSpheres.length; i++) {
+            let rotationSpeed = toRadians(movingSpheres[i].angle);
+            let rotationZ = movingSpheres[i].rotationZ;
+            rotationZ += rotationSpeed * movingSpheres[i].direction;
+            movingSpheres[i].rotationZ = rotationZ;
+            // Change direction if the max or min angle is reached
+            if (rotationZ > maxAngle) {
+                movingSpheres[i].direction = -1;
+            }
+            else if (rotationZ < minAngle) {
+                movingSpheres[i].direction = 1;
+            }
+        }
+        return movingSpheres;
+    }
+    ;
     updateMovingObstacles(delta, movingObstacles) {
         for (let i = 0; i < movingObstacles.length; i++) {
             let element = movingObstacles[i];

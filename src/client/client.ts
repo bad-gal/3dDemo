@@ -9,6 +9,7 @@ import * as CANNON from 'cannon-es'
 import CannonDebugRenderer from 'cannon-es-debugger';
 import RaceTrack from './racetrack';
 import Coin from "./coin";
+import movingSphere from "./movingSphere";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -39,8 +40,10 @@ class Client {
   cannonDebugRenderer: undefined;
   remoteScores: any[];
   coins: Coin[];
-  physicsBodiesCull: CANNON.Body[];
   coinLocations: any[];
+  physicsBodiesCull: CANNON.Body[];
+  sphereObstacles: movingSphere[];
+  movingSphereLocations: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
   wallMaterial = new CANNON.Material('wallMaterial')
@@ -60,6 +63,8 @@ class Client {
     this.userModel = '';
     this.coins = [];
     this.coinLocations = [];
+    this.sphereObstacles = [];
+    this.movingSphereLocations = [];
     this.physicsBodiesCull = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
@@ -75,6 +80,11 @@ class Client {
     // get the coin locations from the server
     this.socket.on( 'coinLocations', ( data: any ) => {
       this.coinLocations = data;
+    });
+
+    // get the sphere locations from the server
+    this.socket.on( 'movingSphereLocations', ( data: any ) => {
+      this.movingSphereLocations = data;
     });
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
@@ -129,9 +139,8 @@ class Client {
       this.scene = new THREE.Scene();
 
       // background and fog
-      this.scene.background = new THREE.Color( 0x0d820d );
-      this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
-
+      this.scene.background = new THREE.Color( 0xb0e0e6 );
+      this.scene.fog = new THREE.Fog( 0xb0e0e6, 2, 36 );
 
       // lighting
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -161,7 +170,7 @@ class Client {
   createRaceTrack(scene: THREE.Scene, physicsWorld: CANNON.World, material: CANNON.Material) {
     const raceTrack = new RaceTrack(scene, physicsWorld, material, this.wallMaterial);
     raceTrack.create();
-  }
+  };
 
   onPlayState() {
     this.player = new PlayerLocal( this, this.camera, this.socket );
@@ -169,6 +178,10 @@ class Client {
     this.socket.on('gameTimer', (data: number) => {
       this.gameTimer = this.formatGameTimer(data);
     });
+
+    this.socket.on('remoteMovingSphereData', (data:any)=> {
+      this.movingSphereLocations = data;
+    })
 
     this.socket.on( 'removeCoin', ( data: any ) => {
       for ( let i = this.coins.length - 1; i >=0; i-- ) {
@@ -184,6 +197,12 @@ class Client {
 
     for ( let i = 0; i < this.coinLocations.length; i++ ) {
       this.coins.push( new Coin( this, this.coinLocations[i], i ));
+    }
+
+    this.socket.emit('beginGame');
+
+    for( let i = 0; i < this.movingSphereLocations.length; i++ ) {
+      this.sphereObstacles.push( new movingSphere( this, this.movingSphereLocations[i] ));
     }
 
     const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
@@ -221,12 +240,12 @@ class Client {
     if ( timerPanel !== null ) {
       timerPanel.innerText = this.gameTimer;
     }
-  }
+  };
 
   updateDisplayTimer() {
     let timerText = document.getElementById('game-time-info');
     if( timerText !== null ) timerText.innerText = this.gameTimer;
-  }
+  };
 
   createScorePanel() {
     const scorePanel = document.getElementById("score-info");
@@ -257,7 +276,7 @@ class Client {
     playerTitle.appendChild(localPlayerScoreText);
     localPlayerPanel.appendChild(playerTitle);
     scorePanel.appendChild(localPlayerPanel);
-  }
+  };
 
   updateScorePanel() {
     const localPlayerScore = document.getElementById('local-player-score');
@@ -294,7 +313,7 @@ class Client {
         remotePanel.textContent = `${remoteScore.score}`;
       }
     }
-  }
+  };
 
   updateRemotePlayers( delta: number ) {
     if( this.remoteData === undefined || this.remoteData.length == 0 || this.player === undefined || this.player.id === undefined ) return;
@@ -349,7 +368,7 @@ class Client {
     this.remotePlayers.forEach( ( player: any ) => {
       player.update( delta );
     });
-  }
+  };
 
   getRemotePlayerById( id: string ) {
     if( this.remotePlayers === undefined || this.remotePlayers.length == 0 ) return;
@@ -361,7 +380,7 @@ class Client {
     if( players.length == 0 ) return;
 
     return players[0];
-  }
+  };
 
   getRemotePlayerBodyById( model: string ) {
     let bodies = this.physicsWorld.bodies;
@@ -372,7 +391,7 @@ class Client {
       }
     }
     return;
-  }
+  };
 
   updatePhysics() {
     if (this.physicsWorld !== undefined){
@@ -387,7 +406,7 @@ class Client {
       this.player?.characterController?.updatePlayerMesh();
       this.removeStrayPhysicsBodies();
     }
-  }
+  };
 
   animate() {
     const game = this;
@@ -415,6 +434,8 @@ class Client {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
       }
 
+      this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
+
       this.updateRemotePlayers( mixerUpdateDelta );
 
       this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
@@ -433,7 +454,7 @@ class Client {
 
       this.renderer.render( this.scene, this.camera );
     }
-  }
+  };
 
   formatGameTimer(timer: number): string {
     if (timer < 10) {
@@ -447,7 +468,7 @@ class Client {
     } else {
       return '2:00';
     }
-  }
+  };
 
   removeCoin(coinName: string) {
     const coin = this.scene?.getObjectByName( coinName );
@@ -463,7 +484,7 @@ class Client {
       this.coins.splice( coinElement, 1);
     }
     this.scene?.remove( coin );
-  }
+  };
 
   /**
    * removes coin physics bodies that have resulted from remote players removing a coin
@@ -487,7 +508,7 @@ class Client {
     for( let i = 0; i < coinCull.length; i++ ) {
       this.physicsWorld.removeBody( coinCull[i] );
     }
-  }
-}
+  };
+};
 
 new Client();

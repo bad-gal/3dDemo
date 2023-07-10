@@ -1,6 +1,6 @@
 import * as CANNON from 'cannon-es';
 import { threeToCannon, ShapeType } from 'three-to-cannon';
-import { Group } from "three";
+import { Group, Box3, Vector3 } from "three";
 
 // Define an interface for the custom data
 interface CustomData {
@@ -53,19 +53,10 @@ export default class PhysicsBody {
     body.addShape(result?.shape as CANNON.Shape, result?.offset, result?.orientation);
 
     // Set the body position to the mesh position
-    body.position.set(
-      this.model.position.x,
-      this.model.position.y,
-      this.model.position.z
-    );
+    body.position.set( this.model.position.x, this.model.position.y, this.model.position.z );
 
     // Set any rotations to the body
-    body.quaternion.set(
-      this.model.quaternion.x,
-      this.model.quaternion.y,
-      this.model.quaternion.z,
-      this.model.quaternion.w
-    )
+    body.quaternion.set( this.model.quaternion.x, this.model.quaternion.y, this.model.quaternion.z, this.model.quaternion.w )
 
     // Attach custom data to the body
     body.customData = {
@@ -74,9 +65,50 @@ export default class PhysicsBody {
     };
 
     // TODO: Remove once happy
-    console.log("physicsBody.createBody for: " + body.customData.name, result)
+    //console.log("physicsBody.createBody for: " + body.customData.name, result)
 
     // return Custom body to be added to the physics world
+    return body;
+  }
+
+  //TODO: Remove unless this is fixed or some other use can be made for it
+  createReducedSizeBody():CustomBody {
+    let boundingBox = new Box3().setFromObject(this.model);
+
+    // Compute the size of the bounding box
+    let size = new Vector3();
+    boundingBox.getSize(size);
+    console.log(size);
+
+    // Make the body slightly smaller
+    let slightlySmallerSize = size.clone().multiplyScalar(0.8);
+    let halfExtents = new CANNON.Vec3(slightlySmallerSize.x / 2, slightlySmallerSize.y / 2, slightlySmallerSize.z / 2);
+
+    // Create the cannon-es shape with a slightly smaller size
+    let boxShape = new CANNON.Box(halfExtents);
+    const body = new CustomBody({ mass: this.mass, material: this.material, collisionFilterGroup: this.collisionGroup, collisionFilterMask: this.collisionMask })
+    body.addShape(boxShape);
+
+    // Set the body position to the mesh position
+    body.position.set(
+        this.model.position.x,
+        this.model.position.y / 2,
+        this.model.position.z
+    );
+
+    // Set any rotations to the body
+    body.quaternion.set(
+        this.model.quaternion.x,
+        this.model.quaternion.y,
+        this.model.quaternion.z,
+        this.model.quaternion.w
+    )
+
+    // Attach custom data to the body
+    body.customData = {
+      name: this.name,
+      type: this.type,
+    };
     return body;
   }
 }
