@@ -126,9 +126,29 @@ export default class RaceTrack {
     loader.load("assets/environment/blue-spike-trap.glb", ( object ) => {
       const name = 'blue-spike';
       object.scene.name = name;
-      object.scene.position.set(4, 0.3, -6);
+      object.scene.position.set(0.775, 0.3, -7.5);
+      this.scene.add(object.scene);
+      this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX);
+    });
+
+    // red spike
+    loader.load("assets/environment/red-spike-trap.glb", ( object ) => {
+      const name = 'red-spike';
+      object.scene.name = name;
+      object.scene.position.set(2.75, 0.3, -7.5);
       this.scene.add(object.scene);
 
+      this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX);
+      this.cloneObject( object.scene, { x: -1.2, y: 0.3, z: -7.5 }, name, 'obstacle' );
+      this.cloneObject( object.scene, { x: 6.7, y: 0.3, z: -7.5 }, name, 'obstacle' );
+    });
+
+    // green spike
+    loader.load("assets/environment/green-spike-trap.glb", ( object ) => {
+      const name = 'red-spike';
+      object.scene.name = name;
+      object.scene.position.set(4.725, 0.3, -7.5);
+      this.scene.add(object.scene);
       this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX);
     });
   };
