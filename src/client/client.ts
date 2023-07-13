@@ -10,6 +10,7 @@ import CannonDebugRenderer from 'cannon-es-debugger';
 import RaceTrack from './racetrack';
 import Coin from "./coin";
 import movingSphere from "./movingSphere";
+import Hammer from "./hammer";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -44,6 +45,7 @@ class Client {
   physicsBodiesCull: CANNON.Body[];
   sphereObstacles: movingSphere[];
   movingSphereLocations: any[];
+  hammers: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
   wallMaterial = new CANNON.Material('wallMaterial')
@@ -65,6 +67,7 @@ class Client {
     this.coinLocations = [];
     this.sphereObstacles = [];
     this.movingSphereLocations = [];
+    this.hammers = [];
     this.physicsBodiesCull = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
@@ -204,6 +207,8 @@ class Client {
     for( let i = 0; i < this.movingSphereLocations.length; i++ ) {
       this.sphereObstacles.push( new movingSphere( this, this.movingSphereLocations[i] ));
     }
+
+    this.hammers.push( new Hammer( this ) );
 
     const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
 
@@ -435,6 +440,8 @@ class Client {
       }
 
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
+
+      this.hammers[0].update();
 
       this.updateRemotePlayers( mixerUpdateDelta );
 
