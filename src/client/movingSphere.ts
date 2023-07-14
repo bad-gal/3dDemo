@@ -7,11 +7,10 @@ import * as CANNON from 'cannon-es';
 
 export default class movingSphere {
   game: any;
-  root: any;
   object: THREE.Object3D<THREE.Event> | undefined;
   body: CANNON.Body | undefined;
 
-  constructor( game: any, data: { direction: number, rotationZ: number, angle: number, name: string, position: { x: number, y: number, z: number } }  ) {
+  constructor( game: any, data: { rotationZ: number, name: string, position: { x: number, y: number, z: number } }  ) {
     this.game = game;
 
     let sphereList = [
@@ -62,7 +61,7 @@ export default class movingSphere {
     });
   };
 
-  update( data: { direction: number, rotationZ: number } ) {
+  update( data: { rotationZ: number } ) {
     if (this.object !== undefined) {
       this.object.rotation.z = data.rotationZ;
 
