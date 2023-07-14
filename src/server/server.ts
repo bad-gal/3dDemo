@@ -46,11 +46,13 @@ class App {
     const WAITING_TIME = 5;
     let waitingRoomTimeRemaining = WAITING_TIME;
 
+    //not needed
     const movingObstacleLocations = gameObjects.createNewMovingObstacles();
     const groundObstacleLocations = gameObjects.createNewGroundObstacles();
 
     const coinLocations = gameObjects.createNewCoinLocations( groundObstacleLocations );
     const movingSphereLocations = gameObjects.createMovingSpheres();
+    const movingHammerLocations = gameObjects.createMovingHammers();
 
     this.io.sockets.on( 'connection', ( socket: ISocket ) => {
       // send list of quadRacers to clients
@@ -169,6 +171,9 @@ class App {
       // send moving sphere locations to clients
       socket.emit( 'movingSphereLocations', movingSphereLocations );
 
+      // send moving hammer locations to clients
+      socket.emit( 'movingHammerLocations', movingHammerLocations );
+
       // when we receive the instruction to begin game
       socket.on( 'beginGame', function() {
         gameTimerStart = true;
@@ -232,6 +237,7 @@ class App {
 
       if ( gameTimerStart == true) {
         this.io.emit( 'remoteMovingSphereData', gameObjects.updateMovingSphere(0.03, movingSphereLocations ));
+        this.io.emit( 'remoteMovingHammerData', gameObjects.updateMovingHammers(0.03, movingHammerLocations ));
       }
 
     }, 1000 / FPS );

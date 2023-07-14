@@ -7,23 +7,30 @@ import {ShapeType} from "three-to-cannon";
 
 export default class Hammer {
   game: any;
-  root: any;
   object: THREE.Object3D<THREE.Event> | undefined;
   body: CANNON.Body | undefined;
-  direction: number;
 
-  constructor(game: any) {
+  constructor( game: any,
+                  data: { rotationY: number, name: string, on_side: boolean, position: { x: number, y: number, z: number } }) {
+
     this.game = game;
-    const name = 'hammer;'
-    const filename = 'assets/environment/green-hammer.glb';
+
+    const hammerList =  [
+      { name: 'blue-hammer', filename: 'assets/environment/blue-hammer.glb '},
+      { name: 'green-hammer', filename: 'assets/environment/green-hammer.glb '},
+      { name: 'red-hammer', filename: 'assets/environment/red-hammer.glb '},
+    ];
+
+    const name = data.name;
+    const rnd = Math.floor( Math.random() * hammerList.length );
+    const hammer = hammerList.filter( hm => hm.name === name );
+    let filename = hammer[0].filename;
+
     const loader = new GLTFLoader();
-    this.direction = 1;
 
     loader.load( filename, ( object ) => {
       object.scene.name = name;
-      // object.scene.rotateOnWorldAxis(new Vector3(0, 1, 0), MathUtils.degToRad(90));
-      // object.scene.updateMatrix();
-      object.scene.position.set( 8.3, 1, -14 );
+      object.scene.position.set( data.position.x, data.position.y, data.position.z );
 
       // we need to rotate the object 90 degrees in the X and Y axis
       let axis = new THREE.Vector3(0, 1, 0); // Rotate around Y axis
@@ -31,40 +38,39 @@ export default class Hammer {
       object.scene.rotateOnAxis(axis, angle);
       object.scene.updateMatrix();
 
-      axis = new THREE.Vector3(1, 0, 0); // Rotate around X axis
-      angle = Math.PI / 2; // 90 degrees
-      object.scene.rotateOnAxis(axis, angle);
-      object.scene.updateMatrix();
+       if( data.on_side) {
+        axis = new THREE.Vector3(1, 0, 0); // Rotate around X axis
+        angle = Math.PI / 2; // 90 degrees
+        object.scene.rotateOnAxis(axis, angle);
+        object.scene.updateMatrix();
+      } else {
+         axis = new THREE.Vector3(1, 0, 0); // Rotate around X axis
+         angle = Math.PI; // 180 degrees
+         object.scene.rotateOnAxis(axis, angle);
+         object.scene.updateMatrix();
+      }
 
       game.scene.add(object.scene);
       this.object = object.scene;
 
-      // this.body = new CANNON.Body;
-      // const body = new PhysicsBody(
-      //     object.scene, name, 'obstacle', 8, // 2^3
-      //     4, ShapeType.BOX, 0, game.wallMaterial
-      // );
-      //
-      // this.body = body.createCustomBody();
-      // game.physicsWorld.addBody(this.body);
+      this.body = new CANNON.Body;
+      const body = new PhysicsBody(
+          object.scene, name, 'obstacle', 8, // 2^3
+          4, ShapeType.BOX, 0, game.wallMaterial
+      );
+
+      this.body = body.createCustomBody();
+      game.physicsWorld.addBody(this.body);
     });
   }
 
-  update() {
-    const toRadians = (angle: number) => angle * (Math.PI / 180);
-    const minAngle = toRadians(0);
-    const maxAngle = toRadians(90);
-    const rotationSpeed = toRadians( 1.9 );
+  update(data: { rotationY: number }) {
+    if (this.object !== undefined) {
+      this.object.rotation.y = data.rotationY;
 
-    if( this.object?.rotation !== undefined) {
-      this.object.rotation.y += rotationSpeed * this.direction;
-
-      // Change direction if the max or min angle is reached
-      if ( this.object.rotation.y > maxAngle ) {
-        this.direction = -1;
-      } else if ( this.object.rotation.y < minAngle ) {
-        this.direction = 1;
-      }
+      // Update the physics body to match the animated model
+      this.body?.position.set(this.object.position.x, this.object.position.y, this.object.position.z);
+      this.body?.quaternion.set(this.object.quaternion.x, this.object.quaternion.y, this.object.quaternion.z, this.object.quaternion.w);
     }
   }
 };

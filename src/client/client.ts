@@ -44,8 +44,9 @@ class Client {
   coinLocations: any[];
   physicsBodiesCull: CANNON.Body[];
   sphereObstacles: movingSphere[];
+  hammerObstacles: Hammer[];
   movingSphereLocations: any[];
-  hammers: any[];
+  movingHammerLocations: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
   wallMaterial = new CANNON.Material('wallMaterial')
@@ -66,8 +67,9 @@ class Client {
     this.coins = [];
     this.coinLocations = [];
     this.sphereObstacles = [];
+    this.hammerObstacles = [];
     this.movingSphereLocations = [];
-    this.hammers = [];
+    this.movingHammerLocations = [];
     this.physicsBodiesCull = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
@@ -88,6 +90,12 @@ class Client {
     // get the sphere locations from the server
     this.socket.on( 'movingSphereLocations', ( data: any ) => {
       this.movingSphereLocations = data;
+    });
+
+    // get the hammer locations from the server
+    this.socket.on( 'movingHammerLocations', ( data: any ) => {
+      this.movingHammerLocations = data;
+      console.log(data)
     });
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
@@ -186,6 +194,9 @@ class Client {
       this.movingSphereLocations = data;
     })
 
+    this.socket.on('remoteMovingHammerData', (data:any)=> {
+      this.movingHammerLocations = data;
+    })
     this.socket.on( 'removeCoin', ( data: any ) => {
       for ( let i = this.coins.length - 1; i >=0; i-- ) {
         let coin = this.coins[i];
@@ -208,7 +219,9 @@ class Client {
       this.sphereObstacles.push( new movingSphere( this, this.movingSphereLocations[i] ));
     }
 
-    this.hammers.push( new Hammer( this ) );
+    for( let i = 0; i < this.movingHammerLocations.length; i++ ) {
+      this.hammerObstacles.push( new Hammer( this, this.movingHammerLocations[i] ));
+    }
 
     const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
 
@@ -441,7 +454,7 @@ class Client {
 
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
 
-      this.hammers[0].update();
+      this.hammerObstacles.forEach(( hammer, index ) => hammer.update( this.movingHammerLocations[index]));
 
       this.updateRemotePlayers( mixerUpdateDelta );
 

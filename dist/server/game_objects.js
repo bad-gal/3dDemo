@@ -423,6 +423,39 @@ class GameObjects {
         return movingSpheres;
     }
     ;
+    createMovingHammers() {
+        const hammerTypes = ['blue-hammer', 'green-hammer', 'red-hammer'];
+        let hammerNames = [];
+        for (let i = 0; i < 3; i++) {
+            let index = this.generateRandomIntInRange(0, hammerTypes.length - 1);
+            hammerNames.push(hammerTypes[index]);
+        }
+        return [
+            { direction: -1, rotationY: 0, angle: 2.1, name: hammerNames[0], minAngle: 0, maxAngle: 90, on_side: true, position: { x: 8.3, y: 1, z: -14 } },
+            { direction: -1, rotationY: 0, angle: 3.5, name: hammerNames[1], minAngle: -90, maxAngle: 0, on_side: true, position: { x: -2.6, y: 1, z: -14 } },
+            { direction: -1, rotationY: 0, angle: 4.9, name: hammerNames[2], minAngle: 0, maxAngle: 359, on_side: false, position: { x: 3, y: 1, z: -19 } },
+        ];
+    }
+    updateMovingHammers(delta, movingHammers) {
+        const toRadians = (angle) => angle * (Math.PI / 180);
+        for (let i = 0; i < movingHammers.length; i++) {
+            let minAngle = toRadians(movingHammers[i].minAngle);
+            let maxAngle = toRadians(movingHammers[i].maxAngle);
+            let rotationSpeed = toRadians(movingHammers[i].angle);
+            let rotationY = movingHammers[i].rotationY;
+            rotationY += rotationSpeed * movingHammers[i].direction;
+            movingHammers[i].rotationY = rotationY;
+            // Change direction if the max or min angle is reached
+            if (rotationY > maxAngle) {
+                movingHammers[i].direction = -1;
+            }
+            else if (rotationY < minAngle) {
+                movingHammers[i].direction = 1;
+            }
+        }
+        return movingHammers;
+    }
+    ;
     updateMovingObstacles(delta, movingObstacles) {
         for (let i = 0; i < movingObstacles.length; i++) {
             let element = movingObstacles[i];
