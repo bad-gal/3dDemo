@@ -9,11 +9,13 @@ export default class Hammer {
   game: any;
   object: THREE.Object3D<THREE.Event> | undefined;
   body: CANNON.Body | undefined;
+  on_side: boolean;
 
   constructor( game: any,
                   data: { rotationY: number, name: string, on_side: boolean, position: { x: number, y: number, z: number } }) {
 
     this.game = game;
+    this.on_side = data.on_side;
 
     const hammerList =  [
       { name: 'blue-hammer', filename: 'assets/environment/blue-hammer.glb '},
@@ -33,16 +35,19 @@ export default class Hammer {
       object.scene.position.set( data.position.x, data.position.y, data.position.z );
 
       // we need to rotate the object 90 degrees in the X and Y axis
-      let axis = new THREE.Vector3(0, 1, 0); // Rotate around Y axis
-      let angle = Math.PI / 2; // 90 degrees
-      object.scene.rotateOnAxis(axis, angle);
-      object.scene.updateMatrix();
+      let axis;
+      let angle;
 
        if( data.on_side) {
-        axis = new THREE.Vector3(1, 0, 0); // Rotate around X axis
-        angle = Math.PI / 2; // 90 degrees
-        object.scene.rotateOnAxis(axis, angle);
-        object.scene.updateMatrix();
+         axis = new THREE.Vector3(0, 1, 0); // Rotate around Y axis
+         angle = Math.PI / 2; // 90 degrees
+         object.scene.rotateOnAxis(axis, angle);
+         object.scene.updateMatrix();
+
+         axis = new THREE.Vector3(1, 0, 0); // Rotate around X axis
+         angle = Math.PI / 2; // 90 degrees
+         object.scene.rotateOnAxis(axis, angle);
+         object.scene.updateMatrix();
       } else {
          axis = new THREE.Vector3(1, 0, 0); // Rotate around X axis
          angle = Math.PI; // 180 degrees
