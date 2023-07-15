@@ -40,16 +40,16 @@ export default class Player {
     this.riderPhysicsBody = new CANNON.Body;
 
     const quadRacers: { name: string; filename: string }[]  = [
-      { name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb" },
-      { name: "green rider", filename:"assets/green_rider_quad.glb" },
-      { name: "lime rider", filename:"assets/lime_rider_quad.glb" },
-      { name: "mustard rider", filename:"assets/mustard_rider_quad.glb" },
-      { name: "neon rider", filename:"assets/neon_rider_quad.glb" },
-      { name: "orange rider", filename:"assets/orange_rider_quad.glb" },
-      { name: "purple rider", filename:"assets/purple_rider_quad.glb" },
-      { name: "red rider", filename:"assets/red_rider_quad.glb" },
-      { name: "red star rider", filename:"assets/red_star_rider_quad.glb" },
-      { name: "blue rider", filename:"assets/blue_rider_quad.glb" },
+      { name: "camouflage rider", filename: "assets/riders/camouflage_rider_quad.glb" },
+      { name: "green rider", filename:"assets/riders/green_rider_quad.glb" },
+      { name: "lime rider", filename:"assets/riders/lime_rider_quad.glb" },
+      { name: "mustard rider", filename:"assets/riders/mustard_rider_quad.glb" },
+      { name: "neon rider", filename:"assets/riders/neon_rider_quad.glb" },
+      { name: "orange rider", filename:"assets/riders/orange_rider_quad.glb" },
+      { name: "purple rider", filename:"assets/riders/purple_rider_quad.glb" },
+      { name: "red rider", filename:"assets/riders/red_rider_quad.glb" },
+      { name: "red star rider", filename:"assets/riders/red_star_rider_quad.glb" },
+      { name: "blue rider", filename:"assets/riders/blue_rider_quad.glb" },
     ]
 
     if ( typeof options === 'object' ) {
