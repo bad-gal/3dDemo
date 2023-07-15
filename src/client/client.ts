@@ -11,6 +11,7 @@ import RaceTrack from './racetrack';
 import Coin from "./coin";
 import movingSphere from "./movingSphere";
 import Hammer from "./hammer";
+import movingSpike from "./movingSpike";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -45,8 +46,10 @@ class Client {
   physicsBodiesCull: CANNON.Body[];
   sphereObstacles: movingSphere[];
   hammerObstacles: Hammer[];
+  spikeObstacles: movingSpike[];
   movingSphereLocations: any[];
   movingHammerLocations: any[];
+  movingSpikeLocations: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
   wallMaterial = new CANNON.Material('wallMaterial')
@@ -68,8 +71,10 @@ class Client {
     this.coinLocations = [];
     this.sphereObstacles = [];
     this.hammerObstacles = [];
+    this.spikeObstacles = [];
     this.movingSphereLocations = [];
     this.movingHammerLocations = [];
+    this.movingSpikeLocations = [];
     this.physicsBodiesCull = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
@@ -95,7 +100,11 @@ class Client {
     // get the hammer locations from the server
     this.socket.on( 'movingHammerLocations', ( data: any ) => {
       this.movingHammerLocations = data;
-      console.log(data)
+    });
+
+    // get the spike locations from the server
+    this.socket.on( 'movingSpikeLocations', ( data: any ) => {
+      this.movingSpikeLocations = data;
     });
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
@@ -192,11 +201,16 @@ class Client {
 
     this.socket.on('remoteMovingSphereData', (data:any)=> {
       this.movingSphereLocations = data;
-    })
+    });
 
     this.socket.on('remoteMovingHammerData', (data:any)=> {
       this.movingHammerLocations = data;
-    })
+    });
+
+    this.socket.on('remoteMovingSpikeData', (data: any) => {
+      this.movingSpikeLocations = data;
+    });
+
     this.socket.on( 'removeCoin', ( data: any ) => {
       for ( let i = this.coins.length - 1; i >=0; i-- ) {
         let coin = this.coins[i];
@@ -221,6 +235,10 @@ class Client {
 
     for( let i = 0; i < this.movingHammerLocations.length; i++ ) {
       this.hammerObstacles.push( new Hammer( this, this.movingHammerLocations[i] ));
+    }
+
+    for( let i = 0; i < this.movingSpikeLocations.length; i++ ) {
+      this.spikeObstacles.push( new movingSpike( this, this.movingSpikeLocations[i] ));
     }
 
     const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
@@ -450,11 +468,14 @@ class Client {
 
       if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
+        console.log(this.player.characterController.model.position)
       }
 
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
 
       this.hammerObstacles.forEach(( hammer, index ) => hammer.update( this.movingHammerLocations[index]));
+
+      this.spikeObstacles.forEach(( spike, index ) => spike.update( this.movingSpikeLocations[index]));
 
       this.updateRemotePlayers( mixerUpdateDelta );
 

@@ -18,13 +18,12 @@ export default class Hammer {
     this.on_side = data.on_side;
 
     const hammerList =  [
-      { name: 'blue-hammer', filename: 'assets/environment/blue-hammer.glb '},
-      { name: 'green-hammer', filename: 'assets/environment/green-hammer.glb '},
-      { name: 'red-hammer', filename: 'assets/environment/red-hammer.glb '},
+      { name: 'blue-hammer', filename: 'assets/environment/blue-hammer.glb' },
+      { name: 'green-hammer', filename: 'assets/environment/green-hammer.glb' },
+      { name: 'red-hammer', filename: 'assets/environment/red-hammer.glb' },
     ];
 
     const name = data.name;
-    const rnd = Math.floor( Math.random() * hammerList.length );
     const hammer = hammerList.filter( hm => hm.name === name );
     let filename = hammer[0].filename;
 

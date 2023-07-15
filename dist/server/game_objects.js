@@ -404,11 +404,10 @@ class GameObjects {
     }
     ;
     updateMovingSphere(delta, movingSpheres) {
-        const toRadians = (angle) => angle * (Math.PI / 180);
-        let minAngle = toRadians(-45);
-        let maxAngle = toRadians(45);
+        let minAngle = this.toRadians(-45);
+        let maxAngle = this.toRadians(45);
         for (let i = 0; i < movingSpheres.length; i++) {
-            let rotationSpeed = toRadians(movingSpheres[i].angle);
+            let rotationSpeed = this.toRadians(movingSpheres[i].angle);
             let rotationZ = movingSpheres[i].rotationZ;
             rotationZ += rotationSpeed * movingSpheres[i].direction;
             movingSpheres[i].rotationZ = rotationZ;
@@ -436,12 +435,12 @@ class GameObjects {
             { direction: -1, rotationY: 0, angle: 4.9, name: hammerNames[2], minAngle: 0, maxAngle: 359, on_side: false, position: { x: 3, y: 1, z: -19 } },
         ];
     }
+    ;
     updateMovingHammers(delta, movingHammers) {
-        const toRadians = (angle) => angle * (Math.PI / 180);
         for (let i = 0; i < movingHammers.length; i++) {
-            let minAngle = toRadians(movingHammers[i].minAngle);
-            let maxAngle = toRadians(movingHammers[i].maxAngle);
-            let rotationSpeed = toRadians(movingHammers[i].angle);
+            let minAngle = this.toRadians(movingHammers[i].minAngle);
+            let maxAngle = this.toRadians(movingHammers[i].maxAngle);
+            let rotationSpeed = this.toRadians(movingHammers[i].angle);
             let rotationY = movingHammers[i].rotationY;
             rotationY += rotationSpeed * movingHammers[i].direction;
             movingHammers[i].rotationY = rotationY;
@@ -454,6 +453,55 @@ class GameObjects {
             }
         }
         return movingHammers;
+    }
+    ;
+    createMovingSpikes() {
+        const spikeTypes = ['blue-spike', 'green-spike', 'red-spike'];
+        let spikeNames = [];
+        for (let i = 0; i < 10; i++) {
+            let index = this.generateRandomIntInRange(0, spikeTypes.length - 1);
+            spikeNames.push(spikeTypes[index]);
+        }
+        return [
+            { direction: -1, directionX: -1, speed: 5.1, name: spikeNames[0], position: { x: 6.3, y: -1.5, z: -36 } },
+            { direction: -1, directionX: 1, speed: 3.9, name: spikeNames[1], position: { x: 0.7, y: -1.5, z: -36.4 } },
+            { direction: -1, directionX: 1, speed: 3.2, name: spikeNames[2], position: { x: 3, y: -1.5, z: -37 } },
+            { direction: -1, directionX: -1, speed: 4.3, name: spikeNames[3], position: { x: -1.1, y: -1.5, z: -37.5 } },
+            { direction: -1, directionX: -1, speed: 5.5, name: spikeNames[4], position: { x: 6, y: -1.5, z: -38 } },
+            { direction: -1, directionX: 1, speed: 4.7, name: spikeNames[5], position: { x: 4, y: -1.5, z: -39 } },
+            { direction: -1, directionX: 1, speed: 3.9, name: spikeNames[6], position: { x: 0.5, y: -1.5, z: -40.4 } },
+            { direction: -1, directionX: -1, speed: 4.8, name: spikeNames[7], position: { x: 5, y: -1.5, z: -41.5 } },
+            { direction: -1, directionX: -1, speed: 6.4, name: spikeNames[8], position: { x: 2, y: -1.5, z: -42.7 } },
+            { direction: -1, directionX: 1, speed: 5.6, name: spikeNames[9], position: { x: -1, y: -1.5, z: -43.1 } },
+        ];
+    }
+    ;
+    updateMovingSpikes(delta, movingSpikes) {
+        const maxHeight = 0.7;
+        const minHeight = -2;
+        const minX = -1;
+        const maxX = 7;
+        for (let i = 0; i < movingSpikes.length; i++) {
+            let posY = movingSpikes[i].position.y;
+            posY += movingSpikes[i].speed * movingSpikes[i].direction * delta;
+            movingSpikes[i].position.y = posY;
+            let posX = movingSpikes[i].position.x;
+            posX += (movingSpikes[i].speed / 2) * movingSpikes[i].directionX * delta;
+            movingSpikes[i].position.x = posX;
+            if (posY > maxHeight) {
+                movingSpikes[i].direction = -1;
+            }
+            else if (posY < minHeight) {
+                movingSpikes[i].direction = 1;
+            }
+            if (posX > maxX) {
+                movingSpikes[i].directionX = -1;
+            }
+            else if (posX < minX) {
+                movingSpikes[i].directionX = 1;
+            }
+        }
+        return movingSpikes;
     }
     ;
     updateMovingObstacles(delta, movingObstacles) {
@@ -563,6 +611,10 @@ class GameObjects {
     }
     generateRandomIntInRange(start, end) {
         return Math.floor(Math.random() * (end - start + 1) + start);
+    }
+    toRadians(angle) {
+        const toRadians = angle * (Math.PI / 180);
+        return toRadians;
     }
     generateUniqueRandomIntInRange(start, end, existingValues) {
         let value;

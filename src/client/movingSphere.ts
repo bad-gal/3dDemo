@@ -20,7 +20,6 @@ export default class movingSphere {
     ];
 
     const name = data.name;
-    const rnd = Math.floor( Math.random() * sphereList.length );
     const sphere = sphereList.filter( sp => sp.name === name );
     let filename = sphere[0].filename;
 
