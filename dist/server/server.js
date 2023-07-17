@@ -63,6 +63,8 @@ class App {
         const coinLocations = gameObjects.createNewCoinLocations(groundObstacleLocations);
         const movingSphereLocations = gameObjects.createMovingSpheres();
         const movingHammerLocations = gameObjects.createMovingHammers();
+        const movingSpikeLocations = gameObjects.createMovingSpikes();
+        const movingBallLocations = gameObjects.createMovingBalls();
         this.io.sockets.on('connection', (socket) => {
             // send list of quadRacers to clients
             socket.emit('quadRacerList', quadRacerList);
@@ -161,6 +163,10 @@ class App {
             socket.emit('movingSphereLocations', movingSphereLocations);
             // send moving hammer locations to clients
             socket.emit('movingHammerLocations', movingHammerLocations);
+            // send moving spike locations to clients
+            socket.emit('movingSpikeLocations', movingSpikeLocations);
+            // send moving ball locations to clients
+            socket.emit('movingBallLocations', movingBallLocations);
             // when we receive the instruction to begin game
             socket.on('beginGame', function () {
                 gameTimerStart = true;
@@ -218,6 +224,8 @@ class App {
             if (gameTimerStart == true) {
                 this.io.emit('remoteMovingSphereData', gameObjects.updateMovingSphere(0.03, movingSphereLocations));
                 this.io.emit('remoteMovingHammerData', gameObjects.updateMovingHammers(0.03, movingHammerLocations));
+                this.io.emit('remoteMovingSpikeData', gameObjects.updateMovingSpikes(0.03, movingSpikeLocations));
+                this.io.emit('remoteMovingBallData', gameObjects.updateMovingBalls(0.03, movingBallLocations));
             }
         }, 1000 / FPS);
     }

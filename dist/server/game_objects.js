@@ -504,6 +504,50 @@ class GameObjects {
         return movingSpikes;
     }
     ;
+    createMovingBalls() {
+        const ballTypes = ['ball1', 'ball2', 'ball3', 'ball4'];
+        let ballNames = [];
+        for (let i = 0; i < 4; i++) {
+            let index = this.generateRandomIntInRange(0, ballTypes.length - 1);
+            ballNames.push(ballTypes[index]);
+        }
+        return [
+            { directionX: -1, directionZ: 1, speed: 4.6, name: ballNames[0], rotation: 0, position: { x: 2, y: 1, z: -50 } },
+            { directionX: -1, directionZ: 1, speed: 2.9, name: ballNames[1], rotation: 0, position: { x: 6, y: 1, z: -55 } },
+            { directionX: -1, directionZ: 1, speed: 3.6, name: ballNames[2], rotation: 0, position: { x: -1, y: 1, z: -60 } },
+            { directionX: -1, directionZ: 1, speed: 6.6, name: ballNames[3], rotation: 0, position: { x: 4, y: 1, z: -65 } },
+        ];
+    }
+    ;
+    updateMovingBalls(delta, movingBalls) {
+        const minX = -1;
+        const maxX = 7;
+        const minZ = -70;
+        const maxZ = -49.2;
+        for (let i = 0; i < movingBalls.length; i++) {
+            let posX = movingBalls[i].position.x;
+            posX += movingBalls[i].speed * movingBalls[i].directionX * delta;
+            movingBalls[i].position.x = posX;
+            let posZ = movingBalls[i].position.z;
+            posZ += movingBalls[i].speed / 2 * movingBalls[i].directionZ * delta;
+            movingBalls[i].position.z = posZ;
+            if (posX > maxX) {
+                movingBalls[i].directionX = -1;
+            }
+            else if (posX < minX) {
+                movingBalls[i].directionX = 1;
+            }
+            if (posZ > maxZ) {
+                movingBalls[i].directionZ = -1;
+            }
+            else if (posZ < minZ) {
+                movingBalls[i].directionZ = 1;
+            }
+            movingBalls[i].rotation += 0.03;
+        }
+        return movingBalls;
+    }
+    ;
     updateMovingObstacles(delta, movingObstacles) {
         for (let i = 0; i < movingObstacles.length; i++) {
             let element = movingObstacles[i];

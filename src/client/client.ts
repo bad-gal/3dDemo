@@ -12,6 +12,7 @@ import Coin from "./coin";
 import movingSphere from "./movingSphere";
 import Hammer from "./hammer";
 import movingSpike from "./movingSpike";
+import movingBall from "./movingBall";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -47,9 +48,11 @@ class Client {
   sphereObstacles: movingSphere[];
   hammerObstacles: Hammer[];
   spikeObstacles: movingSpike[];
+  ballObstacles: movingBall[];
   movingSphereLocations: any[];
   movingHammerLocations: any[];
   movingSpikeLocations: any[];
+  movingBallLocations: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
   wallMaterial = new CANNON.Material('wallMaterial')
@@ -72,9 +75,11 @@ class Client {
     this.sphereObstacles = [];
     this.hammerObstacles = [];
     this.spikeObstacles = [];
+    this.ballObstacles = [];
     this.movingSphereLocations = [];
     this.movingHammerLocations = [];
     this.movingSpikeLocations = [];
+    this.movingBallLocations = [];
     this.physicsBodiesCull = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
@@ -105,6 +110,11 @@ class Client {
     // get the spike locations from the server
     this.socket.on( 'movingSpikeLocations', ( data: any ) => {
       this.movingSpikeLocations = data;
+    });
+
+    // get the ball locations from the server
+    this.socket.on( 'movingBallLocations', ( data: any ) => {
+      this.movingBallLocations = data;
     });
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
@@ -211,6 +221,11 @@ class Client {
       this.movingSpikeLocations = data;
     });
 
+    this.socket.on( 'remoteMovingBallData', ( data: any ) => {
+      this.movingBallLocations = data;
+      console.log(data)
+    });
+
     this.socket.on( 'removeCoin', ( data: any ) => {
       for ( let i = this.coins.length - 1; i >=0; i-- ) {
         let coin = this.coins[i];
@@ -239,6 +254,10 @@ class Client {
 
     for( let i = 0; i < this.movingSpikeLocations.length; i++ ) {
       this.spikeObstacles.push( new movingSpike( this, this.movingSpikeLocations[i] ));
+    }
+
+    for( let i = 0; i < this.movingBallLocations.length; i++ ) {
+      this.ballObstacles.push( new movingBall( this, this.movingBallLocations[i] ));
     }
 
     const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
@@ -468,7 +487,6 @@ class Client {
 
       if ( this.player?.characterController !== undefined ) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
-        console.log(this.player.characterController.model.position)
       }
 
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
@@ -476,6 +494,8 @@ class Client {
       this.hammerObstacles.forEach(( hammer, index ) => hammer.update( this.movingHammerLocations[index]));
 
       this.spikeObstacles.forEach(( spike, index ) => spike.update( this.movingSpikeLocations[index]));
+
+      this.ballObstacles.forEach(( ball, index) => ball.update( this.movingBallLocations[index] ));
 
       this.updateRemotePlayers( mixerUpdateDelta );
 
