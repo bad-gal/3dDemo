@@ -32,7 +32,7 @@ export default class movingBall {
       this.object = object.scene;
 
       this.body = new CANNON.Body;
-      const body = new PhysicsBody(object.scene, name, 'obstacle', 8, 4, ShapeType.SPHERE, 1, game.wallMaterial);
+      const body = new PhysicsBody(object.scene, name, 'obstacle', ShapeType.SPHERE,8, 4 | 8,  1, game.wallMaterial);
 
       this.body = body.createCustomBody();
       game.physicsWorld.addBody(this.body);

@@ -49,9 +49,9 @@ export default class movingSphere {
           object.scene,
           name,
           'obstacle',
+          ShapeType.BOX,
           8, // 2^3
           4,
-          ShapeType.BOX,
           0,
           game.wallMaterial);
 

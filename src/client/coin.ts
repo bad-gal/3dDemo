@@ -46,9 +46,10 @@ export default class Coin {
           object.scene,
           this.name,
           'coin',
+          ShapeType.BOX,
           8, // 2^3
           4,
-          ShapeType.BOX,
+
           0,
           game.coinMaterial);
 

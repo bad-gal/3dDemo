@@ -384,7 +384,7 @@ export default class Player {
 
     const mass = 5;
     const bodyMaterial = new CANNON.Material("bodyMaterial");
-    const body = new PhysicsBody(rider, modelName, 'player', 4, 1 | 4 | 8, ShapeType.HULL, mass, bodyMaterial);
+    const body = new PhysicsBody(rider, modelName, 'player', ShapeType.HULL,4, 1 | 4 | 8, mass, bodyMaterial);
     this.riderPhysicsBody = body.createCustomBody();
     this.riderPhysicsBody.linearDamping = 0.94;
     this.riderPhysicsBody.angularDamping = 0.94;

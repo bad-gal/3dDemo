@@ -59,8 +59,8 @@ export default class Hammer {
 
       this.body = new CANNON.Body;
       const body = new PhysicsBody(
-          object.scene, name, 'obstacle', 8, // 2^3
-          4, ShapeType.BOX, 0, game.wallMaterial
+          object.scene, name, 'obstacle', ShapeType.BOX,8, // 2^3
+          4, 0, game.wallMaterial
       );
 
       this.body = body.createCustomBody();

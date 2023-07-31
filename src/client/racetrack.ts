@@ -138,7 +138,7 @@ export default class RaceTrack {
       object.scene.position.set(2.75, 0.3, -7.5);
       this.scene.add(object.scene);
 
-      this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX);
+      this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX, 2);
       this.cloneObject( object.scene, { x: -1.2, y: 0.3, z: -7.5 }, name, 'obstacle' );
       this.cloneObject( object.scene, { x: 6.7, y: 0.3, z: -7.5 }, name, 'obstacle' );
     });
@@ -153,13 +153,16 @@ export default class RaceTrack {
     });
   };
 
-  addToPhysics(object: THREE.Group, name: string, type: string, shape: ShapeType) {
-    let body = new PhysicsBody(object, name, type, 1, 4, shape, 0, this.wallMaterial);
+  addToPhysics(object: THREE.Group, name: string, type: string, shape: ShapeType, mass?: number) {
+    let massSize;
+    mass === undefined ? massSize = 0 : massSize = mass;
+
+    let body = new PhysicsBody(object, name, type, shape,1, 4, massSize, this.wallMaterial);
     let result = body.createCustomBody();
     this.physicsWorld.addBody(result);
   };
 
-  cloneObject(object: THREE.Group, position: { x: number, y: number, z: number }, name: string, type: string, degToRotate?: number ) {
+  cloneObject(object: THREE.Group, position: { x: number, y: number, z: number }, name: string, type: string, degToRotate?: number, mass?: number ) {
     let dupe = object.clone(true);
 
     if ( degToRotate !== undefined ) {
@@ -170,7 +173,10 @@ export default class RaceTrack {
     dupe.position.set( position.x, position.y, position.z );
     this.scene.add(dupe);
 
-    let body = new PhysicsBody(dupe, name, type, 1, 4, ShapeType.BOX, 0, this.wallMaterial);
+    let massSize;
+    mass === undefined ? massSize = 0 : massSize = mass;
+
+    let body = new PhysicsBody(dupe, name, type, ShapeType.BOX,1, 4, massSize, this.wallMaterial);
     let result = body.createCustomBody();
     this.physicsWorld.addBody(result);
   };

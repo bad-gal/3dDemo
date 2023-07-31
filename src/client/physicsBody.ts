@@ -30,15 +30,15 @@ export default class PhysicsBody {
       model: Group,
       name: string,
       type: string,
-      collisionGroup: number = 1,
-      collisionMask: number = -1,
       shape?: ShapeType,
+      collisionGroup?: number,
+      collisionMask?: number,
       mass?: number, material?: CANNON.Material) {
     this.model = model;
     this.name = name;
     this.type = type;
-    this.collisionGroup = collisionGroup;
-    this.collisionMask = collisionMask;
+    this.collisionGroup = collisionGroup != undefined ? collisionGroup : 1;
+    this.collisionMask = collisionMask != undefined ? collisionMask : -1;
     this.mass = mass !== undefined ? mass : 0;
     if (material !== undefined) this.material = material
     if(shape !== undefined) this.shape = shape;

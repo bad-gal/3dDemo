@@ -31,7 +31,7 @@ export default class movingSpike {
       this.object = object.scene;
 
       this.body = new CANNON.Body;
-      const body = new PhysicsBody( object.scene, name, 'obstacle', 8, 4, ShapeType.BOX, 0, game.wallMaterial );
+      const body = new PhysicsBody( object.scene, name, 'obstacle', ShapeType.BOX,8, 4,  0, game.wallMaterial );
 
       this.body = body.createCustomBody();
       game.physicsWorld.addBody(this.body);
