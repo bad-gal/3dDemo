@@ -36,6 +36,18 @@ export default class movingBall {
 
       this.body = body.createCustomBody();
       game.physicsWorld.addBody(this.body);
+
+      this.body.addEventListener( "collide", ( e: any ) => {
+        const other = e.body;
+        if( other.customData !== undefined ) {
+          const otherType = other.customData.type;
+          switch ( otherType ) {
+            case 'obstacle':
+              console.log('player collided with another ball');
+              break;
+          }
+        }
+      });
     });
   };
 
@@ -48,7 +60,6 @@ export default class movingBall {
       // Update the physics body to match the animated model
       this.body?.position.set( this.object.position.x, this.object.position.y, this.object.position.z );
       this.body?.quaternion.set( this.object.quaternion.x, this.object.quaternion.y, this.object.quaternion.z, this.object.quaternion.w );
-      console.log('data:', data.position.y, 'object:', this.body?.position.y);
     }
   }
 };
