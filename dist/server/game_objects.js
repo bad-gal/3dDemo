@@ -455,6 +455,46 @@ class GameObjects {
         return movingHammers;
     }
     ;
+    createMovingPlatforms() {
+        const platformTypes = ['floorpad_blue', 'floorpad_red', 'floorpad_green'];
+        return [
+            { name: platformTypes[0], space: 'vertical', direction: -1, speed: 3.4, position: { x: 2.784, y: -0.25, z: -83.7 } },
+            { name: platformTypes[1], space: 'horizontal', direction: -1, speed: 6.4, position: { x: 2.784, y: -0.25, z: -92.5 } },
+            { name: platformTypes[2], space: 'vertical', direction: 1, speed: 4.7, position: { x: 2.784, y: -0.25, z: -101.5 } }
+        ];
+    }
+    updateMovingPlatforms(delta, movingPlatforms) {
+        const verticalMin = -5;
+        const verticalMax = 5;
+        const horizontalMin = -1;
+        const horizontalMax = 10;
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            if (movingPlatforms[i].space === 'vertical') {
+                let posY = movingPlatforms[i].position.y;
+                posY += movingPlatforms[i].speed * movingPlatforms[i].direction * delta;
+                movingPlatforms[i].position.y = posY;
+                if (posY > verticalMax) {
+                    movingPlatforms[i].direction = -1;
+                }
+                else if (posY < verticalMin) {
+                    movingPlatforms[i].direction = 1;
+                }
+            }
+            else {
+                let posX = movingPlatforms[i].position.x;
+                posX += movingPlatforms[i].speed * movingPlatforms[i].direction * delta;
+                movingPlatforms[i].position.x = posX;
+                if (posX > horizontalMax) {
+                    movingPlatforms[i].direction = -1;
+                }
+                else if (posX < horizontalMin) {
+                    movingPlatforms[i].direction = 1;
+                }
+            }
+        }
+        return movingPlatforms;
+    }
+    ;
     createMovingSpikes() {
         const spikeTypes = ['blue-spike', 'green-spike', 'red-spike'];
         let spikeNames = [];

@@ -55,6 +55,7 @@ class App {
     const movingHammerLocations = gameObjects.createMovingHammers();
     const movingSpikeLocations = gameObjects.createMovingSpikes();
     const movingBallLocations = gameObjects.createMovingBalls();
+    const movingPlatformLocations = gameObjects.createMovingPlatforms();
 
     this.io.sockets.on( 'connection', ( socket: ISocket ) => {
       // send list of quadRacers to clients
@@ -182,6 +183,9 @@ class App {
       // send moving ball locations to clients
       socket.emit( 'movingBallLocations', movingBallLocations );
 
+      // send moving platform locations to clients
+      socket.emit( 'movingPlatformLocations', movingPlatformLocations );
+
       // when we receive the instruction to begin game
       socket.on( 'beginGame', function() {
         gameTimerStart = true;
@@ -248,6 +252,7 @@ class App {
         this.io.emit( 'remoteMovingHammerData', gameObjects.updateMovingHammers(0.03, movingHammerLocations ));
         this.io.emit( 'remoteMovingSpikeData', gameObjects.updateMovingSpikes( 0.03, movingSpikeLocations ));
         this.io.emit( 'remoteMovingBallData', gameObjects.updateMovingBalls( 0.03, movingBallLocations ));
+        this.io.emit( 'remoteMovingPlatformData', gameObjects.updateMovingPlatforms( 0.03, movingPlatformLocations ));
       }
 
     }, 1000 / FPS );
