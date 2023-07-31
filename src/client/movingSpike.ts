@@ -41,7 +41,6 @@ export default class movingSpike {
   update( data: { position: { x: number, y: number, z: number } }) {
     if (this.object !== undefined) {
       this.object.position.y = data.position.y;
-      this.object.position.x = data.position.x;
 
       // Update the physics body to match the animated model
       this.body?.position.set(this.object.position.x, this.object.position.y, this.object.position.z);

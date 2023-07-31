@@ -465,8 +465,8 @@ export default class GameObjects {
       { direction: 1, rotationZ: 0, angle: 3.4, name: sphereNames[1], position: { x: 2, y: 6, z: -9 } },
       { direction: 1, rotationZ: 0, angle: 2.7, name: sphereNames[2], position: { x: 2, y: 6, z: -27 } },
       { direction: 1, rotationZ: 0, angle: 1.5, name: sphereNames[3], position: { x: 2, y: 6, z: -30 } },
-      { direction: 1, rotationZ: 0, angle: 3.8, name: sphereNames[4], position:  { x: 2, y: 6, z: -77 } },
-      { direction: 1, rotationZ: 0, angle: 2.2, name: sphereNames[5], position: { x: 2, y: 6, z: -80 } },
+      { direction: 1, rotationZ: 0, angle: 3.8, name: sphereNames[4], position:  { x: 2, y: 6, z: -73 } },
+      { direction: 1, rotationZ: 0, angle: 2.2, name: sphereNames[5], position: { x: 2, y: 6, z: -77 } },
     ];
   };
 
@@ -580,44 +580,32 @@ export default class GameObjects {
     }
 
     return [
-      { direction: -1, directionX: -1, speed: 5.1, name: spikeNames[0], position: { x: 6.3, y: -1.5, z: -36 }},
-      { direction: -1, directionX: 1, speed: 3.9, name: spikeNames[1], position: { x: 0.7, y: -1.5, z: -36.4 }},
-      { direction: -1, directionX: 1, speed: 3.2, name: spikeNames[2], position: { x: 3, y: -1.5, z: -37 }},
-      { direction: -1, directionX: -1, speed: 4.3, name: spikeNames[3], position: { x: -1.1, y: -1.5, z: -37.5 }},
-      { direction: -1, directionX: -1, speed: 5.5, name: spikeNames[4], position: { x: 6, y: -1.5, z: -38 }},
-      { direction: -1, directionX: 1, speed: 4.7, name: spikeNames[5], position: { x: 4, y: -1.5, z: -39 }},
-      { direction: -1, directionX: 1, speed: 3.9, name: spikeNames[6], position: { x: 0.5, y: -1.5, z: -40.4 }},
-      { direction: -1, directionX: -1, speed: 4.8, name: spikeNames[7], position: { x: 5, y: -1.5, z: -41.5 }},
-      { direction: -1, directionX: -1, speed: 6.4, name: spikeNames[8], position: { x: 2, y: -1.5, z: -42.7 }},
-      { direction: -1, directionX: 1, speed: 5.6, name: spikeNames[9], position: { x: -1, y: -1.5, z: -43.1 }},
+      { direction: -1, speed: 4, name: spikeNames[0], position: { x: -1.2, y: -1.5, z: -36 }},
+      { direction: -1, speed: 5.5, name: spikeNames[1], position: { x: 0.775, y: -1.5, z: -36 }},
+      { direction: -1, speed: 4, name: spikeNames[2], position: { x: 2.75, y: -1.5, z: -36 }},
+      { direction: -1, speed: 5.5, name: spikeNames[3], position: { x: 4.725, y: -1.5, z: -36 }},
+      { direction: -1, speed: 4, name: spikeNames[4], position: { x: 6.7, y: -1.5, z: -36 }},
+      { direction: -1, speed: 4.7, name: spikeNames[5], position: { x: -1.2, y: -1.5, z: -39 }},
+      { direction: -1, speed: 3.9, name: spikeNames[6], position: { x: 0.775, y: -1.5, z: -40.4 }},
+      { direction: -1, speed: 4.8, name: spikeNames[7], position: { x: 2.75, y: -1.5, z: -41.5 }},
+      { direction: -1, speed: 6.4, name: spikeNames[8], position: { x: 4.725, y: -1.5, z: -42.7 }},
+      { direction: -1, speed: 5.6, name: spikeNames[9], position: { x: 6.7, y: -1.5, z: -43.1 }},
     ];
   };
 
-  updateMovingSpikes( delta: number, movingSpikes: { direction: number, directionX: number, speed: number, name: string, position: { x: number, y: number, z: number }}[] ) {
+  updateMovingSpikes( delta: number, movingSpikes: { direction: number, speed: number, name: string, position: { x: number, y: number, z: number }}[] ) {
     const maxHeight = 0.7;
     const minHeight = -2;
-    const minX = -1;
-    const maxX = 7;
 
     for( let i = 0; i < movingSpikes.length; i++ ) {
       let posY = movingSpikes[i].position.y;
       posY += movingSpikes[i].speed * movingSpikes[i].direction * delta;
       movingSpikes[i].position.y = posY;
 
-      let posX = movingSpikes[i].position.x;
-      posX += (movingSpikes[i].speed / 2) * movingSpikes[i].directionX * delta;
-      movingSpikes[i].position.x = posX;
-
       if( posY > maxHeight ) {
         movingSpikes[i].direction = -1;
       } else if( posY < minHeight ){
         movingSpikes[i].direction = 1;
-      }
-
-      if( posX > maxX ) {
-        movingSpikes[i].directionX = -1;
-      } else if( posX < minX ) {
-        movingSpikes[i].directionX = 1;
       }
     }
     return movingSpikes;
