@@ -621,10 +621,10 @@ export default class GameObjects {
     }
 
     return [
-      { directionX: -1, directionZ: 1, speed: 4.6, name: ballNames[0], rotation: 0, position: { x: 2, y: 1, z: -50 }},
-      { directionX: -1, directionZ: 1, speed: 2.9, name: ballNames[1], rotation: 0, position: { x: 6, y: 1, z: -55 }},
-      { directionX: -1, directionZ: 1, speed: 3.6, name: ballNames[2], rotation: 0, position: { x: -1, y: 1, z: -60 }},
-      { directionX: -1, directionZ: 1, speed: 6.6, name: ballNames[3], rotation: 0, position: { x: 4, y: 1, z: -65 }},
+      { directionX: -1, directionZ: 1, speed: 4.6, name: ballNames[0] + "_0", rotation: 0, position: { x: 2, y: 1, z: -50 }},
+      { directionX: -1, directionZ: 1, speed: 2.9, name: ballNames[1] + "_1", rotation: 0, position: { x: 6, y: 1, z: -55 }},
+      { directionX: -1, directionZ: 1, speed: 3.6, name: ballNames[2] + "_2", rotation: 0, position: { x: -1, y: 1, z: -60 }},
+      { directionX: -1, directionZ: 1, speed: 6.6, name: ballNames[3] + "_3", rotation: 0, position: { x: 4, y: 1, z: -65 }},
     ];
   };
 
@@ -659,6 +659,37 @@ export default class GameObjects {
     }
     return movingBalls;
   };
+
+  resolveBallCollision(ball1, ball2) {
+    // Calculate the distance between the balls
+    let dx = ball2.position.x - ball1.position.x;
+    let dy = ball2.position.y - ball1.position.y;
+    let dz = ball2.position.z - ball1.position.z;
+    let distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    let radius = 1.603;
+
+    // Calculate the minimum distance (i.e., the sum of the radii)
+    let minDistance = radius + radius;
+
+    // If the balls are overlapping
+    if (distance < minDistance) {
+      // Calculate the overlap
+      let overlap = minDistance - distance;
+
+      // Normalize the distance vector
+      let dxNormalized = dx / distance;
+      let dyNormalized = dy / distance;
+      let dzNormalized = dz / distance;
+
+      // Move the balls apart by the overlap
+      ball1.position.x -= overlap * dxNormalized * 0.5;
+      ball1.position.y -= overlap * dyNormalized * 0.5;
+      ball1.position.z -= overlap * dzNormalized * 0.5;
+      ball2.position.x += overlap * dxNormalized * 0.5;
+      ball2.position.y += overlap * dyNormalized * 0.5;
+      ball2.position.z += overlap * dzNormalized * 0.5;
+    }
+  }
 
   updateMovingObstacles( delta: number, movingObstacles: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number }, playArea: { minX: number, maxX: number, minZ: number, maxZ: number } }[] ) {
     for(let i = 0; i < movingObstacles.length; i++ ) {

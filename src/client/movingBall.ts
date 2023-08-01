@@ -8,9 +8,13 @@ export default class movingBall {
   game: any;
   object: THREE.Object3D<THREE.Event> | undefined;
   body: CANNON.Body | undefined;
+  isInCollision: boolean;
+  radius: number;
 
   constructor( game: any, data: { name: string, position: { x: number, y: number, z: number }}) {
     this.game = game;
+    this.isInCollision = false;
+    this.radius = 0;
 
     let ballList = [
       {name: 'ball1', filename: 'assets/environment/ball1.glb'},
@@ -20,7 +24,8 @@ export default class movingBall {
     ];
 
     const name = data.name;
-    const ball = ballList.filter(b => b.name === name);
+    const baseName = name.split('_')
+    const ball = ballList.filter(b => b.name === baseName[0]);
     let filename = ball[0].filename;
 
     const loader = new GLTFLoader();
@@ -37,13 +42,20 @@ export default class movingBall {
       this.body = body.createCustomBody();
       game.physicsWorld.addBody(this.body);
 
+      this.radius = this.body.shapes[0].boundingSphereRadius;
+
       this.body.addEventListener( "collide", ( e: any ) => {
         const other = e.body;
+        const target = e.target;
         if( other.customData !== undefined ) {
+          const targetName = target.customData.name
           const otherType = other.customData.type;
           switch ( otherType ) {
             case 'obstacle':
-              console.log('player collided with another ball');
+              if( !this.isInCollision ) {
+                game.changeBallDirection(other.customData.name, targetName);
+                this.isInCollision = true
+              }
               break;
           }
         }
@@ -60,6 +72,24 @@ export default class movingBall {
       // Update the physics body to match the animated model
       this.body?.position.set( this.object.position.x, this.object.position.y, this.object.position.z );
       this.body?.quaternion.set( this.object.quaternion.x, this.object.quaternion.y, this.object.quaternion.z, this.object.quaternion.w );
+    }
+
+    let flag = false;
+    // Check if the any of the ball bodies are still touching
+    for (let i = 0; i < this.game.physicsWorld.contacts.length; i++) {
+      let c = this.game.physicsWorld.contacts[i];
+      let type1 = c.bi.customData.type === 'obstacle';
+      let type2 = c.bj.customData.type === 'obstacle';
+
+      if ( type1 && type2 && (c.bi === this.body || c.bj === this.body )) {
+        // set flag
+        flag = true;
+      }
+    }
+
+    // If we get here, the bodies are no longer in contact
+    if( !flag ) {
+      this.isInCollision = false;
     }
   }
 };

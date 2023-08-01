@@ -559,6 +559,11 @@ class Client {
     this.scene?.remove( coin );
   };
 
+  changeBallDirection( ballName1: string, ballName2: string ) {
+    // tell the server to change the direction of the balls
+    this.socket.emit('changeBallDirection', [ballName1, ballName2] );
+  }
+
   /**
    * removes coin physics bodies that have resulted from remote players removing a coin
    */
