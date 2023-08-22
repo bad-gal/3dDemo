@@ -172,14 +172,9 @@ class App {
       socket.on( 'changeBallDirection', function( data ) {
         let balls = movingBallLocations.filter( ball => ball.name === data[0]  || ball.name === data[1] );
 
-        gameObjects.resolveBallCollision( balls[0], balls[1] );
-
         for( let i = 0; i < balls.length; i++ ) {
           const x = balls[i].directionX;
-          const z = balls[i].directionZ;
-
           balls[i].directionX = -x;
-          balls[i].directionZ = -z;
         }
       });
 

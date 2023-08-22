@@ -615,33 +615,27 @@ export default class GameObjects {
     const ballTypes = ['ball1', 'ball2', 'ball3', 'ball4'];
     let ballNames = [];
 
-    for( let i = 0; i < 4; i++ ) {
+    for( let i = 0; i < 6; i++ ) {
       let index = this.generateRandomIntInRange( 0, ballTypes.length - 1 );
       ballNames.push( ballTypes[index] );
     }
 
     return [
-      { directionX: -1, directionZ: 1, speed: 4.6, name: ballNames[0] + "_0", rotation: 0, position: { x: 2, y: 1, z: -50 }},
-      { directionX: -1, directionZ: 1, speed: 2.9, name: ballNames[1] + "_1", rotation: 0, position: { x: 6, y: 1, z: -55 }},
-      { directionX: -1, directionZ: 1, speed: 3.6, name: ballNames[2] + "_2", rotation: 0, position: { x: -1, y: 1, z: -60 }},
-      { directionX: -1, directionZ: 1, speed: 6.6, name: ballNames[3] + "_3", rotation: 0, position: { x: 4, y: 1, z: -65 }},
+      { directionX: -1, speed: 6.6, name: ballNames[0] + "_0", rotation: 0.2, position: { x: 2, y: 1, z: -50 }},
+      { directionX: 1, speed: 8.4, name: ballNames[1] + "_1", rotation: 0.4, position: { x: 4, y: 1, z: -55 }},
+      { directionX: -1, speed: 10.0, name: ballNames[2] + "_2", rotation: 0.6, position: { x: -1, y: 1, z: -60 }},
+      { directionX: 1, speed: 7.3, name: ballNames[3] + "_4", rotation: 0.8, position: { x: 3, y: 1, z: -65 }},
+      { directionX: -1, speed: 9.1, name: ballNames[4] + "_5", rotation: 0.3, position: { x: 6, y: 1, z: -70 }},
+      { directionX: 1, speed: 6.9, name: ballNames[5] + "_6", rotation: 0.5, position: { x: 5, y: 1, z: -75 }},
     ];
   };
 
-  updateMovingBalls( delta: number, movingBalls: { directionX: number, directionZ: number, speed: number, name: string, rotation: number, position: { x: number, y: number, z: number }}[] ) {
+  updateMovingBalls( delta: number, movingBalls: {directionX: number, speed: number, rotation: number, position: { x: number, y: number, z: number }}[] ) {
     const minX = -1;
     const maxX = 7;
-    const minZ = -70;
-    const maxZ = -49.2;
 
     for( let i = 0; i < movingBalls.length; i++ ) {
       let posX = movingBalls[i].position.x;
-      posX += movingBalls[i].speed * movingBalls[i].directionX * delta;
-      movingBalls[i].position.x = posX;
-
-      let posZ = movingBalls[i].position.z;
-      posZ += movingBalls[i].speed / 2 * movingBalls[i].directionZ * delta;
-      movingBalls[i].position.z = posZ;
 
       if( posX > maxX ) {
         movingBalls[i].directionX = -1;
@@ -649,47 +643,12 @@ export default class GameObjects {
         movingBalls[i].directionX = 1;
       }
 
-      if( posZ > maxZ ) {
-        movingBalls[i].directionZ = -1;
-      } else if( posZ < minZ ) {
-        movingBalls[i].directionZ = 1;
-      }
-
-      movingBalls[i].rotation += 0.03;
+      posX += movingBalls[i].speed * movingBalls[i].directionX * delta;
+      movingBalls[i].position.x = posX;
+      movingBalls[i].rotation += 1.6 * delta;
     }
     return movingBalls;
   };
-
-  resolveBallCollision(ball1, ball2) {
-    // Calculate the distance between the balls
-    let dx = ball2.position.x - ball1.position.x;
-    let dy = ball2.position.y - ball1.position.y;
-    let dz = ball2.position.z - ball1.position.z;
-    let distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-    let radius = 1.603;
-
-    // Calculate the minimum distance (i.e., the sum of the radii)
-    let minDistance = radius + radius;
-
-    // If the balls are overlapping
-    if (distance < minDistance) {
-      // Calculate the overlap
-      let overlap = minDistance - distance;
-
-      // Normalize the distance vector
-      let dxNormalized = dx / distance;
-      let dyNormalized = dy / distance;
-      let dzNormalized = dz / distance;
-
-      // Move the balls apart by the overlap
-      ball1.position.x -= overlap * dxNormalized * 0.5;
-      ball1.position.y -= overlap * dyNormalized * 0.5;
-      ball1.position.z -= overlap * dzNormalized * 0.5;
-      ball2.position.x += overlap * dxNormalized * 0.5;
-      ball2.position.y += overlap * dyNormalized * 0.5;
-      ball2.position.z += overlap * dzNormalized * 0.5;
-    }
-  }
 
   updateMovingObstacles( delta: number, movingObstacles: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number }, playArea: { minX: number, maxX: number, minZ: number, maxZ: number } }[] ) {
     for(let i = 0; i < movingObstacles.length; i++ ) {
