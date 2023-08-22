@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import PhysicsBody from './physicsBody';
 import { ShapeType } from 'three-to-cannon';
 import { Vector3, MathUtils, Scene } from 'three';
+import CustomBody from "./customBody";
 
 export default class RaceTrack {
   scene : Scene;
@@ -30,10 +31,10 @@ export default class RaceTrack {
       object.scene.position.set(5, -0.25, -13);
       this.scene.add(object.scene);
 
-      this.addToPhysics(object.scene, name, objectType, ShapeType.BOX);
-      this.cloneObject( object.scene, { x: 5, y: -0.25, z: -39.5 }, name, objectType );
-      this.cloneObject( object.scene, { x: 5, y: -0.25, z: -66 }, name, objectType );
-      this.cloneObject( object.scene, { x: 5, y: -0.25, z: -119.75 }, name, objectType );
+      this.addPhysicsShape(object.scene, name, objectType, {x: object.scene.position.x - 2.15, y: -3, z: -39.5});
+      this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -39.5 });
+      this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -66});
+      this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -119.75 });
     });
 
     // blue spike
@@ -52,7 +53,7 @@ export default class RaceTrack {
       object.scene.position.set(2.75, 0.3, -7.5);
       this.scene.add(object.scene);
 
-      this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX, 2);
+      this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX);
       this.cloneObject( object.scene, { x: -1.2, y: 0.3, z: -7.5 }, name, 'obstacle' );
       this.cloneObject( object.scene, { x: 6.7, y: 0.3, z: -7.5 }, name, 'obstacle' );
     });
@@ -65,6 +66,31 @@ export default class RaceTrack {
       this.scene.add(object.scene);
       this.addToPhysics(object.scene, name, 'obstacle', ShapeType.BOX);
     });
+  };
+
+  addPhysicsShape(object: THREE.Group, name: string, type: string, position: {x: number, y: number, z: number}) {
+    let body = new CustomBody({
+      mass: 0,
+      material: this.wallMaterial,
+      shape: new CANNON.Box(new CANNON.Vec3(4.425406455993652, 3, 39.74178457260132)),
+      collisionFilterGroup: 1,
+      collisionFilterMask: 4,
+    });
+
+    body.position.set(position.x , position.y, position.z);
+
+    body.customData = {
+      name: name,
+      type: type,
+    }
+
+    this.physicsWorld.addBody(body);
+  };
+
+  duplicateFloorpads(object: THREE.Group, position: { x: number, y: number, z: number }) {
+    let dupe = object.clone(true);
+    dupe.position.set( position.x, position.y, position.z );
+    this.scene.add(dupe);
   };
 
   addToPhysics(object: THREE.Group, name: string, type: string, shape: ShapeType, mass?: number) {
