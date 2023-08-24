@@ -53,7 +53,7 @@ class App {
     const coinLocations = gameObjects.createNewCoinLocations( groundObstacleLocations );
     const movingSphereLocations = gameObjects.createMovingSpheres();
     const movingHammerLocations = gameObjects.createMovingHammers();
-    const movingSpikeLocations = gameObjects.createMovingSpikes();
+    const spikeLocations = gameObjects.createStaticSpikes();
     const movingBallLocations = gameObjects.createMovingBalls();
     const movingPlatformLocations = gameObjects.createMovingPlatforms();
 
@@ -187,8 +187,8 @@ class App {
       // send moving hammer locations to clients
       socket.emit( 'movingHammerLocations', movingHammerLocations );
 
-      // send moving spike locations to clients
-      socket.emit( 'movingSpikeLocations', movingSpikeLocations );
+      // send spike locations to clients
+      socket.emit( 'spikeLocations', spikeLocations );
 
       // send moving ball locations to clients
       socket.emit( 'movingBallLocations', movingBallLocations );
@@ -260,11 +260,9 @@ class App {
       if ( gameTimerStart == true) {
         this.io.emit( 'remoteMovingSphereData', gameObjects.updateMovingSphere(0.03, movingSphereLocations ));
         this.io.emit( 'remoteMovingHammerData', gameObjects.updateMovingHammers(0.03, movingHammerLocations ));
-        this.io.emit( 'remoteMovingSpikeData', gameObjects.updateMovingSpikes( 0.03, movingSpikeLocations ));
         this.io.emit( 'remoteMovingBallData', gameObjects.updateMovingBalls( 0.03, movingBallLocations ));
         this.io.emit( 'remoteMovingPlatformData', gameObjects.updateMovingPlatforms( 0.03, movingPlatformLocations ));
       }
-
     }, 1000 / FPS );
   }
 

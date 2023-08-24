@@ -495,42 +495,35 @@ class GameObjects {
         return movingPlatforms;
     }
     ;
-    createMovingSpikes() {
+    createStaticSpikes() {
         const spikeTypes = ['blue-spike', 'green-spike', 'red-spike'];
         let spikeNames = [];
-        for (let i = 0; i < 10; i++) {
-            let index = this.generateRandomIntInRange(0, spikeTypes.length - 1);
+        for (let i = 0; i < 20; i++) {
+            let index = Math.floor(Math.random() * spikeTypes.length);
             spikeNames.push(spikeTypes[index]);
         }
         return [
-            { direction: -1, speed: 4, name: spikeNames[0], position: { x: -1.2, y: -1.5, z: -36 } },
-            { direction: -1, speed: 5.5, name: spikeNames[1], position: { x: 0.775, y: -1.5, z: -36 } },
-            { direction: -1, speed: 4, name: spikeNames[2], position: { x: 2.75, y: -1.5, z: -36 } },
-            { direction: -1, speed: 5.5, name: spikeNames[3], position: { x: 4.725, y: -1.5, z: -36 } },
-            { direction: -1, speed: 4, name: spikeNames[4], position: { x: 6.7, y: -1.5, z: -36 } },
-            { direction: -1, speed: 4.7, name: spikeNames[5], position: { x: -1.2, y: -1.5, z: -39 } },
-            { direction: -1, speed: 3.9, name: spikeNames[6], position: { x: 0.775, y: -1.5, z: -40.4 } },
-            { direction: -1, speed: 4.8, name: spikeNames[7], position: { x: 2.75, y: -1.5, z: -41.5 } },
-            { direction: -1, speed: 6.4, name: spikeNames[8], position: { x: 4.725, y: -1.5, z: -42.7 } },
-            { direction: -1, speed: 5.6, name: spikeNames[9], position: { x: 6.7, y: -1.5, z: -43.1 } },
+            { name: spikeNames[0], position: { x: -1.2, y: 0, z: -36 } },
+            { name: spikeNames[1], position: { x: 0.775, y: 0, z: -36 } },
+            { name: spikeNames[2], position: { x: 2.75, y: 0, z: -36 } },
+            { name: spikeNames[3], position: { x: 4.725, y: 0, z: -36 } },
+            { name: spikeNames[4], position: { x: 6.7, y: 0, z: -36 } },
+            { name: spikeNames[5], position: { x: -0.6, y: 0, z: -39 } },
+            { name: spikeNames[6], position: { x: 1.9, y: 0, z: -39 } },
+            { name: spikeNames[7], position: { x: 3.5, y: 0, z: -39 } },
+            { name: spikeNames[8], position: { x: 5.7, y: 0, z: -39 } },
+            { name: spikeNames[9], position: { x: 7.1, y: 0, z: -39 } },
+            { name: spikeNames[10], position: { x: -1.2, y: 0, z: -41 } },
+            { name: spikeNames[11], position: { x: 0.775, y: 0, z: -41 } },
+            { name: spikeNames[12], position: { x: 2.75, y: 0, z: -41 } },
+            { name: spikeNames[13], position: { x: 4.25, y: 0, z: -41 } },
+            { name: spikeNames[14], position: { x: 6.34, y: 0, z: -41 } },
+            { name: spikeNames[15], position: { x: -1.2, y: 0, z: -43 } },
+            { name: spikeNames[16], position: { x: 0.775, y: 0, z: -43 } },
+            { name: spikeNames[17], position: { x: 2.75, y: 0, z: -43 } },
+            { name: spikeNames[18], position: { x: 4.725, y: 0, z: -43 } },
+            { name: spikeNames[19], position: { x: 6.7, y: 0, z: -43 } },
         ];
-    }
-    ;
-    updateMovingSpikes(delta, movingSpikes) {
-        const maxHeight = 0.7;
-        const minHeight = -2;
-        for (let i = 0; i < movingSpikes.length; i++) {
-            let posY = movingSpikes[i].position.y;
-            posY += movingSpikes[i].speed * movingSpikes[i].direction * delta;
-            movingSpikes[i].position.y = posY;
-            if (posY > maxHeight) {
-                movingSpikes[i].direction = -1;
-            }
-            else if (posY < minHeight) {
-                movingSpikes[i].direction = 1;
-            }
-        }
-        return movingSpikes;
     }
     ;
     createMovingBalls() {

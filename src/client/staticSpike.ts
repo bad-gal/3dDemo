@@ -4,7 +4,7 @@ import {ShapeType} from "three-to-cannon";
 import PhysicsBody from "./physicsBody";
 import * as CANNON from 'cannon-es';
 
-export default class movingSpike {
+export default class staticSpike {
   game: any;
   object: THREE.Object3D<THREE.Event> | undefined;
   body: CANNON.Body | undefined;
@@ -36,15 +36,5 @@ export default class movingSpike {
       this.body = body.createCustomBody();
       game.physicsWorld.addBody(this.body);
     });
-  };
-
-  update( data: { position: { x: number, y: number, z: number } }) {
-    if (this.object !== undefined) {
-      this.object.position.y = data.position.y;
-
-      // Update the physics body to match the animated model
-      this.body?.position.set(this.object.position.x, this.object.position.y, this.object.position.z);
-      this.body?.quaternion.set(this.object.quaternion.x, this.object.quaternion.y, this.object.quaternion.z, this.object.quaternion.w);
-    }
   };
 };

@@ -11,9 +11,10 @@ import RaceTrack from './racetrack';
 import Coin from "./coin";
 import movingSphere from "./movingSphere";
 import Hammer from "./hammer";
-import movingSpike from "./movingSpike";
+import staticSpike from "./staticSpike";
 import movingBall from "./movingBall";
 import movingPlatform from "./movingPlatform";
+import PhysicsBody from "./physicsBody";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -48,18 +49,19 @@ class Client {
   physicsBodiesCull: CANNON.Body[];
   sphereObstacles: movingSphere[];
   hammerObstacles: Hammer[];
-  spikeObstacles: movingSpike[];
+  spikeObstacles: staticSpike[];
   ballObstacles: movingBall[];
   platformObstacles: movingPlatform[];
   movingSphereLocations: any[];
   movingHammerLocations: any[];
-  movingSpikeLocations: any[];
+  spikeLocations: any[];
   movingBallLocations: any[];
   movingPlatformLocations: any[];
   groundMaterial = new CANNON.Material("groundMaterial");
   grassMaterial = new CANNON.Material('grassMaterial' );
   wallMaterial = new CANNON.Material('wallMaterial')
   coinMaterial = new CANNON.Material('coinMaterial');
+  ballMaterial = new CANNON.Material({ friction: 0.5, restitution: 0.2 });
   physicsWorld  = new CANNON.World({
     gravity: new CANNON.Vec3(0, -9.81, 0), // -9.81 m/s²
   });
@@ -82,7 +84,7 @@ class Client {
     this.platformObstacles = [];
     this.movingSphereLocations = [];
     this.movingHammerLocations = [];
-    this.movingSpikeLocations = [];
+    this.spikeLocations = [];
     this.movingBallLocations = [];
     this.movingPlatformLocations = [];
     this.physicsBodiesCull = [];
@@ -113,8 +115,8 @@ class Client {
     });
 
     // get the spike locations from the server
-    this.socket.on( 'movingSpikeLocations', ( data: any ) => {
-      this.movingSpikeLocations = data;
+    this.socket.on( 'spikeLocations', ( data: any ) => {
+      this.spikeLocations = data;
     });
 
     // get the ball locations from the server
@@ -227,10 +229,6 @@ class Client {
       this.movingHammerLocations = data;
     });
 
-    this.socket.on('remoteMovingSpikeData', (data: any) => {
-      this.movingSpikeLocations = data;
-    });
-
     this.socket.on( 'remoteMovingBallData', ( data: any ) => {
       this.movingBallLocations = data;
     });
@@ -265,8 +263,8 @@ class Client {
       this.hammerObstacles.push( new Hammer( this, this.movingHammerLocations[i] ));
     }
 
-    for( let i = 0; i < this.movingSpikeLocations.length; i++ ) {
-      this.spikeObstacles.push( new movingSpike( this, this.movingSpikeLocations[i] ));
+    for( let i = 0; i < this.spikeLocations.length; i++ ) {
+      this.spikeObstacles.push( new staticSpike( this, this.spikeLocations[i] ));
     }
 
     for( let i = 0; i < this.movingBallLocations.length; i++ ) {
@@ -502,8 +500,6 @@ class Client {
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
 
       this.hammerObstacles.forEach(( hammer, index ) => hammer.update( this.movingHammerLocations[index]));
-
-      this.spikeObstacles.forEach(( spike, index ) => spike.update( this.movingSpikeLocations[index]));
 
       this.ballObstacles.forEach(( ball, index) => ball.update( this.movingBallLocations[index] ));
 
