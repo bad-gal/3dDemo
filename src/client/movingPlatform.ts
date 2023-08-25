@@ -1,16 +1,17 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader';
-import {ShapeType} from "three-to-cannon";
-import PhysicsBody from "./physicsBody";
 import * as CANNON from 'cannon-es';
+import CustomBody from "./customBody";
 
 export default class movingPlatform {
   game: any;
   object: THREE.Object3D<THREE.Event> | undefined;
-  body: CANNON.Body | undefined;
+  body: CustomBody | undefined;
+  bodyDistanceDeduction: number;
 
   constructor(game: any, data: { name: string, position: { x: number, y: number, z: number}, direction: string }) {
     this.game = game;
+    this.bodyDistanceDeduction = 2.8;
 
     let platformList = [
       { name: 'floorpad_blue', filename: 'assets/environment/floorpad_blue_large.glb' },
@@ -29,10 +30,19 @@ export default class movingPlatform {
       game.scene.add(object.scene);
       this.object = object.scene;
 
-      this.body = new CANNON.Body;
-      const body = new PhysicsBody(object.scene, name, 'floor' , ShapeType.BOX );
+      this.body = new CustomBody({
+        mass: 0,
+        material: this.game.wallMaterial,
+        shape: new CANNON.Box(new CANNON.Vec3(4.5, 3, 4.43)),
+        collisionFilterGroup: 8,
+        collisionFilterMask: 4,
+      });
 
-      this.body = body.createCustomBody();
+      this.body.position.set(data.position.x, data.position.y - this.bodyDistanceDeduction, data.position.z);
+      this.body.customData = {
+        name: name,
+        type: 'moving platform',
+      }
       game.physicsWorld.addBody(this.body);
     });
   };
@@ -46,7 +56,7 @@ export default class movingPlatform {
       }
 
       // Update the physics body to match the animated model
-      this.body?.position.set(this.object.position.x, this.object.position.y, this.object.position.z);
+      this.body?.position.set(this.object.position.x, this.object.position.y - this.bodyDistanceDeduction, this.object.position.z);
       this.body?.quaternion.set(this.object.quaternion.x, this.object.quaternion.y, this.object.quaternion.z, this.object.quaternion.w);
     }
   };
