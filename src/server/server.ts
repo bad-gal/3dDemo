@@ -46,11 +46,7 @@ class App {
     const WAITING_TIME = 5;
     let waitingRoomTimeRemaining = WAITING_TIME;
 
-    //not needed
-    const movingObstacleLocations = gameObjects.createNewMovingObstacles();
-    const groundObstacleLocations = gameObjects.createNewGroundObstacles();
-
-    const coinLocations = gameObjects.createNewCoinLocations( groundObstacleLocations );
+    const coinLocations = gameObjects.createNewCoinLocations();
     const movingSphereLocations = gameObjects.createMovingSpheres();
     const movingHammerLocations = gameObjects.createMovingHammers();
     const spikeLocations = gameObjects.createStaticSpikes();
@@ -150,9 +146,6 @@ class App {
       // send coin locations to clients
       socket.emit( 'coinLocations', coinLocations );
 
-      // send obstacles to clients
-      socket.emit( 'groundObstacleLocations', groundObstacleLocations );
-
       // a client has collected a coin
       socket.on( 'updateCoins', function( data ) {
         let result = coinLocations.filter( coin => coin.x == data.x && coin.z == data.z );
@@ -177,9 +170,6 @@ class App {
           balls[i].directionX = -x;
         }
       });
-
-      // send flying obstacles to clients
-      socket.emit( 'fruitObstaclesDataInitial', movingObstacleLocations );
 
       // send moving sphere locations to clients
       socket.emit( 'movingSphereLocations', movingSphereLocations );

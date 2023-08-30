@@ -6,7 +6,6 @@ import MenuState from './menu_state';
 import WaitingState from './waiting_state';
 import ExpelledState from './expelled_state';
 import * as CANNON from 'cannon-es'
-import CannonDebugRenderer from 'cannon-es-debugger';
 import RaceTrack from './racetrack';
 import Coin from "./coin";
 import movingSphere from "./movingSphere";
@@ -14,7 +13,6 @@ import Hammer from "./hammer";
 import staticSpike from "./staticSpike";
 import movingBall from "./movingBall";
 import movingPlatform from "./movingPlatform";
-import PhysicsBody from "./physicsBody";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -190,6 +188,11 @@ class Client {
       hemiLight.name = 'hemiLight';
       this.scene.add( hemiLight );
 
+      // this.physicsWorld.solver
+      (this.physicsWorld.solver as CANNON.GSSolver).iterations = 5
+      this.physicsWorld.defaultContactMaterial.friction = 0.5; // Adjust friction as needed
+      this.physicsWorld.defaultContactMaterial.restitution = 0.7; // Adjust restitution (bounciness) as needed
+
       this.createRaceTrack(this.scene, this.physicsWorld, this.grassMaterial);
 
       // web render
@@ -200,9 +203,6 @@ class Client {
 
       document.body.style.overflow = 'hidden';
       document.body.appendChild( this.renderer.domElement );
-
-      // Debug Renderer for Physics
-      this.cannonDebugRenderer = new (CannonDebugRenderer  as any)(this.scene, this.physicsWorld);
 
       this.currentState = this.GAMESTATES.PLAY;
       this.onPlayState();
@@ -465,8 +465,6 @@ class Client {
         console.log('physicsWorld', this.physicsWorld)
         this.counter = 1;
       }
-
-      this.player?.characterController?.updatePlayerMesh();
       this.removeStrayPhysicsBodies();
     }
   };
@@ -555,14 +553,6 @@ class Client {
     this.scene?.remove( coin );
   };
 
-  changeBallDirection( ballName1: string, ballName2: string ) {
-    // tell the server to change the direction of the balls
-    this.socket.emit('changeBallDirection', [ballName1, ballName2] );
-  }
-
-  /**
-   * removes coin physics bodies that have resulted from remote players removing a coin
-   */
   removeStrayPhysicsBodies() {
     let coinCull = [];
 

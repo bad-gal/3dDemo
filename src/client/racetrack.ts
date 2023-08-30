@@ -31,10 +31,11 @@ export default class RaceTrack {
       object.scene.position.set(5, -0.25, -13);
       this.scene.add(object.scene);
 
-      this.addPhysicsShape(object.scene, name, objectType, {x: object.scene.position.x - 2.15, y: -3, z: -39.5});
+      this.addPhysicsShape(object.scene, name, objectType, 39.74178457260132, {x: object.scene.position.x - 2.15, y: -3, z: -39.5});
       this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -39.5 });
       this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -66});
       this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -119.75 });
+      this.addPhysicsShape(object.scene, name, objectType, 13.25, {x: object.scene.position.x - 2.15, y: -3, z: -119.75});
     });
 
     // blue spike
@@ -68,11 +69,11 @@ export default class RaceTrack {
     });
   };
 
-  addPhysicsShape(object: THREE.Group, name: string, type: string, position: {x: number, y: number, z: number}) {
+  addPhysicsShape(object: THREE.Group, name: string, type: string, length: number, position: {x: number, y: number, z: number}) {
     let body = new CustomBody({
       mass: 0,
       material: this.wallMaterial,
-      shape: new CANNON.Box(new CANNON.Vec3(4.425406455993652, 3, 39.74178457260132)),
+      shape: new CANNON.Box(new CANNON.Vec3(4.425406455993652, 3, length)),
       collisionFilterGroup: 1,
       collisionFilterMask: 4,
     });

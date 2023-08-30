@@ -7,6 +7,7 @@ import PhysicsBody from './physicsBody';
 import { ShapeType } from 'three-to-cannon';
 import * as CANNON from 'cannon-es';
 import AudioManager from "./audioManager";
+import CustomBody from "./customBody";
 
 export default class Player {
   local: boolean;
@@ -28,7 +29,7 @@ export default class Player {
   skinnedMesh: THREE.SkinnedMesh[] = [];
   score: number;
   falling: boolean;
-  riderPhysicsBody: CANNON.Body;
+  riderPhysicsBody: CustomBody;
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
@@ -335,7 +336,7 @@ export default class Player {
 
       if( player.local ) {
         this.action = 'idle_02';
-        let characterController = new CharacterController( object.scene, mixer, this.animationsMap, camera, this.action, this.position, this.riderPhysicsBody );
+        let characterController = new CharacterController( object.scene, mixer, this.animationsMap, camera, this.action, this.position, this.riderPhysicsBody);
         let thirdPersonCamera = new ThirdPersonCameraController( { target: characterController } );
         player.characterController = characterController;
         player.thirdPersonCamera = thirdPersonCamera;
@@ -353,6 +354,13 @@ export default class Player {
                 break;
               case 'player':
                 console.log('player collided with another player');
+                break;
+              case 'moving platform':
+                if(this.characterController !== undefined) {
+                  if( !this.characterController.onPlatform ) {
+                    this.characterController.onPlatform = true;
+                  }
+                }
                 break;
             }
           }
@@ -411,16 +419,22 @@ export default class Player {
       restitution: 0
     });
 
-    // game.physicsWorld.materials
-    game.physicsWorld.addContactMaterial( groundMaterial );
-    game.physicsWorld.addContactMaterial( grassMaterial );
-    game.physicsWorld.addContactMaterial( coinMaterial );
+    const ballMaterial = new CANNON.ContactMaterial( game.ballMaterial, bodyMaterial, {
+      friction: 0.5,
+      restitution: 0.5
+    });
 
     const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, {
       friction: 0.5,
       restitution: 0
     });
-    game.physicsWorld.addContactMaterial(riderWallMaterial);
+
+    // game.physicsWorld.materials
+    game.physicsWorld.addContactMaterial( groundMaterial );
+    game.physicsWorld.addContactMaterial( grassMaterial );
+    game.physicsWorld.addContactMaterial( coinMaterial );
+    game.physicsWorld.addContactMaterial( ballMaterial );
+    game.physicsWorld.addContactMaterial( riderWallMaterial );
   }
 
   update( delta: any ){

@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import CustomBody from "./customBody";
+import {Object3D} from "three";
 
 export default class CharacterController {
   model: THREE.Group;
@@ -12,6 +14,10 @@ export default class CharacterController {
   velocity = new CANNON.Vec3(0,0,0);
   startingPosition = new THREE.Vector3();
   riderPhysicsBody = new CANNON.Body();
+  onPlatform: boolean;
+  platformBody: CustomBody | undefined;
+  platformDirection: string;
+  platformObject: Object3D | undefined;
 
   constructor(
     model: THREE.Group,
@@ -21,8 +27,13 @@ export default class CharacterController {
     camera: THREE.Camera,
     currentAction: string,
     initialPosition: any,
-    riderPhysicsBody: CANNON.Body
+    riderPhysicsBody: CANNON.Body,
   ) {
+    this.onPlatform = false;
+    this.platformBody = undefined;
+    this.platformDirection = 'none';
+    this.platformObject = undefined;
+
     this.riderPhysicsBody = riderPhysicsBody;
     this.model = model;
     this.mixer = mixer;
@@ -56,6 +67,21 @@ export default class CharacterController {
       this.userInput( delta, keysPressed );
     }
 
+    if(this.onPlatform)  {
+      if(this.platformDirection === 'vertical'){
+        if(this.platformBody !== undefined && this.platformObject !== undefined) {
+          this.riderPhysicsBody.position.y = this.platformObject.position.y;
+        }
+      }
+      else if (this.platformDirection === 'horizontal') {
+        if(this.platformBody !== undefined && this.platformObject !== undefined) {
+          const relativeX = this.riderPhysicsBody.position.x - this.platformObject.position.x;
+          this.riderPhysicsBody.position.x -= relativeX;
+        }
+      }
+    }
+
+    this.updatePlayerMesh();
     this.mixer.update( delta );
   };
 
@@ -76,14 +102,6 @@ export default class CharacterController {
 
   checkActiveKeys( key: boolean ) {
     return !key;
-  }
-
-  printRider() {
-    let clonedPosition = this.riderPhysicsBody.position.clone();
-    let clonedVelocity = this.riderPhysicsBody.velocity.clone();
-    let clonedRotation = this.riderPhysicsBody.quaternion.clone();
-
-    console.log('position: ', clonedPosition, ' velocity: ', clonedVelocity, ' rotation: ', clonedRotation, ' force: ', this.riderPhysicsBody.force);
   }
 
   userInput( delta: number, keysPressed: { [key: string]: boolean; } = {} ) {
@@ -149,7 +167,6 @@ export default class CharacterController {
       if (this.currentAction !== play) {
         this.playAnimation(play);
       }
-      this.mixer.update( delta );
     }
   }
 
