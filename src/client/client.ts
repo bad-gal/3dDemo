@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import Player from './player';
 import PlayerLocal from './player_local';
-import { io } from 'socket.io-client';
+import {io} from 'socket.io-client';
 import MenuState from './menu_state';
 import WaitingState from './waiting_state';
 import ExpelledState from './expelled_state';
@@ -13,6 +13,8 @@ import Hammer from "./hammer";
 import staticSpike from "./staticSpike";
 import movingBall from "./movingBall";
 import movingPlatform from "./movingPlatform";
+import CustomBody from "./customBody";
+import AudioManager from "./audioManager";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -63,6 +65,7 @@ class Client {
   physicsWorld  = new CANNON.World({
     gravity: new CANNON.Vec3(0, -9.81, 0), // -9.81 m/s²
   });
+  audioManager: AudioManager | undefined;
 
   constructor() {
     this.remotePlayers = [];
@@ -187,6 +190,8 @@ class Client {
       hemiLight.position.set( 0, 20, 0 );
       hemiLight.name = 'hemiLight';
       this.scene.add( hemiLight );
+
+      this.audioManager = new AudioManager( this.camera );
 
       // this.physicsWorld.solver
       (this.physicsWorld.solver as CANNON.GSSolver).iterations = 5
@@ -487,12 +492,26 @@ class Client {
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
 
+      if ( this.hasPlayerFallenOffTrack() ) {
+        if ( this.player !== undefined ) {
+          if ( !this.player.falling) {
+            this.player.falling = true;
+            this.audioManager?.playFallenPlayerSound()
+          }
+
+          if ( this.player.object !== undefined && this.player.object.position.y < -11.5 ) {
+            this.player.resetFallenPlayer();
+            this.audioManager?.playRevivePlayerSound();
+          }
+        }
+      }
+
       requestAnimationFrame( function(){ game.animate() } );
 
       if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
 
       if ( this.player?.characterController !== undefined ) {
-        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed );
+        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling );
       }
 
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
@@ -573,6 +592,37 @@ class Client {
       this.physicsWorld.removeBody( coinCull[i] );
     }
   };
-};
+
+  hasPlayerFallenOffTrack() {
+    if( this.player !== undefined && this.player.riderPhysicsBody !== undefined) {
+      const playerBody = this.player.riderPhysicsBody;
+
+      if(playerBody.position.y >= 0) return false;
+
+      if( playerBody.world !== null) {
+        const playerContacts = playerBody.world.contacts;
+
+        if (playerContacts.length === 0 && playerBody.position.y < -4) {
+          return true;
+        }
+
+        const contactMap = playerContacts.map(function (contact) {
+          const bodyA = <CustomBody>contact.bi;
+          const bodyB = <CustomBody>contact.bj;
+          if (bodyA.customData !== undefined && bodyB.customData !== undefined) {
+            if (bodyA.customData.type === 'moving platform') {
+              return bodyA;
+            } else if (bodyB.customData.type === 'moving platform') {
+              return bodyB;
+            }
+          }
+        });
+
+        return contactMap.length === 0 && playerBody.position.y < -4;
+      }
+    }
+    return false;
+  }
+}
 
 new Client();

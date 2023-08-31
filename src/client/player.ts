@@ -484,4 +484,17 @@ export default class Player {
       if( !found ) this.game.remotePlayer( this );
     }
   }
+
+  resetFallenPlayer() {
+    this.falling = false;
+
+    if ( this.object !== undefined ) {
+      if ( this.position !== undefined ) {
+        this.riderPhysicsBody.position.set(this.position.x, this.position.y, this.position.z );
+        this.riderPhysicsBody.quaternion.set( 0, 0, 0, 1 );
+      }
+
+      this.action = 'idle_02';
+    }
+  }
 }

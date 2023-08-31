@@ -51,11 +51,30 @@ export default class CharacterController {
     });
   };
 
-  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {} ) {
+  public update( delta: number, collided: { value: boolean, object: string }, keysPressed: { [key: string]: boolean; } = {}, falling: boolean ) {
     let noKeysPressed = Object.values(keysPressed).every(this.checkActiveKeys);
     let play = '';
 
-    if( noKeysPressed === true ) {
+    if ( falling  ) {
+      play = 'turn_360';
+
+      if ( this.currentAction !== play ) {
+        this.playAnimation(play);
+      }
+
+      const _R = this.model.quaternion.clone();
+      const acc = this.acceleration.clone();
+
+      this.model.quaternion.copy( _R );
+      this.velocity.y -= (acc.y * 4 ) * delta;
+
+      const downwards = new CANNON.Vec3( 0, 1, 0 );
+      this.riderPhysicsBody.quaternion.setFromAxisAngle(downwards, 2 * Math.PI);
+      this.model.quaternion.set(this.riderPhysicsBody.quaternion.x, this.riderPhysicsBody.quaternion.y, this.riderPhysicsBody.quaternion.z, this.riderPhysicsBody.quaternion.w);
+      this.riderPhysicsBody.position.vadd(downwards);
+      this.model.position.set(this.riderPhysicsBody.position.x, this.riderPhysicsBody.position.y, this.riderPhysicsBody.position.y);
+    }
+    else if( noKeysPressed === true ) {
       play = 'idle_02';
       this.velocity = new CANNON.Vec3(0, 0, 0);
 
