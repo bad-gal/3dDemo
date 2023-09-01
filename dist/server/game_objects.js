@@ -3,24 +3,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 class GameObjects {
     createNewCoinLocations() {
         const coinTypes = ['bronze', 'silver', 'gold'];
-        const COINS_MIN = 30;
-        const COINS_MAX = 50;
-        const LARGE_TRACK_COINS_MIN = 100;
-        const LARGE_TRACK_COINS_MAX = 200;
+        const COINS_MIN = 200;
+        const COINS_MAX = 400;
         let coinLocations = [];
-        let trackOneX = [];
-        let trackOneZ = [];
+        let trackX = [];
+        let trackZ = [];
         for (let i = 0; i < 6; i++) {
-            trackOneX.push(i);
+            trackX.push(i);
         }
-        for (let i = -3; i > -60; i--) {
-            trackOneZ.push(i);
+        for (let i = -3; i > -130; i--) {
+            trackZ.push(i);
         }
         for (let i = 0; i < this.generateRandomIntInRange(COINS_MIN, COINS_MAX); i++) {
-            let randX = Math.floor(Math.random() * trackOneX.length);
-            let randZ = Math.floor(Math.floor(Math.random() * trackOneZ.length));
-            let x = trackOneX[randX];
-            let z = trackOneZ[randZ];
+            let randX = Math.floor(Math.random() * trackX.length);
+            let randZ = Math.floor(Math.floor(Math.random() * trackZ.length));
+            let x = trackX[randX];
+            let z = trackZ[randZ];
             let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
             coinLocations.push({ x: x, z: z, type: coinTypes[coinIndex] });
         }
