@@ -198,6 +198,7 @@ class App {
                 if (GAME_TIMER <= 0) {
                     clearTimeout(GAME_TIMER);
                     gameTimerStart = false;
+                    this.io.emit('gameOver', true);
                 }
                 else {
                     GAME_TIMER--;

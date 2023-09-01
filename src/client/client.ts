@@ -66,6 +66,7 @@ class Client {
     gravity: new CANNON.Vec3(0, -9.81, 0), // -9.81 m/s²
   });
   audioManager: AudioManager | undefined;
+  gameOver: boolean;
 
   constructor() {
     this.remotePlayers = [];
@@ -95,7 +96,7 @@ class Client {
       "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
       "blue rider",
     ];
-
+    this.gameOver = false;
     this.socket.once('connect', () => {
       console.log(this.socket.id)
     });
@@ -240,6 +241,10 @@ class Client {
 
     this.socket.on( 'remoteMovingPlatformData', ( data: any ) => {
       this.movingPlatformLocations = data;
+    });
+
+    this.socket.on('gameOver', (data: boolean) => {
+      this.gameOver = data;
     });
 
     this.socket.on( 'removeCoin', ( data: any ) => {
@@ -508,9 +513,7 @@ class Client {
 
       requestAnimationFrame( function(){ game.animate() } );
 
-      if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
-
-      if ( this.player?.characterController !== undefined ) {
+      if ( this.player?.characterController !== undefined && !this.gameOver) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling );
       }
 
@@ -522,7 +525,7 @@ class Client {
 
       this.platformObstacles.forEach(( platform, index) => platform.update( this.movingPlatformLocations[index] ));
 
-      this.updateRemotePlayers( mixerUpdateDelta );
+      if( !this.gameOver ) this.updateRemotePlayers( mixerUpdateDelta );
 
       this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
 
