@@ -42,7 +42,6 @@ class Client {
   quadRacerFullList: string[];
   userModel: string;
   gameTimer: string = '';
-  cannonDebugRenderer: undefined;
   remoteScores: any[];
   coins: Coin[];
   coinLocations: any[];
@@ -621,7 +620,12 @@ class Client {
           }
         });
 
-        return contactMap.length === 0 && playerBody.position.y < -4;
+        //remove any elements that are undefined
+        let filteredContactMap = contactMap.filter(function(body) {
+          return body !== undefined;
+        });
+
+        return filteredContactMap.length === 0 && playerBody.position.y < -4;
       }
     }
     return false;
