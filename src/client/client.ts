@@ -27,7 +27,6 @@ class Client {
   clock: any;
   keysPressed: { [key: string]: boolean; } = {};
   counter: number;
-  BLINK_AMOUNT: number;
   currentState: string;
   GAMESTATES = {
     MENU: 'menu',
@@ -35,6 +34,7 @@ class Client {
     INIT: 'initial',
     PLAY: 'play',
     EXPELLED: 'expelled',
+    LEADERBOARD: 'leaderboard',
   }
   socket = io();
   initPlayerId: any;
@@ -74,7 +74,6 @@ class Client {
     this.initialisingPlayers = [];
     this.clock = new THREE.Clock();
     this.counter = 0;
-    this.BLINK_AMOUNT = 11;
     this.userModel = '';
     this.coins = [];
     this.coinLocations = [];
@@ -160,6 +159,129 @@ class Client {
   onExpelled() {
     const gameState = new ExpelledState(this);
     gameState.onExpelledState();
+
+    console.log('in expelled state')
+    setTimeout(() => {
+      this.socket.connect();
+      console.log('inside setTimer')
+      window.location.href = '/';
+    }, 5000);
+  }
+
+  onLeaderBoardState() {
+    if ( this.currentState === 'leaderboard' ) {
+      // show leaderboard
+      const leaderBoard = document.getElementById("leaderboard");
+      if ( leaderBoard !== null ) leaderBoard.style.visibility='visible';
+
+      // hide score panel
+      const scorePanel = document.getElementById("score-info");
+      if ( scorePanel !== null ) scorePanel.style.visibility='hidden';
+
+      // hide timer panel
+      const timerPanel = document.getElementById( 'game-time-info' );
+      if ( timerPanel !== null ) timerPanel.style.visibility='hidden';
+
+      // add title
+      const titleParagraph = document.createElement("p");
+      titleParagraph.className = ('leaderboard-title');
+
+      const titleText = document.createTextNode("Leader Board");
+      titleParagraph.appendChild(titleText);
+      leaderBoard?.appendChild(titleParagraph);
+
+      // create a list to hold the player score information
+      const uList = document.createElement("ul");
+      // const list = document.createElement("li");
+      const headerList = document.createElement("li");
+
+      // collect all players and their scores
+      let playerScoreData = []
+
+      if(this.player !== undefined)
+        playerScoreData.push({ iconName: `assets/icons/${this.player.model}.ico`, score: `${this.player.score ?? ""}`});
+
+      this.remoteScores.forEach((player) => {
+        playerScoreData.push({ iconName: `assets/icons/${player.model}.ico`, score: `${player.score ?? ""}`})
+      });
+
+      console.log('PLAYER SCORE DATA', playerScoreData);
+
+      // sort playerScoreData by score in descending order
+      if(playerScoreData.length > 1) {
+        playerScoreData.sort((a: any, b: any) => a.score - b.score ).reverse();
+      }
+
+      let headerPosition = document.createElement("span");
+      headerPosition.innerText = "Position";
+
+      let headerIcon = document.createElement("span");
+      headerIcon.innerText = "Player";
+
+      let headerScore = document.createElement("span");
+      headerScore.innerText = "Score";
+
+      headerList.appendChild(headerPosition);
+      headerList.appendChild(headerIcon);
+      headerList.appendChild(headerScore);
+
+      uList.appendChild(headerList);
+
+      playerScoreData.forEach((player, index) => {
+        const list = document.createElement("li");
+        let position = document.createElement("span")
+        let iconSpan = document.createElement("span");
+        let icon = document.createElement("img")
+        let score = document.createElement("span");
+
+        position.innerText = (index + 1).toString();
+        list.appendChild(position);
+        icon.src = player.iconName;
+        iconSpan.appendChild(icon);
+        list.appendChild(iconSpan);
+        score.innerText = player.score;
+        list.appendChild(score);
+        uList.appendChild(list);
+      });
+
+      leaderBoard?.appendChild(uList);
+
+      this.socket.on('resetGame', () => {
+        console.log( "server called trying to reset game")
+
+        this.resetGame();
+        // Redirect the user to the /reset page
+        console.log(window.location)
+        window.location.href = '/';
+      });
+    }
+  }
+
+  resetGame() {
+    this.remotePlayers = [];
+    this.remoteData = [];
+    this.remoteScores = [];
+    this.initialisingPlayers = [];
+    this.clock = new THREE.Clock();
+    this.counter = 0;
+    this.userModel = '';
+    this.coins = [];
+    this.coinLocations = [];
+    this.sphereObstacles = [];
+    this.hammerObstacles = [];
+    this.spikeObstacles = [];
+    this.ballObstacles = [];
+    this.platformObstacles = [];
+    this.movingSphereLocations = [];
+    this.movingHammerLocations = [];
+    this.spikeLocations = [];
+    this.movingBallLocations = [];
+    this.movingPlatformLocations = [];
+    this.physicsBodiesCull = [];
+    this.quadRacerList = [];
+    this.quadRacerFullList = [];
+    this.gameOver = false;
+    this.player = undefined;
   }
 
   onInitState() {
@@ -538,6 +660,11 @@ class Client {
         if ( this.player.characterController !== undefined ) {
           this.player.updateSocket();
         }
+      }
+
+      if( this.gameOver ) {
+        this.currentState = this.GAMESTATES.LEADERBOARD;
+        this.onLeaderBoardState();
       }
 
       this.renderer.render( this.scene, this.camera );
