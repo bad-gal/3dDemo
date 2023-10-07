@@ -33,9 +33,9 @@ export default class RaceTrack {
 
       this.addPhysicsShape(object.scene, name, objectType, 39.74178457260132, {x: object.scene.position.x - 2.15, y: -3, z: -39.5});
       this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -39.5 });
-      this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -66});
+      this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -66 });
       this.duplicateFloorpads(object.scene, { x: 5, y: -0.25, z: -119.75 });
-      this.addPhysicsShape(object.scene, name, objectType, 13.25, {x: object.scene.position.x - 2.15, y: -3, z: -119.75});
+      this.addPhysicsShape(object.scene, name, objectType, 13.25, { x: object.scene.position.x - 2.15, y: -3, z: -119.75 });
     });
 
     // blue spike
