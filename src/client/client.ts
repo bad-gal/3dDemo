@@ -15,7 +15,6 @@ import movingBall from "./movingBall";
 import movingPlatform from "./movingPlatform";
 import CustomBody from "./customBody";
 import AudioManager from "./audioManager";
-import CannonDebugRenderer from 'cannon-es-debugger';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -67,7 +66,6 @@ class Client {
   });
   audioManager: AudioManager | undefined;
   gameOver: boolean;
-  cannonDebugRenderer: undefined;
 
   constructor() {
     this.remotePlayers = [];
@@ -333,9 +331,6 @@ class Client {
 
       document.body.style.overflow = 'hidden';
       document.body.appendChild( this.renderer.domElement );
-
-      // Debug Renderer for Physics
-      this.cannonDebugRenderer = new (CannonDebugRenderer  as any)(this.scene, this.physicsWorld);
 
       this.currentState = this.GAMESTATES.PLAY;
       this.onPlayState();
@@ -643,8 +638,6 @@ class Client {
       if ( this.player?.characterController !== undefined && !this.gameOver) {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling );
       }
-
-      if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
 
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
 
