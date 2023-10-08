@@ -27,6 +27,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 const dotenv = __importStar(require("dotenv"));
 const http_1 = __importDefault(require("http"));
 const socket_io_1 = require("socket.io");
@@ -37,6 +38,7 @@ dotenv.config();
 const port = process_1.default.env.PORT;
 const FPS = 30;
 const app = (0, express_1.default)();
+app.use((0, cors_1.default)());
 app.use(express_1.default.static(path_1.default.join(__dirname, '../client')));
 const server = new http_1.default.Server(app);
 const io = new socket_io_1.Server(server);

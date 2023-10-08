@@ -1,4 +1,5 @@
 import express from 'express';
+import cors  from 'cors';
 import * as dotenv from 'dotenv';
 import http from 'http';
 import { Server, Socket } from 'socket.io';
@@ -16,6 +17,7 @@ interface ISocket extends Socket {
 const port = process.env.PORT;
 const FPS = 30;
 const app = express();
+app.use(cors())
 app.use(express.static( path.join( __dirname, '../client' )));
 
 const server = new http.Server( app );
@@ -155,17 +157,6 @@ function startEndGameTimer() {
       }
   }, 1000);
 }
-
-// this seems to be working now, the players appear in the same game (on reset back to menu)and the objects
-// move at the correct speed.
-
-// what needs to be fixed is in the waiting area, when a player selects a rider it is not being
-// reflected on the other player like it does on initial game.
-
-// THE SOLUTION!
-// the quadListInterval needs to be wrapped in function, because after the initial game the interval stops running.
-// we should add the function to start the timer as soon as we enter the waiting room, so maybe at line 251
-// after "startWaitingRoomTimer = data;"
 
 let updateGameInterval
 function updateGameDataTimer() {
