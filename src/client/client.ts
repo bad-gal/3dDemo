@@ -1,16 +1,20 @@
 import * as THREE from 'three';
 import Player from './player';
 import PlayerLocal from './player_local';
-import { Box3 } from 'three';
-import { io } from 'socket.io-client';
+import {io} from 'socket.io-client';
 import MenuState from './menu_state';
 import WaitingState from './waiting_state';
 import ExpelledState from './expelled_state';
-import Coin from './coin';
-import MovingObstacle from './moving_obstacle';
-import GroundObstacle from './ground_obstacle';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { clone } from 'three/examples/jsm/utils/SkeletonUtils';
+import * as CANNON from 'cannon-es'
+import RaceTrack from './racetrack';
+import Coin from "./coin";
+import movingSphere from "./movingSphere";
+import Hammer from "./hammer";
+import staticSpike from "./staticSpike";
+import movingBall from "./movingBall";
+import movingPlatform from "./movingPlatform";
+import CustomBody from "./customBody";
+import AudioManager from "./audioManager";
 
 class Client {
   player: PlayerLocal | undefined;
@@ -23,7 +27,6 @@ class Client {
   clock: any;
   keysPressed: { [key: string]: boolean; } = {};
   counter: number;
-  BLINK_AMOUNT: number;
   currentState: string;
   GAMESTATES = {
     MENU: 'menu',
@@ -31,81 +34,101 @@ class Client {
     INIT: 'initial',
     PLAY: 'play',
     EXPELLED: 'expelled',
+    LEADERBOARD: 'leaderboard',
   }
   socket = io();
   initPlayerId: any;
   quadRacerList: any;
   quadRacerFullList: string[];
   userModel: string;
-  wallList: string[];
+  gameTimer: string = '';
+  remoteScores: any[];
   coins: Coin[];
   coinLocations: any[];
-  barrelObstacles: GroundObstacle[];
-  barrelObstaclesData: { type: string, position: { x: number, z: number } }[];
-  fruitObstaclesData: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number}, rotation: { x: number, y: number, z: number } }[];
-  fruitObstacles: MovingObstacle[];
-  coinPickupSound: THREE.Audio | undefined;
-  coinDropSound: THREE.Audio | undefined;
-  collisionSound: THREE.Audio | undefined;
-  smallCollisionSound: THREE.Audio | undefined;
-  largeCoinDropSound: THREE.Audio | undefined;
-  revivePlayerSound: THREE.Audio | undefined;
-  playerFallenSound: THREE.Audio | undefined;
-  gameTimer: string = '';
-  fruitVisibility = false;
-  checkpointReached = false;
-
-  remoteScores: any[];
+  physicsBodiesCull: CANNON.Body[];
+  sphereObstacles: movingSphere[];
+  hammerObstacles: Hammer[];
+  spikeObstacles: staticSpike[];
+  ballObstacles: movingBall[];
+  platformObstacles: movingPlatform[];
+  movingSphereLocations: any[];
+  movingHammerLocations: any[];
+  spikeLocations: any[];
+  movingBallLocations: any[];
+  movingPlatformLocations: any[];
+  groundMaterial = new CANNON.Material("groundMaterial");
+  grassMaterial = new CANNON.Material('grassMaterial' );
+  wallMaterial = new CANNON.Material('wallMaterial')
+  coinMaterial = new CANNON.Material('coinMaterial');
+  ballMaterial = new CANNON.Material({ friction: 0.5, restitution: 0.2 });
+  physicsWorld  = new CANNON.World({
+    gravity: new CANNON.Vec3(0, -9.81, 0), // -9.81 m/s²
+  });
+  audioManager: AudioManager | undefined;
+  gameOver: boolean;
 
   constructor() {
-    this.player;
-    this.scene;
     this.remotePlayers = [];
     this.remoteData = [];
     this.remoteScores = [];
     this.initialisingPlayers = [];
-    this.camera;
-    this.renderer;
-    this.clock;
-    this.keysPressed;
     this.clock = new THREE.Clock();
     this.counter = 0;
-    this.BLINK_AMOUNT = 11;
-    this.initPlayerId;
     this.userModel = '';
     this.coins = [];
     this.coinLocations = [];
-    this.fruitObstacles = []
-    this.fruitObstaclesData = [];
-    this.barrelObstacles = [];
-    this.barrelObstaclesData = [];
+    this.sphereObstacles = [];
+    this.hammerObstacles = [];
+    this.spikeObstacles = [];
+    this.ballObstacles = [];
+    this.platformObstacles = [];
+    this.movingSphereLocations = [];
+    this.movingHammerLocations = [];
+    this.spikeLocations = [];
+    this.movingBallLocations = [];
+    this.movingPlatformLocations = [];
+    this.physicsBodiesCull = [];
     this.quadRacerList = [];
     this.quadRacerFullList = [
       "camouflage rider", "green rider", "lime rider", "mustard rider",
       "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
       "blue rider",
     ];
-
-    this.wallList = ['wall_0', 'wall_1'];
-
+    this.gameOver = false;
+//camouflage - green rider
     this.socket.once('connect', () => {
       console.log(this.socket.id)
-    })
+    });
 
     // get the coin locations from the server
     this.socket.on( 'coinLocations', ( data: any ) => {
       this.coinLocations = data;
     });
 
-    // get the ground obstacle locations from the server
-    this.socket.on( 'groundObstacleLocations', (data: { type: string, position: { x: number, z: number } }[] ) => {
-      this.barrelObstaclesData = data;
+    // get the sphere locations from the server
+    this.socket.on( 'movingSphereLocations', ( data: any ) => {
+      this.movingSphereLocations = data;
     });
 
-    // get the fruit obstacle locations from the server
-    this.socket.on('fruitObstaclesDataInitial', (data: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number}, rotation: { x: number, y: number, z: number } }[]) => {
-      this.fruitObstaclesData = data;
+    // get the hammer locations from the server
+    this.socket.on( 'movingHammerLocations', ( data: any ) => {
+      this.movingHammerLocations = data;
     });
+
+    // get the spike locations from the server
+    this.socket.on( 'spikeLocations', ( data: any ) => {
+      this.spikeLocations = data;
+    });
+
+    // get the ball locations from the server
+    this.socket.on( 'movingBallLocations', ( data: any ) => {
+      this.movingBallLocations = data;
+    });
+
+    // get the platform locations from the server
+    this.socket.on( 'movingPlatformLocations', ( data:any ) => {
+      this.movingPlatformLocations = data;
+    })
 
     window.addEventListener( 'resize', () => this.onWindowResize(), false );
     this.currentState = this.GAMESTATES.MENU;
@@ -126,20 +149,140 @@ class Client {
 
   onMenuState() {
     const gameState = new MenuState(this);
-
     gameState.onMenuState();
   };
 
-  onWaitingRoomState() {
+  onWaitingRoom() {
     const gameState = new WaitingState(this);
-
     gameState.onWaitingRoomState();
   }
 
-  onExpelledState() {
+  onExpelled() {
     const gameState = new ExpelledState(this);
-
     gameState.onExpelledState();
+
+    console.log('in expelled state')
+    setTimeout(() => {
+      this.socket.connect();
+      console.log('inside setTimer')
+      window.location.href = '/';
+    }, 5000);
+  }
+
+  onLeaderBoardState() {
+    if ( this.currentState === 'leaderboard' ) {
+      // show leaderboard
+      const leaderBoard = document.getElementById("leaderboard");
+      if ( leaderBoard !== null ) leaderBoard.style.visibility='visible';
+
+      // hide score panel
+      const scorePanel = document.getElementById("score-info");
+      if ( scorePanel !== null ) scorePanel.style.visibility='hidden';
+
+      // hide timer panel
+      const timerPanel = document.getElementById( 'game-time-info' );
+      if ( timerPanel !== null ) timerPanel.style.visibility='hidden';
+
+      // add title
+      const titleParagraph = document.createElement("p");
+      titleParagraph.className = ('leaderboard-title');
+
+      const titleText = document.createTextNode("Leader Board");
+      titleParagraph.appendChild(titleText);
+      leaderBoard?.appendChild(titleParagraph);
+
+      // create a list to hold the player score information
+      const uList = document.createElement("ul");
+      // const list = document.createElement("li");
+      const headerList = document.createElement("li");
+
+      // collect all players and their scores
+      let playerScoreData = []
+
+      if(this.player !== undefined)
+        playerScoreData.push({ iconName: `assets/icons/${this.player.model}.ico`, score: `${this.player.score ?? ""}`});
+
+      this.remoteScores.forEach((player) => {
+        playerScoreData.push({ iconName: `assets/icons/${player.model}.ico`, score: `${player.score ?? ""}`})
+      });
+
+      console.log('PLAYER SCORE DATA', playerScoreData);
+
+      // sort playerScoreData by score in descending order
+      if(playerScoreData.length > 1) {
+        playerScoreData.sort((a: any, b: any) => a.score - b.score ).reverse();
+      }
+
+      let headerPosition = document.createElement("span");
+      headerPosition.innerText = "Position";
+
+      let headerIcon = document.createElement("span");
+      headerIcon.innerText = "Player";
+
+      let headerScore = document.createElement("span");
+      headerScore.innerText = "Score";
+
+      headerList.appendChild(headerPosition);
+      headerList.appendChild(headerIcon);
+      headerList.appendChild(headerScore);
+
+      uList.appendChild(headerList);
+
+      playerScoreData.forEach((player, index) => {
+        const list = document.createElement("li");
+        let position = document.createElement("span")
+        let iconSpan = document.createElement("span");
+        let icon = document.createElement("img")
+        let score = document.createElement("span");
+
+        position.innerText = (index + 1).toString();
+        list.appendChild(position);
+        icon.src = player.iconName;
+        iconSpan.appendChild(icon);
+        list.appendChild(iconSpan);
+        score.innerText = player.score;
+        list.appendChild(score);
+        uList.appendChild(list);
+      });
+
+      leaderBoard?.appendChild(uList);
+
+      this.socket.on('resetGame', () => {
+        console.log( "server called trying to reset game")
+
+        this.resetGame();
+        // Redirect the user to the /reset page
+        console.log(window.location)
+        window.location.href = '/';
+      });
+    }
+  }
+
+  resetGame() {
+    this.remotePlayers = [];
+    this.remoteData = [];
+    this.remoteScores = [];
+    this.initialisingPlayers = [];
+    this.clock = new THREE.Clock();
+    this.counter = 0;
+    this.userModel = '';
+    this.coins = [];
+    this.coinLocations = [];
+    this.sphereObstacles = [];
+    this.hammerObstacles = [];
+    this.spikeObstacles = [];
+    this.ballObstacles = [];
+    this.platformObstacles = [];
+    this.movingSphereLocations = [];
+    this.movingHammerLocations = [];
+    this.spikeLocations = [];
+    this.movingBallLocations = [];
+    this.movingPlatformLocations = [];
+    this.physicsBodiesCull = [];
+    this.quadRacerList = [];
+    this.quadRacerFullList = [];
+    this.gameOver = false;
+    this.player = undefined;
   }
 
   onInitState() {
@@ -154,16 +297,16 @@ class Client {
       const scorePanel = document.getElementById("score-info");
       if ( scorePanel !== null ) scorePanel.style.visibility='visible';
 
-      // set up 3D space
       // camera
       this.camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
       this.camera.position.set( -5, 3, 10);
       this.camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
 
       this.scene = new THREE.Scene();
+
       // background and fog
-      this.scene.background = new THREE.Color( 0x0d820d );
-      this.scene.fog = new THREE.Fog( 0x0d820d, 2, 36 );
+      this.scene.background = new THREE.Color( 0xb0e0e6 );
+      this.scene.fog = new THREE.Fog( 0xb0e0e6, 2, 36 );
 
       // lighting
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -171,13 +314,14 @@ class Client {
       hemiLight.name = 'hemiLight';
       this.scene.add( hemiLight );
 
-      // ground
-      this.createTrack(this.scene);
+      this.audioManager = new AudioManager( this.camera );
 
-      this.createWalls();
+      // this.physicsWorld.solver
+      (this.physicsWorld.solver as CANNON.GSSolver).iterations = 5
+      this.physicsWorld.defaultContactMaterial.friction = 0.5; // Adjust friction as needed
+      this.physicsWorld.defaultContactMaterial.restitution = 0.7; // Adjust restitution (bounciness) as needed
 
-      // audio listener
-      this.createAudio();
+      this.createRaceTrack(this.scene, this.physicsWorld, this.grassMaterial);
 
       // web render
       this.renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -193,352 +337,10 @@ class Client {
     }
   };
 
-  createAudio() {
-    const listener = new THREE.AudioListener();
-    this.camera.add(listener);
-
-    this.coinPickupSound = new THREE.Audio( listener );
-    this.coinDropSound = new THREE.Audio( listener );
-    this.collisionSound = new THREE.Audio( listener );
-    this.largeCoinDropSound = new THREE.Audio( listener );
-    this.smallCollisionSound = new THREE.Audio( listener );
-    this.revivePlayerSound = new THREE.Audio( listener );
-    this.playerFallenSound = new THREE.Audio( listener );
-
-    // load sounds and set it as the Audio object's buffer
-    const audioLoader = new THREE.AudioLoader();
-    audioLoader.load('assets/audio/confirmation_001.ogg', (buffer) => {
-      if (this.coinPickupSound !== undefined) {
-        this.coinPickupSound.setBuffer(buffer);
-        this.coinPickupSound.setLoop(false);
-        this.coinPickupSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/coin-drop-small.mp3', (buffer) => {
-      if (this.coinDropSound !== undefined) {
-        this.coinDropSound.setBuffer(buffer);
-        this.coinDropSound.setLoop(false);
-        this.coinDropSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/impact-large.wav', (buffer) => {
-      if (this.collisionSound !== undefined) {
-        this.collisionSound.setBuffer(buffer);
-        this.collisionSound.setLoop(false);
-        this.collisionSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/impact-small.wav', (buffer) => {
-      if (this.smallCollisionSound !== undefined) {
-        this.smallCollisionSound.setBuffer(buffer);
-        this.smallCollisionSound.setLoop(false);
-        this.smallCollisionSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/coin-drop.mp3', (buffer) => {
-      if (this.largeCoinDropSound !== undefined) {
-        this.largeCoinDropSound.setBuffer(buffer);
-        this.largeCoinDropSound.setLoop(false);
-        this.largeCoinDropSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/mixkit-fairy-glitter-867.wav', (buffer) => {
-      if (this.revivePlayerSound !== undefined) {
-        this.revivePlayerSound.setBuffer(buffer);
-        this.revivePlayerSound.setLoop(false);
-        this.revivePlayerSound.setVolume(0.5);
-      }
-    });
-
-    audioLoader.load('assets/audio/mixkit-cartoon-falling-eco-407.wav', (buffer) => {
-      if (this.playerFallenSound !== undefined) {
-        this.playerFallenSound.setBuffer(buffer);
-        this.playerFallenSound.setLoop(false);
-        this.playerFallenSound.setVolume(0.5);
-      }
-    });
-
-  }
-
-  createWalls() {
-    const geometry = new THREE.BoxGeometry( 20, 2, 2 );
-    const material = new THREE.MeshBasicMaterial( { color: 0x3b030f });
-    let wallZ = 20;
-    for (let i = 0; i < 2; i++ ) {
-      let wall = new THREE.Mesh( geometry, material );
-      wall.position.set( 8.5, 1, wallZ );
-      wall.name = 'wall_' + i;
-      this.scene?.add( wall );
-      wallZ += -375;
-    }
-  }
-
-  private createTrack(scene: THREE.Scene) {
-    const geometry = new THREE.PlaneGeometry(20, 100);
-    const geometry2 = new THREE.PlaneGeometry(20, 140);
-    const geometry4 = new THREE.PlaneGeometry(20, 120);
-    const material = new THREE.MeshBasicMaterial({ color: 0x0f0f0e, side: THREE.DoubleSide });
-
-    //==========================
-    //    TRACKS
-    //==========================
-
-    //main runway
-    const plane = new THREE.Mesh(geometry4, material);
-    plane.rotation.x = Math.PI / 2;
-    plane.position.set(8.5, 0, -38);
-    plane.name = 'track';
-    scene.add(plane);
-
-    // first horizontal runway
-    const plane2 = new THREE.Mesh(geometry2, material);
-    plane2.rotation.x = Math.PI / 2;
-    plane2.rotation.z = Math.PI / 2;
-    plane2.position.set(8.5, 0, -108);
-    plane2.name = 'track';
-    scene.add(plane2);
-
-    // right runway
-    const planeRight = new THREE.Mesh(geometry, material);
-    planeRight.rotation.x = Math.PI / 2;
-    planeRight.position.set(68.5, 0, -168);
-    planeRight.name = 'track';
-    scene.add(planeRight);
-
-    // left runway
-    const planeLeft = new THREE.Mesh(geometry, material);
-    planeLeft.rotation.x = Math.PI / 2;
-    planeLeft.position.set(-51.5, 0, -168);
-    planeLeft.name = 'track';
-    scene.add(planeLeft);
-
-    // second horizontal runway
-    const plane5 = new THREE.Mesh(geometry2, material);
-    plane5.rotation.x = Math.PI / 2;
-    plane5.rotation.z = Math.PI / 2;
-    plane5.position.set(8.5, 0, -228);
-    plane5.name = 'track';
-    scene.add(plane5);
-
-    // final runway
-    const plane6 = new THREE.Mesh(geometry4, material);
-    plane6.rotation.x = Math.PI / 2;
-    plane6.position.set(8.5, 0, -298);
-    plane6.name = 'track';
-    scene.add(plane6);
-
-    // load checkpoint model
-    const loader = new GLTFLoader();
-    loader.load('assets/checkpoint.glb', (gltf) => {
-      gltf.scene.name = 'checkpoint';
-      scene?.add(gltf.scene);
-      gltf.scene.position.set(16.5, 0.1, 0);
-      gltf.scene.rotation.y = Math.PI / 2;
-
-      // clone the model
-      const checkpoint = clone(gltf.scene);
-      checkpoint.position.set(16.5, 0.1, -333);
-      scene?.add(checkpoint);
-    });
-
-    //==========================
-    //  CENTRAL ROAD MARKINGS
-    //==========================
-
-    const geometry3 = new THREE.PlaneGeometry(0.2, 1)
-    const material2 = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-
-    // main runway markings
-    let markZ = -3;
-    for ( let i = 0; i < 32; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(8.5, 0.01, markZ);
-      scene.add(roadMark);
-      markZ -= 3;
-    }
-
-    // left runway markings
-    let markX = -120;
-    for ( let i = 0; i < 33; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(-51.5, 0.01, markX);
-      scene.add(roadMark);
-      markX -= 3;
-    }
-
-    // right runway markings
-    markX = -120;
-    for ( let i = 0; i < 33; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(68.5, 0.01, markX);
-      scene.add(roadMark);
-      markX -= 3;
-    }
-
-    // first horizontal runway markings
-    markX = -60;
-    for ( let i = 0; i < 46; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(markX, 0.01, -108);
-      scene.add(roadMark);
-      markX +=3;
-    }
-
-    // second horizontal runway markings
-    markX = -60;
-    for ( let i = 0; i < 46; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(markX, 0.01, -228);
-      scene.add(roadMark);
-      markX +=3;
-    }
-
-    // final runway markings
-    markZ = -240;
-    for ( let i = 0; i < 31; i++ ){
-      let roadMark = new THREE.Mesh(geometry3, material2)
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.position.set(8.5, 0.01, markZ);
-      scene.add(roadMark);
-      markZ -= 3;
-    }
-
-    //==========================
-    //  TURN MARKINGS
-    //==========================
-
-    //main runway
-    let lineX = -0.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -98);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = -0.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -97);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-
-    // runway left top
-    lineX = -50.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -119);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = -50.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -118);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-
-    //runway left bottom
-    lineX = -52.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -217);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-    lineX = -52.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -218);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-
-    //runway right top
-    lineX = 77.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -119);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-    lineX = 77.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -118);
-      scene.add(roadMark);
-      lineX -= 1.5
-    }
-
-    //runway right bottom
-    lineX = 60
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -218);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = 60
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -217);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-
-    //final runway top
-    lineX = 9.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -238);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-    lineX = 9.5
-    for ( let i = 0; i < 6; i++ ) {
-      let roadMark = new THREE.Mesh( geometry3, material2 )
-      roadMark.rotation.x = Math.PI / 2;
-      roadMark.rotation.z = Math.PI / 2;
-      roadMark.position.set(lineX, 0.01, -239);
-      scene.add(roadMark);
-      lineX += 1.5
-    }
-  }
+  createRaceTrack(scene: THREE.Scene, physicsWorld: CANNON.World, material: CANNON.Material) {
+    const raceTrack = new RaceTrack(scene, physicsWorld, material, this.wallMaterial);
+    raceTrack.create();
+  };
 
   onPlayState() {
     this.player = new PlayerLocal( this, this.camera, this.socket );
@@ -547,50 +349,79 @@ class Client {
       this.gameTimer = this.formatGameTimer(data);
     });
 
+    this.socket.on('remoteMovingSphereData', (data:any)=> {
+      this.movingSphereLocations = data;
+    });
+
+    this.socket.on('remoteMovingHammerData', (data:any)=> {
+      this.movingHammerLocations = data;
+    });
+
+    this.socket.on( 'remoteMovingBallData', ( data: any ) => {
+      this.movingBallLocations = data;
+    });
+
+    this.socket.on( 'remoteMovingPlatformData', ( data: any ) => {
+      this.movingPlatformLocations = data;
+    });
+
+    this.socket.on('gameOver', (data: boolean) => {
+      this.gameOver = data;
+    });
+
     this.socket.on( 'removeCoin', ( data: any ) => {
-      for (let i = this.coins.length - 1; i >=0; i--) {
+      for ( let i = this.coins.length - 1; i >=0; i-- ) {
         let coin = this.coins[i];
-        if(coin.object !== undefined && coin.object.parent !== null) {
+        if( coin.object !== undefined && coin.object.parent !== null ) {
           if ( coin.object?.position.x == data[0].x && coin.object?.position.z == data[0].z ) {
-            this?.scene?.remove( coin.object.parent.remove(coin.object));
-            this.coins.splice(i, 1);
+            this?.scene?.remove( coin.object.parent.remove( coin.object ));
+            this.coins.splice( i, 1 );
           }
         }
       }
-		});
-
-    this.socket.on( 'setVisibilityMoveableObjects', ( visibility: boolean) => {
-      console.log('fruits visibility is ', visibility);
-      this.fruitVisibility = visibility;
     });
 
     for ( let i = 0; i < this.coinLocations.length; i++ ) {
-      this.coins.push( new Coin( this, this.coinLocations[i] ));
+      this.coins.push( new Coin( this, this.coinLocations[i], i ));
     }
 
-    for( let i = 0; i < this.fruitObstaclesData.length; i++) {
-      this.fruitObstacles.push( new MovingObstacle(this, this.fruitObstaclesData[i]))
+    this.socket.emit('beginGame');
+
+    for( let i = 0; i < this.movingSphereLocations.length; i++ ) {
+      this.sphereObstacles.push( new movingSphere( this, this.movingSphereLocations[i] ));
     }
 
-    for ( let i = 0; i < this.barrelObstaclesData.length; i++ ) {
-      this.barrelObstacles.push( new GroundObstacle( this, this.barrelObstaclesData[i]));
+    for( let i = 0; i < this.movingHammerLocations.length; i++ ) {
+      this.hammerObstacles.push( new Hammer( this, this.movingHammerLocations[i] ));
     }
 
-    this.socket.emit('fruitStart');
+    for( let i = 0; i < this.spikeLocations.length; i++ ) {
+      this.spikeObstacles.push( new staticSpike( this, this.spikeLocations[i] ));
+    }
 
-    this.socket.on('remoteFruitObstaclesData', (data:any)=> {
-      this.fruitObstaclesData = data;
-    })
+    for( let i = 0; i < this.movingBallLocations.length; i++ ) {
+      this.ballObstacles.push( new movingBall( this, this.movingBallLocations[i] ));
+    }
+
+    for( let i = 0; i < this.movingPlatformLocations.length; i++ ) {
+      this.platformObstacles.push( new movingPlatform( this, this.movingPlatformLocations[i] ));
+    }
+
+    const PLAYER_KEYS = [ 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight' ];
 
     document.addEventListener( 'keydown', ( e ) => {
       if ( this.player?.characterController ) {
-        this.keysPressed[e.key] = true;
+        if ( PLAYER_KEYS.includes(e.key)) {
+          this.keysPressed[e.key] = true;
+        }
       }
     });
 
     document.addEventListener( 'keyup', ( e ) => {
       if( this.player?.characterController ) {
-        this.keysPressed[e.key] = false;
+        if ( PLAYER_KEYS.includes(e.key)) {
+          this.keysPressed[e.key] = false;
+        }
       }
     });
 
@@ -604,12 +435,12 @@ class Client {
     if ( timerPanel !== null ) {
       timerPanel.innerText = this.gameTimer;
     }
-  }
+  };
 
   updateDisplayTimer() {
     let timerText = document.getElementById('game-time-info');
     if( timerText !== null ) timerText.innerText = this.gameTimer;
-  }
+  };
 
   createScorePanel() {
     const scorePanel = document.getElementById("score-info");
@@ -640,7 +471,7 @@ class Client {
     playerTitle.appendChild(localPlayerScoreText);
     localPlayerPanel.appendChild(playerTitle);
     scorePanel.appendChild(localPlayerPanel);
-  }
+  };
 
   updateScorePanel() {
     const localPlayerScore = document.getElementById('local-player-score');
@@ -677,7 +508,7 @@ class Client {
         remotePanel.textContent = `${remoteScore.score}`;
       }
     }
-  }
+  };
 
   updateRemotePlayers( delta: number ) {
     if( this.remoteData === undefined || this.remoteData.length == 0 || this.player === undefined || this.player.id === undefined ) return;
@@ -718,7 +549,12 @@ class Client {
 
     this.scene?.children.forEach( function( object ) {
       if( object.userData.remotePlayer && game.getRemotePlayerById( object.userData.id ) === undefined ) {
+        let body = game.getRemotePlayerBodyById(object.name);
         game.scene?.remove( object );
+
+        if(body !== undefined ) {
+          game.physicsWorld.removeBody(body);
+        }
       }
     });
 
@@ -727,8 +563,7 @@ class Client {
     this.remotePlayers.forEach( ( player: any ) => {
       player.update( delta );
     });
-    // console.log('REMOTE SCORES', this.remoteScores)
-  }
+  };
 
   getRemotePlayerById( id: string ) {
     if( this.remotePlayers === undefined || this.remotePlayers.length == 0 ) return;
@@ -740,162 +575,83 @@ class Client {
     if( players.length == 0 ) return;
 
     return players[0];
-  }
+  };
+
+  getRemotePlayerBodyById( model: string ) {
+    let bodies = this.physicsWorld.bodies;
+    for(let i = 0; i < bodies.length; i++) {
+      // @ts-ignore
+      if (bodies[i].customData?.name === model) {
+        return bodies[i];
+      }
+    }
+    return;
+  };
+
+  updatePhysics() {
+    if (this.physicsWorld !== undefined){
+
+      // Run the simulation independently of framerate every 1 / 60 ms
+      this.physicsWorld.fixedStep();
+      if(this.counter === 0) {
+        console.log('physicsWorld', this.physicsWorld)
+        this.counter = 1;
+      }
+      this.removeStrayPhysicsBodies();
+    }
+  };
 
   animate() {
     const game = this;
 
+    // remove any orphaned physics bodies
+    if(this.physicsBodiesCull.length > 0) {
+      for( let i = 0; i < this.physicsBodiesCull.length; i++) {
+        this.physicsWorld.removeBody(this.physicsBodiesCull[i]);
+      }
+      this.physicsBodiesCull.splice(0);
+    }
+
+    this.updatePhysics();
     this.updateDisplayTimer();
     this.updateScorePanel();
-
-    if ( this.isPlayerOnTracks() == false ) {
-      if ( this.player !== undefined ) {
-        if ( !this.player.falling) {
-          this.player.falling = true;
-
-          if ( this.playerFallenSound?.isPlaying ) {
-            this.playerFallenSound.stop();
-            this.playerFallenSound.play();
-          } else {
-            this.playerFallenSound?.play();
-          }
-        }
-
-        if ( this.player.object !== undefined && this.player.object.position.y < -2.5 ) {
-          this.player.resetFallenPlayer();
-
-          if ( this.revivePlayerSound?.isPlaying ) {
-            this.revivePlayerSound.stop();
-            this.revivePlayerSound.play();
-          } else {
-            this.revivePlayerSound?.play();
-          }
-        }
-      }
-    }
-
-    this.completedCourse()
-
-    let wallConnected = false;
-    for ( let i = 0; i < this.wallList.length; i++ ) {
-      if ( this.player !== undefined ) {
-        if ( this.checkWallCollision( this.wallList[i] )) {
-          console.log('wall collision');
-          wallConnected = true;
-          if ( this.collisionSound?.isPlaying ) {
-            this.collisionSound.stop();
-            this.collisionSound.play();
-          } else {
-            this.collisionSound?.play();
-          }
-          break;
-        }
-      }
-    }
-    if ( !wallConnected && this.player?.collided && this.player.collided.object == 'wall' ) {
-      this.player.collided.value = false;
-      this.player.collided.object = '';
-      if ( this.player.characterController !== undefined ) {
-        this.player.characterController.barrelCollisionCounter = 0;
-      }
-      console.log('no wall collision')
-    }
 
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
 
-      requestAnimationFrame( function(){ game.animate() } );
+      if ( this.hasPlayerFallenOffTrack() ) {
+        if ( this.player !== undefined ) {
+          if ( !this.player.falling) {
+            this.player.falling = true;
+            this.audioManager?.playFallenPlayerSound()
+          }
 
-      if ( this.player?.characterController !== undefined ) {
-        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling, this.checkpointReached );
-        // run blink animation after player on player collision
-        if( this.player.collided.value == true && this.player.collided.object == 'player') {
-          this.player.mixer?.addEventListener( 'finished', function() {
-            if ( game.player?.skinnedMesh !== undefined ) {
-              game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
-            }
-          });
+          if ( this.player.object !== undefined && this.player.object.position.y < -11.5 ) {
+            this.player.resetFallenPlayer();
+            this.audioManager?.playRevivePlayerSound();
+          }
         }
       }
+
+      requestAnimationFrame( function(){ game.animate() } );
+
+      if ( this.player?.characterController !== undefined && !this.gameOver) {
+        this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling );
+      }
+
+      this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
+
+      this.hammerObstacles.forEach(( hammer, index ) => hammer.update( this.movingHammerLocations[index]));
+
+      this.ballObstacles.forEach(( ball, index) => ball.update( this.movingBallLocations[index] ));
+
+      this.platformObstacles.forEach(( platform, index) => platform.update( this.movingPlatformLocations[index] ));
+
+      if( !this.gameOver ) this.updateRemotePlayers( mixerUpdateDelta );
 
       this.coins.forEach( coin => coin.update( mixerUpdateDelta ))
 
-      this.fruitObstacles.forEach( (fruit, index) => fruit.update(this.fruitObstaclesData[index], this.fruitVisibility));
-
-      this.checkMovingFruitCollision();
-
-      if (this.player?.collided.value == true && this.player.collided.object == 'fruit') {
-        this.player.mixer?.addEventListener( 'finished', function() {
-          if ( game.player?.skinnedMesh !== undefined ) {
-            game.onBlinkPlayer( game.BLINK_AMOUNT, game.player?.skinnedMesh, game.player );
-          }
-        });
-      }
-
-      this.barrelObstacles.forEach( barrel => barrel.update( mixerUpdateDelta ));
-
-      this.updateRemotePlayers( mixerUpdateDelta );
-
-      let found = false
-      for(let i = 0; i < this.barrelObstacles.length; i++) {
-        if(this.player !== undefined) {
-          if (this.checkBarrelCollision(this.barrelObstacles[i], this.player)){
-            console.log('PLAYER COLLIDED WITH BARREL')
-            console.log('velocity',this.player.characterController?.velocity)
-            found = true;
-            break;
-          }
-        }
-      }
-
-      if (found == false && this.player?.collided.value == true && this.player?.collided.object == 'barrel') {
-        this.player.collided.value = false;
-        this.player.collided.object = '';
-        if(this.player.characterController !== undefined) {
-          this.player.characterController.barrelCollisionCounter = 0;
-        }
-        console.log('no barrel collision')
-      }
-
-      for (let i = this.coins.length - 1; i >=0; i--) {
-        if ( this.checkCoinCollsion(this.coins[i], this.player)){
-          let coin = this.coins[i];
-          if(coin.object !== undefined && coin.object.parent !== null) {
-            let coinPosition = { x: coin.object.position.x, z: coin.object.position.z}
-            if ( this.player !== undefined) {
-              if ( this.coinPickupSound?.isPlaying ) {
-                this.coinPickupSound.stop();
-                this.coinPickupSound?.play();
-              } else {
-                this.coinPickupSound?.play();
-              }
-
-              this.player.score += coin.points;
-            }
-            this.socket.emit('updateCoins', coinPosition);
-            game?.scene?.remove( coin.object.parent.remove(coin.object));
-            this.coins.splice(i, 1);
-          }
-        }
-      }
-
-      if ( this.remotePlayers !== undefined ) {
-        this.checkCollisions();
-        this.remotePlayers.forEach(( rPlayer: Player ) => {
-          // run blink animation after player on player collision
-          if( rPlayer.collided.value == true && rPlayer.collided.object == 'player') {
-            rPlayer.mixer?.addEventListener( 'finished', function() {
-              game.onBlinkPlayer( game.BLINK_AMOUNT, rPlayer?.skinnedMesh, rPlayer );
-            });
-          }
-        });
-      }
-
       if( this.player?.mixer != undefined ) {
-          this.player.boxHelper?.geometry.computeBoundingBox();
-          this.player.boxHelper?.update();
-          this.player.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
-
           this.player.mixer?.update( mixerUpdateDelta );
           this.player.updatePlayerData();
       }
@@ -907,241 +663,14 @@ class Client {
         }
       }
 
+      if( this.gameOver ) {
+        this.currentState = this.GAMESTATES.LEADERBOARD;
+        this.onLeaderBoardState();
+      }
+
       this.renderer.render( this.scene, this.camera );
     }
-  }
-
-  render() {
-    this.renderer.render( this.scene, this.camera );
-  }
-
-  isPlayerOnTracks() {
-    if ( this.player !== undefined && this.player.object !== undefined ) {
-      const playerBox = new THREE.Box3().setFromObject( this.player.object );
-      const collisionMargin = 0.3;
-      let tracks = this.scene?.getObjectsByProperty( 'name', 'track' );
-
-      if ( tracks !== undefined ) {
-        for( let i = 0; i < tracks.length; i++ ) {
-          const trackBox = new THREE.Box3().setFromObject( tracks[i] );
-          let collisionDetected = playerBox.intersectsBox( trackBox.expandByScalar( -collisionMargin ));
-
-          if ( collisionDetected ) {
-            return true;
-          }
-        }
-        return false;
-      } else {
-        return true;
-      }
-    } else {
-      return true;
-    }
-  }
-
-  checkCoinCollsion( coinModel:any, playerModel:any ) {
-    if ( coinModel !== undefined && playerModel !== undefined ){
-      if(playerModel.boundaryBox !== undefined){
-        const coinBoundingBox = new THREE.Box3().setFromObject(coinModel.boxHelper);
-        const playerBoundingBox = playerModel.boundaryBox;
-
-        //check if the two boxes intersect
-        return coinBoundingBox.intersectsBox(playerBoundingBox);
-      }
-    }
-  }
-
-  checkWallCollision( wall: string ) {
-    if( this.player !== undefined && this.player.object !== undefined && this.player?.collided.value == false ) {
-      const wallObject = this.scene?.getObjectByName( wall );
-
-      if( wallObject !== undefined ) {
-        const collisionMargin = 0.3;
-        const wallBox = new THREE.Box3().setFromObject( wallObject );
-        const playerBox = new THREE.Box3().setFromObject( this.player.object );
-
-        const collisionDetected = playerBox.intersectsBox( wallBox.expandByScalar( -collisionMargin ));
-
-        if ( collisionDetected ) {
-          this.player.collided.value = true;
-          this.player.collided.object = 'wall';
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  checkBarrelCollision(barrelModel: GroundObstacle, playerModel: PlayerLocal) {
-    if(playerModel.collided.value == false) {
-
-      if ( barrelModel !== undefined && playerModel !== undefined ){
-        if(barrelModel.object !== undefined && playerModel.object !== undefined){
-
-          const collisionMargin = 0.3;
-          const barrelBox = new THREE.Box3().setFromObject(barrelModel.object);
-          const playerBox = new THREE.Box3().setFromObject(playerModel.object);
-
-          // Check if the two objects intersect with a margin for error
-          const collisionDetected =playerBox.intersectsBox(barrelBox.expandByScalar(-collisionMargin));
-
-          if(collisionDetected) {
-            playerModel.collided.value = true;
-            playerModel.collided.object = 'barrel';
-
-            //play impact sound
-            if ( this.smallCollisionSound?.isPlaying) {
-              this.smallCollisionSound.stop();
-              this.smallCollisionSound?.play();
-            } else {
-              this.smallCollisionSound?.play()
-            }
-
-            if (playerModel.score >= Math.abs(barrelModel.points)) {
-              playerModel.score += barrelModel.points;
-              if ( this.coinDropSound?.isPlaying) {
-                this.coinDropSound.stop();
-                this.coinDropSound?.play();
-              } else {
-                this.coinDropSound?.play()
-              }
-            }
-            return true;
-          }
-        }
-      }
-    }
-    return false
-  }
-
-  checkCollisions() {
-    this.player?.boxHelper?.geometry.computeBoundingBox();
-    this.player?.boxHelper?.update();
-    this.player?.boundaryBox?.copy( this.player.boxHelper.geometry.boundingBox ).applyMatrix4( this.player.boxHelper.matrixWorld );
-    const playerBB = this.player?.boundaryBox;
-
-    for( let remotePlayer of this.remotePlayers ) {
-      remotePlayer?.boxHelper?.geometry.computeBoundingBox();
-      remotePlayer?.boxHelper?.update();
-      remotePlayer?.boundaryBox?.copy( remotePlayer.boxHelper.geometry.boundingBox ).applyMatrix4( remotePlayer.boxHelper.matrixWorld );
-
-      const remoteBB: Box3 = remotePlayer.boundaryBox;
-
-      if( playerBB?.intersectsBox( remoteBB ) && this.player?.collided.value == false ) {
-        const distance = this.player?.object?.position?.distanceTo( remotePlayer.object.position );
-        if(distance !== undefined){
-          if( distance < 1 ) {
-            if( this.player !== undefined ) {
-              this.player.collided.value = true;
-              this.player.collided.object = 'player';
-
-              //play impact sound
-              if ( this.collisionSound?.isPlaying) {
-                this.collisionSound.stop();
-                this.collisionSound?.play();
-              } else {
-                this.collisionSound?.play()
-              }
-
-              // player loses 30% of their coins
-              if ( this.player.score > 0 ) {
-
-                if ( this.largeCoinDropSound?.isPlaying) {
-                  this.largeCoinDropSound.stop();
-                  this.largeCoinDropSound?.play();
-                } else {
-                  this.largeCoinDropSound?.play()
-                }
-
-                this.player.score = this.player.score - ( Math.round(this.player.score * 0.3 ));
-                console.log('player score', this.player.score)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  checkMovingFruitCollision() {
-    if ( this.fruitVisibility && !this.checkpointReached) {
-      if (this.player !== undefined && this.player.object !== undefined) {
-        const playerBox = new THREE.Box3().setFromObject(this.player.object);
-
-        for ( let i = 0; i < this.fruitObstacles.length; i++ ) {
-          let obstacle = this.fruitObstacles[i];
-
-          if ( obstacle !== undefined && obstacle.object !== undefined) {
-          let fruitBox = new THREE.Box3().setFromObject( obstacle.object );
-
-            if ( playerBox.intersectsBox(fruitBox) && this.player.collided.value == false ) {
-              this.player.collided.value = true;
-              this.player.collided.object = 'fruit';
-              console.log('fruit collides with player')
-
-              //play impact sound
-              if ( this.collisionSound?.isPlaying) {
-                this.collisionSound.stop();
-                this.collisionSound?.play();
-              } else {
-                this.collisionSound?.play()
-              }
-
-              // player loses 50% of their coins
-              // we only play the coin sound if the player has a positive score
-              if ( this.player.score > 0 ) {
-                if ( this.largeCoinDropSound?.isPlaying) {
-                  this.largeCoinDropSound.stop();
-                  this.largeCoinDropSound?.play();
-                } else {
-                  this.largeCoinDropSound?.play()
-                }
-                this.player.score = this.player.score - ( Math.round( this.player.score * 0.5 ));
-                console.log( 'player score after collision with fruit', this.player.score)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  onBlinkPlayer( numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
-    let iterationCounter = 0;
-
-    this.setBlink( iterationCounter, numberOfIterations, skinnedMesh, player );
-  }
-
-  changePlayerOpacity( skinnedMesh: THREE.SkinnedMesh[], counter: number ) {
-    skinnedMesh?.forEach( ( mesh ) => {
-      let opacityScale = counter % 2 === 0 ? 0.5 : 1;
-        //@ts-ignore
-        mesh.material.opacity = opacityScale;
-    })
-  }
-
-  setBlink( iteratorIndex: number, numberOfIterations: number, skinnedMesh: THREE.SkinnedMesh[], player: Player ) {
-    const game = this;
-    setTimeout( function() {
-      game.changePlayerOpacity( skinnedMesh, iteratorIndex );
-      iteratorIndex++;
-
-      if ( iteratorIndex >= numberOfIterations ) {
-        // console.log('we have finished with the blinking', player)
-        player.resetCollidedPlayer();
-
-        if ( game.revivePlayerSound?.isPlaying ) {
-          game.revivePlayerSound.stop();
-          game.revivePlayerSound.play();
-        } else {
-          game.revivePlayerSound?.play();
-        }
-
-        return;
-      }
-      game.setBlink( iteratorIndex, numberOfIterations, skinnedMesh, player );
-    }, 300)
-  }
+  };
 
   formatGameTimer(timer: number): string {
     if (timer < 10) {
@@ -1155,19 +684,92 @@ class Client {
     } else {
       return '2:00';
     }
-  }
+  };
 
-  completedCourse() {
-    if ( !this.checkpointReached ) {
-      if ( this.player !== undefined && this.player.characterController !== undefined) {
-        if ( this.player.characterController.model.position.x >= 0 && this.player.characterController.model.position.x <= 18 &&
-          this.player.characterController.model.position.z >= -350 && this.player.characterController.model.position.z <= -335 ) {
-            this.player.score += 1000;
-            console.log('checkpoint reached')
-            this.checkpointReached = true;
-          }
+  removeCoin(coinName: string) {
+    const coin = this.scene?.getObjectByName( coinName );
+    if( coin == undefined ) return;
+
+    // tell the server to update coins
+    let coinPosition = { x: coin.position.x, z: coin.position.z }
+    this.socket.emit('updateCoins', coinPosition);
+
+    const coinElement = this.coins.findIndex( el => el.name === coinName );
+    if( coinElement !== -1) {
+      if(this.player !== undefined) this.player.score += this.coins[coinElement].points;
+      this.coins.splice( coinElement, 1);
+    }
+    this.scene?.remove( coin );
+  };
+
+  removeStrayPhysicsBodies() {
+    let coinCull = [];
+
+    if( this.physicsWorld === undefined ) return;
+
+    // @ts-ignore
+    const coinBodies = this.physicsWorld.bodies.filter( body => body.customData?.type === 'coin' );
+
+    for( let i = 0; i < coinBodies.length; i++ ) {
+      // @ts-ignore
+      const found = this.coins.find(coin => coin.object !== undefined && coin.object.name === coinBodies[i].customData?.name);
+      if( found === undefined ) {
+        coinCull.push( coinBodies[i] );
       }
     }
+
+    for( let i = 0; i < coinCull.length; i++ ) {
+      this.physicsWorld.removeBody( coinCull[i] );
+    }
+  };
+
+  hasPlayerFallenOffTrack() {
+    if( this.player !== undefined && this.player.riderPhysicsBody !== undefined) {
+      const playerBody = this.player.riderPhysicsBody;
+      console.log('PLAYER-BODY', playerBody.customData?.name, this.player.riderPhysicsBody.customData?.name)
+      if(playerBody.position.y >= 0) return false;
+
+      if( playerBody.world !== null) {
+        const playerContacts = playerBody.world.contacts;
+        for(let i = 0; i < playerContacts.length; i++ ){
+          let a = <CustomBody>playerContacts[i].bj
+          let b = <CustomBody>playerContacts[i].bi
+          console.log(a.customData?.name, "=>",b.customData?.name)
+        }
+        // console.log('PLAYER CONTACTS', playerContacts, 'for ', playerBody.customData?.name)
+        if (playerContacts.length === 0 && playerBody.position.y < -4) {
+          console.log('no contacts available and player is below -4', playerBody.customData?.name)
+          return true;
+        }
+
+        //playerContacts do not appear to just be related to this.riderPhysicsBody, it can also relate to remote player
+        //need to pull out contacts that feature this.riderPhysicsBody
+        const contactMap = playerContacts.map(function (contact) {
+          const bodyA = <CustomBody>contact.bi;
+          const bodyB = <CustomBody>contact.bj;
+          if (bodyA.customData !== undefined && bodyB.customData !== undefined) {
+            if(bodyA.customData.type === 'floor' || bodyB.customData.type === 'floor') {
+              console.log( playerBody.customData?.name, 'player is on a floor object')
+              return false;
+            }
+            if (bodyA.customData.type === 'moving platform') {
+              return bodyA;
+            } else if (bodyB.customData.type === 'moving platform') {
+              return bodyB;
+            }
+          }
+        });
+
+        //remove any elements that are undefined
+        let filteredContactMap = contactMap.filter(function(body) {
+          return body !== undefined;
+        });
+
+        // console.log('filtered contact map', filteredContactMap)
+        return filteredContactMap.length === 0 && playerBody.position.y < -4;
+      }
+    }
+    return false;
   }
 }
 

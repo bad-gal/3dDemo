@@ -26,7 +26,7 @@ export default class ExpelledState {
     // add paragraph
     const expelledParagraph = document.createElement( "p" );
     expelledParagraph.className = ( 'expelled-para');
-    const paraContent = document.createTextNode( "You have been kicked out because a game is already underway, you didn't choose a player within the timeframe or there were more than 10 players. Try again later" );
+    const paraContent = document.createTextNode( "You have been kicked out because you didn't choose a player within the timeframe or the maximum number of players were reached." );
     expelledParagraph.appendChild( paraContent );
     containerDiv.appendChild( expelledParagraph );
   }

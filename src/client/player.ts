@@ -3,6 +3,11 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import CharacterController from './characterController';
 import ThirdPersonCameraController from './third_person_camera_controller';
 import { SkinnedMesh, Vector3 } from 'three';
+import PhysicsBody from './physicsBody';
+import { ShapeType } from 'three-to-cannon';
+import * as CANNON from 'cannon-es';
+import AudioManager from "./audioManager";
+import CustomBody from "./customBody";
 
 export default class Player {
   local: boolean;
@@ -17,8 +22,6 @@ export default class Player {
   deleted: undefined;
   characterController: CharacterController | undefined;
   thirdPersonCamera: ThirdPersonCameraController | undefined;
-  boundaryBox: any;
-  boxHelper: any;
   action: string;
   animationsMap: any;
   position: Vector3 | undefined;
@@ -26,27 +29,28 @@ export default class Player {
   skinnedMesh: THREE.SkinnedMesh[] = [];
   score: number;
   falling: boolean;
+  riderPhysicsBody: CustomBody;
 
   constructor( game: any, camera: any, options?: any ) {
     this.local = true;
-    let model: string;
     let filename: any;
     this.action = '';
     this.collided = { value: false, object: '' };
     this.falling = false;
     this.score = 0;
+    this.riderPhysicsBody = new CANNON.Body;
 
     const quadRacers: { name: string; filename: string }[]  = [
-      { name: "camouflage rider", filename: "assets/camouflage_rider_quad.glb" },
-      { name: "green rider", filename:"assets/green_rider_quad.glb" },
-      { name: "lime rider", filename:"assets/lime_rider_quad.glb" },
-      { name: "mustard rider", filename:"assets/mustard_rider_quad.glb" },
-      { name: "neon rider", filename:"assets/neon_rider_quad.glb" },
-      { name: "orange rider", filename:"assets/orange_rider_quad.glb" },
-      { name: "purple rider", filename:"assets/purple_rider_quad.glb" },
-      { name: "red rider", filename:"assets/red_rider_quad.glb" },
-      { name: "red star rider", filename:"assets/red_star_rider_quad.glb" },
-      { name: "blue rider", filename:"assets/blue_rider_quad.glb" },
+      { name: "camouflage rider", filename: "assets/riders/camouflage_rider_quad.glb" },
+      { name: "green rider", filename:"assets/riders/green_rider_quad.glb" },
+      { name: "lime rider", filename:"assets/riders/lime_rider_quad.glb" },
+      { name: "mustard rider", filename:"assets/riders/mustard_rider_quad.glb" },
+      { name: "neon rider", filename:"assets/riders/neon_rider_quad.glb" },
+      { name: "orange rider", filename:"assets/riders/orange_rider_quad.glb" },
+      { name: "purple rider", filename:"assets/riders/purple_rider_quad.glb" },
+      { name: "red rider", filename:"assets/riders/red_rider_quad.glb" },
+      { name: "red star rider", filename:"assets/riders/red_star_rider_quad.glb" },
+      { name: "blue rider", filename:"assets/riders/blue_rider_quad.glb" },
     ]
 
     if ( typeof options === 'object' ) {
@@ -54,6 +58,7 @@ export default class Player {
       this.options = options;
       this.id = options.id;
       this.model = options.model;
+      this.position = new Vector3( options.position.x, options.position.y, options.position.z );
     }
     else {
       this.model = game.userModel;
@@ -294,8 +299,11 @@ export default class Player {
     this.animationsMap = new Map();
     filename = quadRacers.find( racer => racer.name === this.model )?.filename;
 
+    //TODO: Refactor the line below: if filename exists then name WILL NOT be undefined
+    let modelName = quadRacers.find( racer => racer.name === this.model )?.name;
+
     loader.load( filename, ( object ) => {
-      object.scene.name = model;
+      object.scene.name = this.model;
       const mixer = new THREE.AnimationMixer( object.scene );
       clips = object.animations;
       let clipAction;
@@ -317,34 +325,46 @@ export default class Player {
           o.material.transparent = true
           this.skinnedMesh.push(o)
         }
-      })
+      });
+
+      if(modelName === undefined) modelName = "undefined";
 
       if ( player.deleted === undefined ) {
         game.scene.add( object.scene );
-
-        // create player boundary box for collision detection
-        const geometry = new THREE.BoxGeometry( 0.75, 2.5, 0.75 );
-        const box = new THREE.Mesh( geometry, new THREE.MeshBasicMaterial( { color: 0xffbbaa } ) );
-
-        this.boxHelper = new THREE.BoxHelper( box, 0xf542dd );
-        this.boxHelper.visible = false;
-
-        this.boundaryBox = new THREE.Box3();
-        this.boundaryBox.setFromObject( this.boxHelper );
-
-        object.scene.add( this.boxHelper );
-
-        this.boxHelper?.geometry.computeBoundingBox();
-        this.boxHelper?.update();
-        this.boundaryBox?.copy( this.boxHelper.geometry.boundingBox ).applyMatrix4( this.boxHelper.matrixWorld );
+        this.riderPhysics(object.scene, modelName, game);
       }
 
       if( player.local ) {
         this.action = 'idle_02';
-        let characterController = new CharacterController( object.scene, mixer, this.animationsMap, camera, this.action, this.position );
+        let characterController = new CharacterController( object.scene, mixer, this.animationsMap, camera, this.action, this.position, this.riderPhysicsBody);
         let thirdPersonCamera = new ThirdPersonCameraController( { target: characterController } );
         player.characterController = characterController;
         player.thirdPersonCamera = thirdPersonCamera;
+        let audioManager = new AudioManager( game.camera );
+
+        this.riderPhysicsBody.addEventListener("collide", ( e: any ) => {
+          const other = e.body;
+          if( other.customData !== undefined ) {
+            const otherType = other.customData.type;
+            switch ( otherType ) {
+              case 'coin':
+                audioManager.playCoinSound();
+                game.removeCoin(other.customData.name, other);
+                game.physicsBodiesCull.push(other);
+                break;
+              case 'player':
+                console.log('player collided with another player');
+                break;
+              case 'moving platform':
+                if(this.characterController !== undefined) {
+                  if( !this.characterController.onPlatform ) {
+                    this.characterController.onPlatform = true;
+                  }
+                }
+                break;
+            }
+          }
+         });
 
         // without the ignore we get TS2339: Property 'initSocket' does not exist on type 'Player'
         // even though initSocket is a valid property of PlayerLocal which extends Player
@@ -355,17 +375,66 @@ export default class Player {
         }
       }
       else {
-				player.object.userData.id = player.id;
-				player.object.userData.remotePlayer = true;
+        player.object.userData.id = player.id;
+        player.object.userData.remotePlayer = true;
         player.object.userData.position = options.position;
         player.object.userData.collided = player.collided;
-        // player.object.userData.collided.object = player.collided.object;
-        this.position = new Vector3( options.position.x, options.position.y, options.position.z );
 
-				const players = game.initialisingPlayers.splice( game.initialisingPlayers.indexOf( player ), 1 );
-				game.remotePlayers.push( players[0] );
+        const players = game.initialisingPlayers.splice(game.initialisingPlayers.indexOf(player), 1);
+        game.remotePlayers.push(players[0]);
       }
     });
+  }
+
+  private riderPhysics(rider: THREE.Group, modelName: string, game: any) {
+    const foundScene = game.scene.getObjectByName( modelName );
+    if (foundScene == undefined) return;
+
+    const mass = 5;
+    const bodyMaterial = new CANNON.Material("bodyMaterial");
+    const body = new PhysicsBody(rider, modelName, 'player', ShapeType.HULL,4, 1 | 4 | 8, mass, bodyMaterial);
+    this.riderPhysicsBody = body.createCustomBody();
+    this.riderPhysicsBody.linearDamping = 0.94;
+    this.riderPhysicsBody.angularDamping = 0.94;
+    this.riderPhysicsBody.fixedRotation = true;
+
+    if (this.position !== undefined ) {
+      this.riderPhysicsBody.position.set(this.position.x, this.position.y, this.position.z);
+    }
+
+    game.physicsWorld.addBody(this.riderPhysicsBody);
+
+    const groundMaterial = new CANNON.ContactMaterial(game.groundMaterial, bodyMaterial, {
+      friction: 0.5, // Use some friction
+      restitution: 0.1 // And some bounciness
+    });
+
+    const grassMaterial = new CANNON.ContactMaterial(game.grassMaterial, bodyMaterial, {
+      friction: 0.6, // Use some friction
+      restitution: 0.9 // And some bounciness
+    });
+
+    const coinMaterial = new CANNON.ContactMaterial( game.coinMaterial, bodyMaterial, {
+      friction: 0,
+      restitution: 0
+    });
+
+    const ballMaterial = new CANNON.ContactMaterial( game.ballMaterial, bodyMaterial, {
+      friction: 0.5,
+      restitution: 0.5
+    });
+
+    const riderWallMaterial = new CANNON.ContactMaterial(game.wallMaterial, bodyMaterial, {
+      friction: 0.5,
+      restitution: 0
+    });
+
+    // game.physicsWorld.materials
+    game.physicsWorld.addContactMaterial( groundMaterial );
+    game.physicsWorld.addContactMaterial( grassMaterial );
+    game.physicsWorld.addContactMaterial( coinMaterial );
+    game.physicsWorld.addContactMaterial( ballMaterial );
+    game.physicsWorld.addContactMaterial( riderWallMaterial );
   }
 
   update( delta: any ){
@@ -373,6 +442,7 @@ export default class Player {
     this.game.remoteScores = [];
 
     if( this.game.remoteData.length > 0 ) {
+      // the length of remoteData should be the number of players in the game
       let found = false;
       for( let data of this.game.remoteData ) {
         if( data.id != this.id ) continue;
@@ -382,29 +452,31 @@ export default class Player {
         this.object?.quaternion.set( data.quaternion._x, data.quaternion._y, data.quaternion._z, data.quaternion._w );
         this.game.remoteScores.push( { id: data.id, model: data.model, score: data.score } );
 
+        // remote player
         if( !this.local ) {
+          // find the matching physics body here and update it
+          let bodies = this.game.physicsWorld.bodies;
+          for(let i = 0; i < bodies.length; i++) {
+            if (bodies[i].customData?.name === data.model) {
+              bodies[i].position.set(data.physicsPosition.x, data.physicsPosition.y, data.physicsPosition.z);
+              bodies[i].quaternion.set(data.physicsQuaternion.x, data.physicsQuaternion.y, data.physicsQuaternion.z, data.physicsQuaternion.w)
+            }
+          }
+
           if( this.action !== data.action ) {
             if( this.action == '' ) this.action = 'idle_02';
-
-            this.object?.updateMatrix()
-            this.object?.updateMatrixWorld( true );
 
             const currentClip = this.animationsMap.get( this.action );
             currentClip.fadeOut( 0.2 );
 
             const newClip = this.animationsMap.get( data.action );
-
-            if( data.action == 'drive_fail_02' ){
-              newClip.reset().fadeIn( 0.2 ).setLoop( THREE.LoopOnce, 1 );
-              newClip.clampWhenFinished = true;
-              newClip.play();
-            }
-            else {
-              newClip.reset().fadeIn( 0.2 ).play();
-            }
+            newClip.reset().fadeIn( 0.2 ).play();
 
             this.action = data.action;
             this.collided = data.collided;
+
+            this.object?.updateMatrix()
+            this.object?.updateMatrixWorld( true );
           }
         }
         found = true;
@@ -417,31 +489,12 @@ export default class Player {
     this.falling = false;
 
     if ( this.object !== undefined ) {
-      if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
-      this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
-      this.boxHelper?.geometry.computeBoundingBox();
-      this.boxHelper?.update();
+      if ( this.position !== undefined ) {
+        this.riderPhysicsBody.position.set(this.position.x, this.position.y, this.position.z );
+        this.riderPhysicsBody.quaternion.set( 0, 0, 0, 1 );
+      }
+
       this.action = 'idle_02';
-      this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
-    }
-  }
-
-  resetCollidedPlayer() {
-    this.collided.value = false;
-    this.collided.object = '';
-    if ( this.object !== undefined ) {
-      if ( this.position !== undefined ) this.characterController?.model.position.set( this.position.x, this.position.y, this.position.z )
-      this.characterController?.model.quaternion.set( 0, 0, 0, 1 );
-
-      this.skinnedMesh.forEach((mesh: THREE.SkinnedMesh) =>  {
-        //@ts-ignore
-        mesh.material.opacity = 1;
-      })
-
-      this.boxHelper?.geometry.computeBoundingBox();
-      this.boxHelper?.update();
-      this.action = 'idle_02';
-      this.boundaryBox?.copy( this.boxHelper?.geometry.boundingBox ).applyMatrix4( this.boxHelper?.matrixWorld );
     }
   }
 }

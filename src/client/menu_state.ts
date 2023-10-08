@@ -10,6 +10,10 @@ export default class MenuState {
     const scorePanel = document.getElementById("score-info");
     if ( scorePanel !== null ) scorePanel.style.visibility='hidden';
 
+    // hide leaderboard
+    const leaderBoard = document.getElementById("leaderboard");
+    if ( leaderBoard !== null ) leaderBoard.style.visibility='hidden';
+
     // create a container
     const containerDiv = document.createElement("div");
     containerDiv.className = ("container");
@@ -34,8 +38,8 @@ export default class MenuState {
 
     // add button
     const btn = document.createElement("button");
-    btn.className = ('btn waiting');
-    btn.id = ('joinButton');
+    btn.className = ('btn-waiting');
+    btn.id = ('join-button');
     btn.innerHTML = "Join Waiting Room";
     containerDiv.appendChild(btn);
   }
@@ -56,11 +60,11 @@ export default class MenuState {
 
     this.createMenuItems();
 
-    const waitingBtn: HTMLElement = document.getElementById("joinButton")!;
+    const waitingBtn: HTMLElement = document.getElementById("join-button")!;
     
     waitingBtn.addEventListener("click", function() {
       game.currentState = game.GAMESTATES.WAITING_ROOM;
-      game.onWaitingRoomState();
+      game.onWaitingRoom();
     });
   };
 }

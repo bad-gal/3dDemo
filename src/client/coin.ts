@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
-import { randInt } from 'three/src/math/MathUtils';
+import PhysicsBody from './physicsBody';
+import { ShapeType } from 'three-to-cannon';
 
 export default class Coin {
   game: any;
@@ -9,9 +10,9 @@ export default class Coin {
   mixer: THREE.AnimationMixer | undefined;
   object: THREE.Object3D<THREE.Event> | undefined;
   points: number;
-  boxHelper: THREE.Box3Helper | undefined;
+  name: string;
 
-  constructor( game: any, coinData: {x: number, z: number, type: string} ) {
+  constructor( game: any, coinData: {x: number, z: number, type: string}, id: number ) {
 
     this.game = game;
 
@@ -22,16 +23,15 @@ export default class Coin {
     ]
 
     let coinType = coinData.type;
-
     let res = coinList.filter(coin => coin.type == coinType)
     this.points = res[0].points;
     let filename = res[0].filename;
-
+    this.name = `${coinType}-${id}`;
     const loader = new GLTFLoader();
     const coin = this;
 
     loader.load( filename, ( object ) => {
-      object.scene.name = coinType;
+      object.scene.name = this.name;
       const mixer = new THREE.AnimationMixer( object.scene );
 
       coin.root = object;
@@ -39,20 +39,28 @@ export default class Coin {
       let action = mixer.clipAction( object.animations[0] );
       action.play();
       coin.object = object.scene;
+      object.scene.position.set( coinData.x, 1, coinData.z );
       game.scene.add( object.scene );
 
-      object.scene.position.set( coinData.x, 1, coinData.z );
+      const body = new PhysicsBody(
+          object.scene,
+          this.name,
+          'coin',
+          ShapeType.BOX,
+          8, // 2^3
+          4,
 
-      const mesh = object.scene.children[0]
-      const box = new THREE.Box3().setFromObject(mesh);
-      this.boxHelper = new THREE.Box3Helper(box, new THREE.Color(0xffbbaa))
-      this.boxHelper.visible = false
-      object.scene.add( this.boxHelper );
+          0,
+          game.coinMaterial);
+
+      const result = body.createCustomBody();
+      result.collisionResponse = false;
+      game.physicsWorld.addBody(result);
     });
   }
 
   coinValue() {
-    this.points;
+    return this.points;
   }
 
   update( delta: any ){

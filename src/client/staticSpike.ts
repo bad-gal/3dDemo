@@ -1,0 +1,40 @@
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader';
+import {ShapeType} from "three-to-cannon";
+import PhysicsBody from "./physicsBody";
+import * as CANNON from 'cannon-es';
+
+export default class staticSpike {
+  game: any;
+  object: THREE.Object3D<THREE.Event> | undefined;
+  body: CANNON.Body | undefined;
+
+  constructor( game: any, data: { name: string, position: { x: number, y: number, z: number }}) {
+    this.game = game;
+
+    let spikeList = [
+      { name: 'blue-spike', filename: 'assets/environment/blue-spike-trap.glb' },
+      { name: 'green-spike', filename: 'assets/environment/green-spike-trap.glb' },
+      { name: 'red-spike', filename: 'assets/environment/red-spike-trap.glb' },
+    ];
+
+    const name = data.name;
+    const spike = spikeList.filter( sp => sp.name === name );
+    let filename = spike[0].filename;
+
+    const loader = new GLTFLoader();
+
+    loader.load( filename, (object) => {
+      object.scene.name = name;
+      object.scene.position.set( data.position.x, data.position.y, data.position.z );
+      game.scene.add(object.scene);
+      this.object = object.scene;
+
+      this.body = new CANNON.Body;
+      const body = new PhysicsBody( object.scene, name, 'obstacle', ShapeType.BOX,8, 4,  0, game.wallMaterial );
+
+      this.body = body.createCustomBody();
+      game.physicsWorld.addBody(this.body);
+    });
+  };
+};

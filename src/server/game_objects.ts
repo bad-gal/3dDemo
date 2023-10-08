@@ -1,533 +1,223 @@
 export default class GameObjects {
-
-  barrelLength_X: number;
-  barrelLength_Z: number;
-
-  constructor() {
-    this.barrelLength_X = 6;
-    this.barrelLength_Z = 8;
-  }
-
-  createNewGroundObstacles() {
-    const groundObstacleTypes = ['barrel', 'barrel_side'];
-    let groundObstacleLocations = [];
-
-    const BARREL_MIN = 2;
-    const BARREL_MAX = 6;
-    const LARGE_TRACK_BARREL_MIN = 6;
-    const LARGE_TRACK_BARREL_MAX = 12;
-
-    // ************** TRACK ONE - MAIN RUNWAY ***************
-    const trackOneX = [];
-    const trackOneZ = [];
-
-    for ( let i = ( 0 + ( this.barrelLength_X / 2 )); i < ( 18 - ( this.barrelLength_X / 2 )); i++ ) { trackOneX.push( i ); }
-    for ( let i = ( -2 - ( this.barrelLength_Z / 2 )); i > ( -94 - ( this.barrelLength_Z / 2 )); i--) { trackOneZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( BARREL_MIN, BARREL_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackOneX.length );
-      let randZ = Math.floor( Math.random() * trackOneZ.length );
-
-      let x = trackOneX[randX];
-      let z = trackOneZ[randZ];
-
-      if ( i > 0 ) {
-        let intersected = false;
-
-        ({ x, z, intersected } = this.checkIntersected( groundObstacleLocations, i, x, this.barrelLength_X, z, this.barrelLength_Z, intersected, trackOneX, trackOneZ ));
-      }
-
-      const obstacleType = groundObstacleTypes[this.generateRandomIntInRange(0, 1)];
-      groundObstacleLocations.push( { type: obstacleType, position: { x: x, z: z, }} );
-    }
-
-    // ************** TRACK TWO - FIRST HORIZONTAL RUNWAY ***************
-    const trackTwoX = [];
-    const trackTwoZ = [];
-
-    for ( let i = ( -60 + ( this.barrelLength_X / 2 )); i < ( 77 - ( this.barrelLength_X / 2 )); i++ ) { trackTwoX.push( i ); }
-    for ( let i = ( -99 - ( this.barrelLength_Z / 2 )); i > ( -117 + ( this.barrelLength_Z / 2 )); i--) { trackTwoZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_BARREL_MIN, LARGE_TRACK_BARREL_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackTwoX.length );
-      let randZ = Math.floor( Math.random() * trackTwoZ.length );
-
-      let x = trackTwoX[randX];
-      let z = trackTwoZ[randZ];
-
-      if ( i > 0 ) {
-        let intersected = false;
-
-        ({ x, z, intersected } = this.checkIntersected( groundObstacleLocations, i, x, this.barrelLength_X, z, this.barrelLength_Z, intersected, trackTwoX, trackTwoZ ));
-      }
-
-      const obstacleType = groundObstacleTypes[this.generateRandomIntInRange(0, 1)];
-      groundObstacleLocations.push( { type: obstacleType, position: { x: x, z: z, }} );
-    }
-    // ************** TRACK THREE  - RIGHT RUNWAY ***************
-
-    const trackThreeX = [];
-    const trackThreeZ = [];
-
-    for ( let i = ( 60 + ( this.barrelLength_X / 2 )); i < ( 77 - ( this.barrelLength_X / 2 )); i++ ) { trackThreeX.push( i ); }
-    for ( let i = ( -117 - ( this.barrelLength_Z / 2 )); i > ( -217 + ( this.barrelLength_Z / 2 )); i--) { trackThreeZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( BARREL_MIN, BARREL_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackThreeX.length );
-      let randZ = Math.floor( Math.random() * trackThreeZ.length );
-
-      let x = trackThreeX[randX];
-      let z = trackThreeZ[randZ];
-
-      if ( i > 0 ) {
-        let intersected = false;
-
-        ({ x, z, intersected } = this.checkIntersected( groundObstacleLocations, i, x, this.barrelLength_X, z, this.barrelLength_Z, intersected, trackThreeX, trackThreeZ ));
-      }
-
-      const obstacleType = groundObstacleTypes[this.generateRandomIntInRange(0, 1)];
-      groundObstacleLocations.push( { type: obstacleType, position: { x: x, z: z, }} );
-    }
-
-    // ************** TRACK FOUR  - LEFT RUNWAY ***************
-
-    const trackFourX = [];
-    const trackFourZ = [];
-
-    for ( let i = ( -42 - ( this.barrelLength_X / 2 )); i > ( -60 + ( this.barrelLength_X / 2 )); i-- ) { trackFourX.push( i ); }
-    for ( let i = ( -117 - ( this.barrelLength_Z / 2 )); i > ( -217 + ( this.barrelLength_Z / 2 )); i--) { trackFourZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( BARREL_MIN, BARREL_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackFourX.length );
-      let randZ = Math.floor( Math.random() * trackFourZ.length );
-
-      let x = trackFourX[randX];
-      let z = trackFourZ[randZ];
-
-      if ( i > 0 ) {
-        let intersected = false;
-
-        ({ x, z, intersected } = this.checkIntersected( groundObstacleLocations, i, x, this.barrelLength_X, z, this.barrelLength_Z, intersected, trackFourX, trackFourZ ));
-      }
-
-      const obstacleType = groundObstacleTypes[this.generateRandomIntInRange(0, 1)];
-      groundObstacleLocations.push( { type: obstacleType, position: { x: x, z: z, }} );
-    }
-    // ************** TRACK FIVE  - SECOND HORIZONTAL RUNWAY ***************
-
-    const trackFiveX = [];
-    const trackFiveZ = [];
-
-    for ( let i = ( 77 - ( this.barrelLength_X / 2 )); i > ( -58 + ( this.barrelLength_X / 2 )); i-- ) { trackFiveX.push( i ); }
-    for ( let i = ( -220 - ( this.barrelLength_Z / 2 )); i > ( -236 + ( this.barrelLength_Z / 2 )); i--) { trackFiveZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_BARREL_MIN, LARGE_TRACK_BARREL_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackFiveX.length );
-      let randZ = Math.floor( Math.random() * trackFiveZ.length );
-
-      let x = trackFiveX[randX];
-      let z = trackFiveZ[randZ];
-
-      if ( i > 0 ) {
-        let intersected = false;
-
-        ({ x, z, intersected } = this.checkIntersected( groundObstacleLocations, i, x, this.barrelLength_X, z, this.barrelLength_Z, intersected, trackFiveX, trackFiveZ ));
-      }
-
-      const obstacleType = groundObstacleTypes[this.generateRandomIntInRange(0, 1)];
-      groundObstacleLocations.push( { type: obstacleType, position: { x: x, z: z, }} );
-    }
-
-    // ************** TRACK SIX  - FINAL RUNWAY ***************
-
-    const trackSixX = [];
-    const trackSixZ = [];
-
-    for ( let i = ( 0 + ( this.barrelLength_X / 2 )); i < ( 18 - ( this.barrelLength_X / 2 )); i++ ) { trackSixX.push( i ); }
-    for ( let i = ( -238 - ( this.barrelLength_Z / 2 )); i > ( -331 + ( this.barrelLength_Z / 2 )); i--) { trackSixZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_BARREL_MIN, LARGE_TRACK_BARREL_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackSixX.length );
-      let randZ = Math.floor( Math.random() * trackSixZ.length );
-
-      let x = trackSixX[randX];
-      let z = trackSixZ[randZ];
-
-      if ( i > 0 ) {
-        let intersected = false;
-
-        ({ x, z, intersected } = this.checkIntersected( groundObstacleLocations, i, x, this.barrelLength_X, z, this.barrelLength_Z, intersected, trackSixX, trackSixZ ));
-      }
-
-      const obstacleType = groundObstacleTypes[this.generateRandomIntInRange(0, 1)];
-      groundObstacleLocations.push( { type: obstacleType, position: { x: x, z: z, }} );
-    }
-
-    // remove any duplicate location values
-    groundObstacleLocations = [...new Set(groundObstacleLocations)];
-    return groundObstacleLocations;
-  }
-
-  createNewCoinLocations( groundObstacleLocations: any[] ){
+  createNewCoinLocations(){
     const coinTypes = ['bronze', 'silver', 'gold'];
-    const COINS_MIN = 30;
-    const COINS_MAX = 50;
-    const LARGE_TRACK_COINS_MIN = 100;
-    const LARGE_TRACK_COINS_MAX = 200;
+    const COINS_MIN = 200;
+    const COINS_MAX = 400;
 
     let coinLocations = [];
+    let trackX = [];
+    let trackZ = [];
 
-    // ************** TRACK ONE - MAIN RUNWAY ***************
-    let trackOneX = [];
-    let trackOneZ = [];
-
-    for ( let i = 1; i < 18; i++ ) { trackOneX.push( i ); }
-    for ( let i = 2; i > -121; i--) { trackOneZ.push( i ); }
+    for ( let i = 0; i < 6; i++ ) { trackX.push( i ); }
+    for ( let i = -3; i > -130; i--) { trackZ.push( i ); }
 
     for ( let i = 0; i < this.generateRandomIntInRange( COINS_MIN, COINS_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackOneX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackOneZ.length ));
+      let randX = Math.floor( Math.random() * trackX.length );
+      let randZ = Math.floor( Math.floor( Math.random() * trackZ.length ));
 
-      let x = trackOneX[randX];
-      let z = trackOneZ[randZ];
-
-      let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-      coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
-    }
-
-    // ************** TRACK TWO - FIRST HORIZONAL RUNWAY ***************
-
-    let trackTwoX = [];
-    let trackTwoZ = [];
-
-    for ( let i = -60; i < 78; i++ ) { trackTwoX.push( i ); }
-    for ( let i = -99; i > -118; i--) { trackTwoZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackTwoX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackTwoZ.length ));
-
-      let x = trackTwoX[randX];
-      let z = trackTwoZ[randZ];
+      let x = trackX[randX];
+      let z = trackZ[randZ];
 
       let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
       coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
     }
-
-    // ************** TRACK THREE  - RIGHT RUNWAY ***************
-    let trackThreeX = [];
-    let trackThreeZ = [];
-
-    for ( let i = 60; i < 78; i++ ) { trackThreeX.push( i ); }
-    for ( let i = -117; i > -218; i--) { trackThreeZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackThreeX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackThreeZ.length ));
-
-      let x = trackThreeX[randX];
-      let z = trackThreeZ[randZ];
-
-      let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-      coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
-    }
-
-    // ************** TRACK FOUR  - LEFT RUNWAY ***************
-    let trackFourX = [];
-    let trackFourZ = [];
-
-    for ( let i = -60; i < -41; i++ ) { trackFourX.push( i ); }
-    for ( let i = -118; i > -217; i--) { trackFourZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackFourX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackFourZ.length ));
-
-      let x = trackFourX[randX];
-      let z = trackFourZ[randZ];
-
-      let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-      coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
-    }
-
-    // ************** TRACK FIVE  - SECOND HORIZONTAL RUNWAY ***************
-    let trackFiveX = [];
-    let trackFiveZ = [];
-
-    for ( let i = -58; i < 78; i++ ) { trackFiveX.push( i ); }
-    for ( let i = -220; i > -237; i--) { trackFiveZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackFiveX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackFiveZ.length ));
-
-      let x = trackFiveX[randX];
-      let z = trackFiveZ[randZ];
-
-      let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-      coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
-    }
-
-    // ************** TRACK SIX  - FINAL RUNWAY ***************
-    let trackSixX = [];
-    let trackSixZ = [];
-
-    for ( let i = 0; i < 18; i++ ) { trackSixX.push( i ); }
-    for ( let i = -238; i > -332; i--) { trackSixZ.push( i ); }
-
-    for ( let i = 0; i < this.generateRandomIntInRange( LARGE_TRACK_COINS_MIN, LARGE_TRACK_COINS_MAX ); i++ ) {
-      let randX = Math.floor( Math.random() * trackSixX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackSixZ.length ));
-
-      let x = trackSixX[randX];
-      let z = trackSixZ[randZ];
-
-      let coinIndex = this.generateRandomIntInRange(0, coinTypes.length - 1);
-      coinLocations.push( { x: x, z: z, type: coinTypes[coinIndex] } );
-    }
-
 
     // remove any duplicate location values
     coinLocations = [...new Set(coinLocations)];
-
-    // remove any coins that are intersected with barrels
-    for ( let i = 0; i < groundObstacleLocations.length; i++ ) {
-      for ( let j = coinLocations.length - 1; j >= 0 ; j-- ) {
-        const obstacle = groundObstacleLocations[i];
-        const obstacleX = obstacle.position.x;
-        const obstacleZ = obstacle.position.z;
-
-        const coin = coinLocations[j];
-        const coinX = coin.x;
-        const coinZ = coin.z;
-
-        if (((coinX >= obstacleX && coinX <= obstacleX + ( this.barrelLength_X / 2 )) ||
-          (coinX + ( this.barrelLength_X / 2 ) >= obstacleX && coinX + ( this.barrelLength_X / 2 ) <= obstacleX + ( this.barrelLength_X / 2 ))) &&
-          ((coinZ >= obstacleZ && coinZ <= obstacleZ + ( this.barrelLength_Z / 2 )) ||
-            (coinZ + ( this.barrelLength_Z / 2 ) >= obstacleZ && coinZ + ( this.barrelLength_Z / 2 ) <= obstacleZ + ( this.barrelLength_Z / 2 )))) {
-
-           coinLocations.splice(j, 1);
-        }
-      }
-    }
     return coinLocations;
   }
 
-  createNewMovingObstacles() {
-    const MOVING_OBJECT_MIN = 12;
-    const MOVING_OBJECT_MAX = 20;
+  createMovingSpheres(){
+    const sphereTypes = ['blue-trap-sphere', 'green-trap-sphere', 'red-trap-sphere'];
+    let sphereNames = [];
 
-    const MOVING_OBJECT_TYPES = ['strawberry', 'apple', 'banana', 'cherry', 'pear'];
-    const movingObstacleLocations = [];
-
-    // ************** TRACK ONE - MAIN RUNWAY ***************
-    // no fruits on track one
-
-    // ************** TRACK TWO - FIRST HORIZONAL RUNWAY ***************
-    let trackTwoX = [];
-    let trackTwoZ = [];
-
-    for ( let i = 0; i < this.generateRandomIntInRange( MOVING_OBJECT_MIN, MOVING_OBJECT_MAX ); i++ ) {
-      for ( let i = -60; i < 78; i++ ) { trackTwoX.push( i ); }
-      for ( let i = -99; i > -118; i--) { trackTwoZ.push( i ); }
-
-      let randX = Math.floor( Math.random() * trackTwoX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackTwoZ.length ));
-
-      let x = trackTwoX[randX];
-      let y = this.generateRandomIntInRange(1, 4);
-      let z = trackTwoZ[randZ];
-
-      let velX = this.generateRandomIntInRange(5, 8);
-      let velY = this.generateRandomIntInRange(5, 10);
-      let velZ = this.generateRandomIntInRange(4, 9);
-
-
-      const objectType = MOVING_OBJECT_TYPES[this.generateRandomIntInRange(0, MOVING_OBJECT_TYPES.length - 1)];
-
-      movingObstacleLocations.push({ type: objectType, position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 }, playArea: {minX: -70, maxX: 85, minZ: -120, maxZ: -90} });
+    for( let i = 0; i < 6; i++) {
+      let index = this.generateRandomIntInRange(0, sphereTypes.length - 1);
+      sphereNames.push(sphereTypes[index]);
     }
 
-    // ************** TRACK THREE  - RIGHT RUNWAY ***************
-    let trackThreeX = [];
-    let trackThreeZ = [];
+    return [
+      { direction: 1, rotationZ: 0, angle: 1.9, name: sphereNames[0], position: { x: 2, y: 6, z: -6 } },
+      { direction: 1, rotationZ: 0, angle: 3.4, name: sphereNames[1], position: { x: 2, y: 6, z: -9 } },
+      { direction: 1, rotationZ: 0, angle: 2.7, name: sphereNames[2], position: { x: 2, y: 6, z: -27 } },
+      { direction: 1, rotationZ: 0, angle: 1.5, name: sphereNames[3], position: { x: 2, y: 6, z: -30 } },
+      { direction: 1, rotationZ: 0, angle: 3.8, name: sphereNames[4], position:  { x: 2, y: 6, z: -73 } },
+      { direction: 1, rotationZ: 0, angle: 2.2, name: sphereNames[5], position: { x: 2, y: 6, z: -77 } },
+    ];
+  };
 
-    for ( let i = 0; i < this.generateRandomIntInRange( MOVING_OBJECT_MIN, MOVING_OBJECT_MAX ); i++ ) {
-      for ( let i = 60; i < 78; i++ ) { trackThreeX.push( i ); }
-      for ( let i = -117; i > -218; i--) { trackThreeZ.push( i ); }
+  updateMovingSphere( delta: number, movingSpheres: { direction: number, rotationZ: number, angle: number, name: string, position: { x: number, y: number, z: number } }[] ) {
+    let minAngle = GameObjects.toRadians(-45);
+    let maxAngle = GameObjects.toRadians(45);
 
-      let randX = Math.floor( Math.random() * trackThreeX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackThreeZ.length ));
+    for( let i = 0; i < movingSpheres.length; i++ ) {
+      let rotationSpeed = GameObjects.toRadians(movingSpheres[i].angle );
+      let rotationZ = movingSpheres[i].rotationZ;
+      rotationZ += rotationSpeed * movingSpheres[i].direction;
+      movingSpheres[i].rotationZ = rotationZ;
 
-      let x = trackThreeX[randX];
-      let y = this.generateRandomIntInRange(1, 4);
-      let z = trackThreeZ[randZ];
+      // Change direction if the max or min angle is reached
+      if (rotationZ > maxAngle) {
+        movingSpheres[i].direction = -1;
+      } else if (rotationZ < minAngle) {
+        movingSpheres[i].direction = 1;
+      }
+    }
+    return movingSpheres;
+  };
 
-      let velX = this.generateRandomIntInRange(5, 8);
-      let velY = this.generateRandomIntInRange(5, 10);
-      let velZ = this.generateRandomIntInRange(4, 9);
+  createMovingHammers() {
+    const hammerTypes = ['blue-hammer', 'green-hammer', 'red-hammer'];
+    let hammerNames = [];
 
-
-      const objectType = MOVING_OBJECT_TYPES[this.generateRandomIntInRange(0, MOVING_OBJECT_TYPES.length - 1)];
-
-      movingObstacleLocations.push({ type: objectType, position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 }, playArea: {minX: 55, maxX: 85, minZ: -220, maxZ: -115} });
+    for( let i = 0; i < 3; i++) {
+      let index = this.generateRandomIntInRange(0, hammerTypes.length - 1);
+      hammerNames.push(hammerTypes[index]);
     }
 
-    // ************** TRACK FOUR  - LEFT RUNWAY ***************
-    let trackFourX = [];
-    let trackFourZ = [];
+    return [
+      { direction: -1, rotationY: 0, angle: 2.1, name: hammerNames[0], minAngle: 0, maxAngle: 90, on_side: true, position: { x: 8.3, y: 1, z: -14 }},
+      { direction: -1, rotationY: 0, angle: 3.5, name: hammerNames[1], minAngle: -90, maxAngle: 0, on_side: true, position: { x: -2.6, y: 1, z: -14 }},
+      { direction: -1, rotationY: 0, angle: 4.9, name: hammerNames[2], minAngle: 0, maxAngle: 359, on_side: false, position: { x: 3, y: 1, z: -19 }},
+    ];
+  };
 
-    for ( let i = 0; i < this.generateRandomIntInRange( MOVING_OBJECT_MIN, MOVING_OBJECT_MAX ); i++ ) {
-      for ( let i = -60; i < -41; i++ ) { trackFourX.push( i ); }
-      for ( let i = -117; i > -218; i--) { trackFourZ.push( i ); }
+  updateMovingHammers(delta: number, movingHammers: { direction: number, rotationY: number, angle: number, name: string, minAngle: number, maxAngle: number, position: { x: number, y: number, z: number } }[]) {
+    for( let i = 0; i < movingHammers.length; i++ ) {
+      let minAngle = GameObjects.toRadians(movingHammers[i].minAngle);
+      let maxAngle = GameObjects.toRadians(movingHammers[i].maxAngle);
+      let rotationSpeed = GameObjects.toRadians(movingHammers[i].angle );
+      let rotationY = movingHammers[i].rotationY;
 
-      let randX = Math.floor( Math.random() * trackFourX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackFourZ.length ));
+      rotationY += rotationSpeed * movingHammers[i].direction;
+      movingHammers[i].rotationY = rotationY;
 
-      let x = trackFourX[randX];
-      let y = this.generateRandomIntInRange(1, 4);
-      let z = trackFourZ[randZ];
-
-      let velX = this.generateRandomIntInRange(5, 8);
-      let velY = this.generateRandomIntInRange(5, 10);
-      let velZ = this.generateRandomIntInRange(4, 9);
-
-
-      const objectType = MOVING_OBJECT_TYPES[this.generateRandomIntInRange(0, MOVING_OBJECT_TYPES.length - 1)];
-
-      movingObstacleLocations.push({ type: objectType, position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 }, playArea: {minX: -55, maxX: -38, minZ: -220, maxZ: -115} });
+      // Change direction if the max or min angle is reached
+      if (rotationY > maxAngle) {
+        movingHammers[i].direction = -1;
+      } else if (rotationY < minAngle) {
+        movingHammers[i].direction = 1;
+      }
     }
+    return movingHammers;
+  };
 
-    // ************** TRACK FIVE  - SECOND HORIZONTAL RUNWAY ***************
-    let trackFiveX = [];
-    let trackFiveZ = [];
+  createMovingPlatforms() {
+    const platformTypes = [ 'floorpad_blue' , 'floorpad_red', 'floorpad_green' ];
 
-    for ( let i = 0; i < this.generateRandomIntInRange( MOVING_OBJECT_MIN, MOVING_OBJECT_MAX ); i++ ) {
-      for ( let i = -60; i < 78; i++ ) { trackFiveX.push( i ); }
-      for ( let i = -220; i > -237; i--) { trackFiveZ.push( i ); }
-
-      let randX = Math.floor( Math.random() * trackFiveX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackFiveZ.length ));
-
-      let x = trackFiveX[randX];
-      let y = this.generateRandomIntInRange(1, 4);
-      let z = trackFiveZ[randZ];
-
-      let velX = this.generateRandomIntInRange(5, 8);
-      let velY = this.generateRandomIntInRange(5, 10);
-      let velZ = this.generateRandomIntInRange(4, 9);
-
-      const objectType = MOVING_OBJECT_TYPES[this.generateRandomIntInRange(0, MOVING_OBJECT_TYPES.length - 1)];
-
-      movingObstacleLocations.push({ type: objectType, position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 }, playArea: {minX: -65, maxX: 80, minZ: -240, maxZ: -215} });
-    }
-
-    // ************** TRACK SIX  - FINAL RUNWAY ***************
-    let trackSixX = [];
-    let trackSixZ = [];
-
-    for ( let i = 0; i < this.generateRandomIntInRange( MOVING_OBJECT_MIN, MOVING_OBJECT_MAX ); i++ ) {
-      for ( let i = -10; i < 25; i++ ) { trackSixX.push( i ); }
-      for ( let i = -238; i > -332; i--) { trackSixZ.push( i ); }
-
-      let randX = Math.floor( Math.random() * trackSixX.length );
-      let randZ = Math.floor( Math.floor( Math.random() * trackSixZ.length ));
-
-      let x = trackSixX[randX];
-      let y = this.generateRandomIntInRange(1, 4);
-      let z = trackSixZ[randZ];
-
-      let velX = this.generateRandomIntInRange(5, 8);
-      let velY = this.generateRandomIntInRange(5, 10);
-      let velZ = this.generateRandomIntInRange(4, 9);
-
-
-      const objectType = MOVING_OBJECT_TYPES[this.generateRandomIntInRange(0, MOVING_OBJECT_TYPES.length - 1)];
-
-
-      movingObstacleLocations.push({ type: objectType, position: { x: x, y: y, z: z }, velocity: { x: velX, y: velY, z: velZ }, rotation: { x: 0, y: 0, z: 0 }, playArea: {minX: -20, maxX: 30, minZ: -340, maxZ: -230} });
-    }
-
-    return movingObstacleLocations;
+    return [
+      { name: platformTypes[0], platformDirection: 'vertical', direction: -1, speed: 3.9, position: { x: 2.784, y: -0.25, z: -83.7 }},
+      { name: platformTypes[1], platformDirection: 'horizontal', direction: -1, speed: 6.4, position: { x: 2.784, y: -0.25, z: -92.5 }},
+      { name: platformTypes[2], platformDirection: 'vertical', direction: 1, speed: 4.7, position: { x: 2.784, y: -0.25, z: -101.5 }}
+    ];
   }
 
-  updateMovingObstacles( delta: number, movingObstacles: { type: string, position: { x: number, y: number, z: number }, velocity: { x: number, y: number, z: number }, rotation: { x: number, y: number, z: number }, playArea: { minX: number, maxX: number, minZ: number, maxZ: number } }[] ) {
-    for(let i = 0; i < movingObstacles.length; i++ ) {
+  updateMovingPlatforms( delta: number, movingPlatforms: { name: string, platformDirection: string, direction: number, speed: number, position:{ x: number, y: number, z: number }}[]) {
+    const verticalMin = -5;
+    const verticalMax = 5;
+    const horizontalMin = -1;
+    const horizontalMax = 10;
 
-      let element = movingObstacles[i];
+    for( let i = 0; i < movingPlatforms.length; i++ ) {
 
-      let currentPosX = element.position.x;
-      let currentPosY = element.position.y;
-      let currentPosZ = element.position.z;
-      let boundsMinX = element.playArea.minX;
-      let boundsMaxX = element.playArea.maxX;
-      let boundsMinZ = element.playArea.minZ;
-      let boundsMaxZ = element.playArea.maxZ;
+      if( movingPlatforms[i].platformDirection === 'vertical') {
+        let posY = movingPlatforms[i].position.y;
+        posY += movingPlatforms[i].speed * movingPlatforms[i].direction * delta;
+        movingPlatforms[i].position.y = posY;
 
-      if ( currentPosX >= boundsMaxX ) {
-        element.velocity.x = -element.velocity.x;
-      } else if ( currentPosX <= boundsMinX ) {
-        element.velocity.x = Math.abs(element.velocity.x);
-      }
-      if ( currentPosY > 11 ){
-        element.velocity.y = -element.velocity.y;
-
-      } else if ( currentPosY <= 0.25 ) {
-        element.velocity.y = Math.abs(element.velocity.y);
-      }
-      if ( currentPosZ >= boundsMaxZ ) {
-        element.velocity.z = -element.velocity.z;
-      } else if ( currentPosZ <= boundsMinZ ) {
-        element.velocity.z = Math.abs(element.velocity.z);
-      }
-
-      for( let j = 0; j < movingObstacles.length; j++) {
-        if ( element !== movingObstacles[j]) {
-          if (this.getDistance(currentPosX, currentPosY, currentPosZ, movingObstacles[j].position.x, movingObstacles[j].position.y, movingObstacles[j].position.z) < 0.5) {
-            let tempX = currentPosX;
-            let tempY = currentPosY;
-            let tempZ = currentPosZ;
-
-            currentPosX = movingObstacles[j].position.x
-            currentPosY = movingObstacles[j].position.y
-            currentPosZ = movingObstacles[j].position.z
-            movingObstacles[j].position.x = tempX;
-            movingObstacles[j].position.y = tempY;
-            movingObstacles[j].position.z = tempZ;
-          }
+        if( posY > verticalMax ) {
+          movingPlatforms[i].direction = -1;
+        } else if( posY < verticalMin ) {
+          movingPlatforms[i].direction = 1;
         }
       }
+      else {
+        let posX = movingPlatforms[i].position.x;
+        posX += movingPlatforms[i].speed * movingPlatforms[i].direction * delta;
+        movingPlatforms[i].position.x = posX;
 
-      // mimic THREE js addScaledVector method
-      let newPositionX =  element.velocity.x * delta + currentPosX
-      let newPositionY =  element.velocity.y * delta + currentPosY
-      let newPositionZ =  element.velocity.z * delta + currentPosZ
+        if ( posX > horizontalMax ) {
+          movingPlatforms[i].direction = -1;
+        } else if( posX < horizontalMin ) {
+          movingPlatforms[i].direction = 1;
+        }
+      }
+    }
+    return movingPlatforms;
+  };
 
+  createStaticSpikes() {
+    const spikeTypes = ['blue-spike', 'green-spike', 'red-spike'];
+    let spikeNames = [];
 
-      // calculate the amount to rotate in the model
-      const rotationAmount = 2 * Math.PI * (delta / 2);
-      const rotationValue = movingObstacles[i].rotation.x + rotationAmount;
+    for( let i = 0; i < 20; i++) {
+      let index = Math.floor(Math.random() * spikeTypes.length);
+      spikeNames.push(spikeTypes[index]);
+    }
 
-      movingObstacles[i].rotation.x = rotationValue;
-      movingObstacles[i].rotation.y = 0;
-      movingObstacles[i].rotation.z = rotationValue;
+    return  [
+      { name: spikeNames[0], position: { x: -1.2, y: 0, z: -36 }},
+      { name: spikeNames[1], position: { x: 0.775, y: 0, z: -36 }},
+      { name: spikeNames[2], position: { x: 2.75, y: 0, z: -36 }},
+      { name: spikeNames[3], position: { x: 4.725, y: 0, z: -36 }},
+      { name: spikeNames[4], position: { x: 6.7, y: 0, z: -36 }},
+      { name: spikeNames[5], position: { x: -0.6, y: 0, z: -39 }},
+      { name: spikeNames[6], position: { x: 1.9, y: 0, z: -39 }},
+      { name: spikeNames[7], position: { x: 3.5, y: 0, z: -39 }},
+      { name: spikeNames[8], position: { x: 5.7, y: 0, z: -39 }},
+      { name: spikeNames[9], position: { x: 7.1, y: 0, z: -39 }},
 
-      if( rotationValue >= 2 * Math.PI ) {
-        movingObstacles[i].rotation.x = 0;
-        movingObstacles[i].rotation.y = 0;
-        movingObstacles[i].rotation.z = 0;
+      { name: spikeNames[10], position: { x: -1.2, y: 0, z: -41 }},
+      { name: spikeNames[11], position: { x: 0.775, y: 0, z: -41 }},
+      { name: spikeNames[12], position: { x: 2.75, y: 0, z: -41 }},
+      { name: spikeNames[13], position: { x: 4.25, y: 0, z: -41 }},
+      { name: spikeNames[14], position: { x: 6.34, y: 0, z: -41 }},
+      { name: spikeNames[15], position: { x: -1.2, y: 0, z: -43 }},
+      { name: spikeNames[16], position: { x: 0.775, y: 0, z: -43 }},
+      { name: spikeNames[17], position: { x: 2.75, y: 0, z: -43 }},
+      { name: spikeNames[18], position: { x: 4.725, y: 0, z: -43 }},
+      { name: spikeNames[19], position: { x: 6.7, y: 0, z: -43 }},
+    ];
+  };
+
+  createMovingBalls() {
+    const ballTypes = ['ball1', 'ball2', 'ball3', 'ball4'];
+    let ballNames = [];
+
+    for( let i = 0; i < 6; i++ ) {
+      let index = this.generateRandomIntInRange( 0, ballTypes.length - 1 );
+      ballNames.push( ballTypes[index] );
+    }
+
+    return [
+      { directionX: -1, speed: 6.6, name: ballNames[0] + "_0", rotation: 0.2, position: { x: 2, y: 1, z: -50 }},
+      { directionX: 1, speed: 8.4, name: ballNames[1] + "_1", rotation: 0.4, position: { x: 4, y: 1, z: -55 }},
+      { directionX: -1, speed: 10.0, name: ballNames[2] + "_2", rotation: 0.6, position: { x: -1, y: 1, z: -60 }},
+      { directionX: 1, speed: 7.3, name: ballNames[3] + "_4", rotation: 0.8, position: { x: 3, y: 1, z: -65 }},
+      { directionX: -1, speed: 9.1, name: ballNames[4] + "_5", rotation: 0.3, position: { x: 6, y: 1, z: -70 }},
+      { directionX: 1, speed: 6.9, name: ballNames[5] + "_6", rotation: 0.5, position: { x: 5, y: 1, z: -75 }},
+    ];
+  };
+
+  updateMovingBalls( delta: number, movingBalls: {directionX: number, speed: number, rotation: number, position: { x: number, y: number, z: number }}[] ) {
+    const minX = -1;
+    const maxX = 7;
+
+    for( let i = 0; i < movingBalls.length; i++ ) {
+      let posX = movingBalls[i].position.x;
+
+      if( posX > maxX ) {
+        movingBalls[i].directionX = -1;
+      } else if( posX < minX ){
+        movingBalls[i].directionX = 1;
       }
 
-      movingObstacles[i].position.x = newPositionX;
-      movingObstacles[i].position.y = newPositionY;
-      movingObstacles[i].position.z = newPositionZ;
-      movingObstacles[i].velocity.x = element.velocity.x;
-      movingObstacles[i].velocity.y = element.velocity.y;
-      movingObstacles[i].velocity.z = element.velocity.z;
-    };
-
-    return movingObstacles;
-  }
+      posX += movingBalls[i].speed * movingBalls[i].directionX * delta;
+      movingBalls[i].position.x = posX;
+      movingBalls[i].rotation += 1.6 * delta;
+    }
+    return movingBalls;
+  };
 
   refreshPlayerPositions(playerXPositions: number[], positionMap: Map<string, number>, socket_id: any) {
     const leavingPlayerPosition = positionMap.get(socket_id);
@@ -538,53 +228,11 @@ export default class GameObjects {
     });
   }
 
-  private checkIntersected(groundObstacleLocations: any[], i: number, x: any, barrelLengthX: number, z: any, barrelLengthZ: number, intersected: boolean, trackX: any[], trackZ: any[]) {
-    do {
-      for (let j = 0; j < groundObstacleLocations.length; j++) {
-        if (i !== j) {
-          const obstacle = groundObstacleLocations[j];
-          const obstacleX = obstacle.position.x;
-          const obstacleZ = obstacle.position.z;
-
-          if (((x >= obstacleX && x <= obstacleX + barrelLengthX) ||
-            (x + barrelLengthX >= obstacleX && x + barrelLengthX <= obstacleX + barrelLengthX)) &&
-            ((z >= obstacleZ && z <= obstacleZ + barrelLengthZ) ||
-              (z + barrelLengthZ >= obstacleZ && z + barrelLengthZ <= obstacleZ + barrelLengthZ))) {
-            intersected = true;
-
-            x = this.generateUniqueRandomIntInRange(trackX[0], trackX[trackX.length - 1], [x]);
-            z = this.generateUniqueRandomIntInRange(trackZ[0], trackZ[trackZ.length - 1], [z]);
-            break;
-          }
-          else {
-            intersected = false;
-          }
-        }
-      }
-    }
-    while (intersected);
-    return { x, z, intersected };
-  }
-
-  private getDistance( x1: number, y1: number, z1: number, x2: number, y2: number, z2: number ): number {
-    let y = x2 - x1;
-    let x = y2 - y1;
-    let z = z2 - z1;
-
-    return Math.sqrt(x * x + y * y + z * z);
-  }
-
   private generateRandomIntInRange( start: number, end: number ): number {
     return Math.floor( Math.random() * ( end - start + 1 ) + start );
   }
 
-  private generateUniqueRandomIntInRange( start: number, end: number, existingValues: number[] ): number {
-    let value: number;
-
-    do {
-      value = this.generateRandomIntInRange( start, end );
-    } while ( existingValues.includes( value ));
-
-    return value;
+  private static toRadians(angle: number) {
+    return angle * (Math.PI / 180);
   }
 }
