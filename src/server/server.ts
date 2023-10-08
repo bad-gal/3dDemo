@@ -21,11 +21,11 @@ app.use(express.static( path.join( __dirname, '../client' )));
 const server = new http.Server( app );
 const io = new Server( server );
 
-const WAITING_TIME = 10;
+const WAITING_TIME = 30;
 let waitingRoomTimeRemaining = WAITING_TIME;
 let startWaitingRoomTimer = false;
 
-const GAME_TIMER = 20;
+const GAME_TIMER = 120;
 let gameTimeRemaining = GAME_TIMER;
 let gameTimerStart = false; // when true, we have received the go-ahead that the game has started
 

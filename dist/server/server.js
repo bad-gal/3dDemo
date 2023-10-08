@@ -40,10 +40,10 @@ const app = (0, express_1.default)();
 app.use(express_1.default.static(path_1.default.join(__dirname, '../client')));
 const server = new http_1.default.Server(app);
 const io = new socket_io_1.Server(server);
-const WAITING_TIME = 10;
+const WAITING_TIME = 30;
 let waitingRoomTimeRemaining = WAITING_TIME;
 let startWaitingRoomTimer = false;
-const GAME_TIMER = 20;
+const GAME_TIMER = 120;
 let gameTimeRemaining = GAME_TIMER;
 let gameTimerStart = false; // when true, we have received the go-ahead that the game has started
 const GAME_END_TIMER = 10;
