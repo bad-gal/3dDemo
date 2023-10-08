@@ -15,6 +15,7 @@ import movingBall from "./movingBall";
 import movingPlatform from "./movingPlatform";
 import CustomBody from "./customBody";
 import AudioManager from "./audioManager";
+import CannonDebugRenderer from 'cannon-es-debugger';
 
 class Client {
   player: PlayerLocal | undefined;
@@ -66,6 +67,7 @@ class Client {
   });
   audioManager: AudioManager | undefined;
   gameOver: boolean;
+  cannonDebugRenderer: undefined;
 
   constructor() {
     this.remotePlayers = [];
@@ -95,6 +97,7 @@ class Client {
       "blue rider",
     ];
     this.gameOver = false;
+//camouflage - green rider
     this.socket.once('connect', () => {
       console.log(this.socket.id)
     });
@@ -330,6 +333,9 @@ class Client {
 
       document.body.style.overflow = 'hidden';
       document.body.appendChild( this.renderer.domElement );
+
+      // Debug Renderer for Physics
+      this.cannonDebugRenderer = new (CannonDebugRenderer  as any)(this.scene, this.physicsWorld);
 
       this.currentState = this.GAMESTATES.PLAY;
       this.onPlayState();
@@ -638,6 +644,8 @@ class Client {
         this.player.characterController.update( mixerUpdateDelta, this.player.collided, this.keysPressed, this.player.falling );
       }
 
+      if(this.cannonDebugRenderer !== undefined) (this.cannonDebugRenderer as any).update()
+
       this.sphereObstacles.forEach((sphere, index) => sphere.update(this.movingSphereLocations[index]));
 
       this.hammerObstacles.forEach(( hammer, index ) => hammer.update( this.movingHammerLocations[index]));
@@ -725,20 +733,32 @@ class Client {
   hasPlayerFallenOffTrack() {
     if( this.player !== undefined && this.player.riderPhysicsBody !== undefined) {
       const playerBody = this.player.riderPhysicsBody;
-
+      console.log('PLAYER-BODY', playerBody.customData?.name, this.player.riderPhysicsBody.customData?.name)
       if(playerBody.position.y >= 0) return false;
 
       if( playerBody.world !== null) {
         const playerContacts = playerBody.world.contacts;
-
+        for(let i = 0; i < playerContacts.length; i++ ){
+          let a = <CustomBody>playerContacts[i].bj
+          let b = <CustomBody>playerContacts[i].bi
+          console.log(a.customData?.name, "=>",b.customData?.name)
+        }
+        // console.log('PLAYER CONTACTS', playerContacts, 'for ', playerBody.customData?.name)
         if (playerContacts.length === 0 && playerBody.position.y < -4) {
+          console.log('no contacts available and player is below -4', playerBody.customData?.name)
           return true;
         }
 
+        //playerContacts do not appear to just be related to this.riderPhysicsBody, it can also relate to remote player
+        //need to pull out contacts that feature this.riderPhysicsBody
         const contactMap = playerContacts.map(function (contact) {
           const bodyA = <CustomBody>contact.bi;
           const bodyB = <CustomBody>contact.bj;
           if (bodyA.customData !== undefined && bodyB.customData !== undefined) {
+            if(bodyA.customData.type === 'floor' || bodyB.customData.type === 'floor') {
+              console.log( playerBody.customData?.name, 'player is on a floor object')
+              return false;
+            }
             if (bodyA.customData.type === 'moving platform') {
               return bodyA;
             } else if (bodyB.customData.type === 'moving platform') {
@@ -752,6 +772,7 @@ class Client {
           return body !== undefined;
         });
 
+        // console.log('filtered contact map', filteredContactMap)
         return filteredContactMap.length === 0 && playerBody.position.y < -4;
       }
     }
