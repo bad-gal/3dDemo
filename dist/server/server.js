@@ -65,8 +65,6 @@ function waitingRoomTimer() {
         if (startWaitingRoomTimer) {
             if (waitingRoomTimeRemaining >= 0) {
                 waitingRoomTimeRemaining -= 1;
-                console.log(waitingRoomTimeRemaining);
-                console.log("");
                 io.emit('30SecondsWaitingRoom', waitingRoomTimeRemaining);
             }
             else {
@@ -122,51 +120,49 @@ function startQuadListTimer() {
     }
     quadListInterval = setInterval(() => {
         io.emit('sendQuadRacerList', quadRacerList);
-        console.log('quadRacerList is emitting');
-        console.log(' ');
     }, 2000 / FPS);
 }
 ;
+function resetAll() {
+    gameObjects = new game_objects_1.default();
+    gameTimerStart = false;
+    startWaitingRoomTimer = false;
+    gameEndTimer = false;
+    quadRacerList = [
+        "camouflage rider", "green rider", "lime rider", "mustard rider",
+        "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
+        "blue rider",
+    ];
+    clientStartingPositions = new Map();
+    gameTimeRemaining = GAME_TIMER;
+    waitingRoomTimeRemaining = WAITING_TIME;
+    gameEndTimeRemaining = GAME_END_TIMER;
+    coinLocations = gameObjects.createNewCoinLocations();
+    movingSphereLocations = gameObjects.createMovingSpheres();
+    movingHammerLocations = gameObjects.createMovingHammers();
+    spikeLocations = gameObjects.createStaticSpikes();
+    movingBallLocations = gameObjects.createMovingBalls();
+    movingPlatformLocations = gameObjects.createMovingPlatforms();
+    positionX = undefined;
+    playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
+    playerCount = 0;
+    if (gameTimerInterval)
+        clearInterval(gameTimerInterval);
+    if (updateGameInterval)
+        clearInterval(updateGameInterval);
+    if (waitingRoomInterval)
+        clearInterval(waitingRoomInterval);
+    if (quadListInterval)
+        clearInterval(quadListInterval);
+}
 let endGameInterval;
 function startEndGameTimer() {
     endGameInterval = setInterval(() => {
         if (gameEndTimeRemaining <= 0) {
             clearInterval(endGameInterval);
-            gameObjects = new game_objects_1.default();
-            gameTimerStart = false;
-            startWaitingRoomTimer = false;
-            gameEndTimer = false;
-            quadRacerList = [
-                "camouflage rider", "green rider", "lime rider", "mustard rider",
-                "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
-                "blue rider",
-            ];
-            clientStartingPositions = new Map();
-            gameTimeRemaining = GAME_TIMER;
-            waitingRoomTimeRemaining = WAITING_TIME;
-            gameEndTimeRemaining = GAME_END_TIMER;
-            coinLocations = gameObjects.createNewCoinLocations();
-            movingSphereLocations = gameObjects.createMovingSpheres();
-            movingHammerLocations = gameObjects.createMovingHammers();
-            spikeLocations = gameObjects.createStaticSpikes();
-            movingBallLocations = gameObjects.createMovingBalls();
-            movingPlatformLocations = gameObjects.createMovingPlatforms();
-            positionX = undefined;
-            playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
-            playerCount = 0;
-            if (gameTimerInterval)
-                clearInterval(gameTimerInterval);
-            if (updateGameInterval)
-                clearInterval(updateGameInterval);
-            if (waitingRoomInterval)
-                clearInterval(waitingRoomInterval);
-            if (quadListInterval)
-                clearInterval(quadListInterval);
+            resetAll();
             // send call to clients to go back to the initial screen
-            console.log('GameTimer');
-            console.log("");
             console.log("calling for game to be reset");
-            console.log("");
             io.emit('resetGame');
         }
         else {
@@ -220,7 +216,6 @@ function createServer() {
             collided: { value: false, object: '' }
         };
         console.log('CONNECTED WITH', socket.id);
-        console.log("");
         socket.emit('setId', { id: socket.id });
         socket.on('init', function (data) {
             socket.userData.model = data.model;
@@ -244,49 +239,32 @@ function createServer() {
         });
         socket.on('updateQuadRacers', function (data) {
             quadRacerList = data;
-            console.log(data);
-            console.log("");
         });
         socket.on('startTimer', function (data) {
             if (!startWaitingRoomTimer) {
                 startWaitingRoomTimer = data;
-                console.log('starting timer', startWaitingRoomTimer, waitingRoomTimeRemaining);
-                console.log("");
+                console.log('go to waiting room');
                 waitingRoomTimer();
                 startQuadListTimer();
             }
         });
         socket.on('kickOutPlayer', function (data) {
-            console.log('playerPositions', playerXPositions);
-            console.log("");
+            console.log('player kicked out');
             socket.broadcast.emit('deletePlayer', { id: data });
             startWaitingRoomTimer = false;
-            console.log('kickout stats');
-            console.log("");
-            console.log('playerCount', playerCount);
-            console.log("");
-            // TODO: style expelled state screen, show countdown timer in sec b4 returning to menu
-            // todo: add coundown timer to leaderboard b4 returning to menu, re-style leaderboard colours
-            // need to test what happens when we have 3 players and 1 player gets kicked out
-            // if (gameTimerInterval) clearInterval(gameTimerInterval);
-            // if (updateGameInterval) clearInterval(updateGameInterval);
+            console.log('kickout stats', playerCount);
             if (waitingRoomInterval)
                 clearInterval(waitingRoomInterval);
-            // if (quadListInterval) clearInterval(quadListInterval);
-            // if  clearInterval(endGameInterval);
             waitingRoomTimeRemaining = WAITING_TIME;
             socket.disconnect(true);
         });
         socket.on('getPlayerPosition', function (data) {
-            // if ( positionX === undefined ) {
             positionX = playerXPositions.shift();
             // we are storing the starting position so if the client leaves
             // we can add position back into playerXPositions
             clientStartingPositions.set(socket.id, positionX);
             playerCount++;
-            // }
             console.log(playerXPositions, 'playerCount', playerCount, 'player position', positionX);
-            console.log("");
             socket.emit('playerPosition', { position: { x: positionX, y: 0, z: 0 } });
         });
         // send coin locations to clients
@@ -328,7 +306,6 @@ function createServer() {
                 gameTimerStart = true;
                 startGameTimer();
                 console.log('starting the 3js game');
-                console.log("");
             }
         });
         socket.on('disconnect', () => {
@@ -340,23 +317,20 @@ function createServer() {
                 }
             }
             console.log('playerPositions', playerXPositions);
-            console.log("");
             console.log('removing player : ' + socket.id, ' deleting now');
-            console.log("");
             socket.broadcast.emit('deletePlayer', { id: socket.id });
             if (playerCount > 0)
                 playerCount -= 1;
-            // if there are no players, can we reset waitingRoomTimeRemaining to waitingTime
-            // this way if the server is still running new players can join a new game
-            if (playerCount === 0 && waitingRoomTimeRemaining === 0) {
-                waitingRoomTimeRemaining = WAITING_TIME;
+            // Reset game if no players are left.
+            if (playerCount === 0) {
+                resetAll();
+                io.emit('resetGame'); // This sends 'resetGame' event to all connected sockets.
             }
         });
         updateGameDataTimer();
     });
     server.listen(port, function () {
         console.log('Listening on PORT ' + port);
-        console.log("");
     });
 }
 createServer();
