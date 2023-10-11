@@ -40,6 +40,10 @@ const FPS = 30;
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.static(path_1.default.join(__dirname, '../client')));
+// Serve the HTML file
+app.get('*', (req, res) => {
+    res.sendFile(path_1.default.resolve(__dirname, '../client/index.html'));
+});
 const server = new http_1.default.Server(app);
 const io = new socket_io_1.Server(server);
 const WAITING_TIME = 30;

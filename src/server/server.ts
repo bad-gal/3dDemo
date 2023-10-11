@@ -20,6 +20,11 @@ const app = express();
 app.use(cors())
 app.use(express.static( path.join( __dirname, '../client' )));
 
+// Serve the HTML file
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../client/index.html'));
+});
+
 const server = new http.Server( app );
 const io = new Server( server );
 
