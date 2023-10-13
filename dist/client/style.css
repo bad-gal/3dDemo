@@ -18,6 +18,7 @@ body {
   font-size: 3rem;
   font-weight: 700;
   padding: 2.5rem 0;
+  color: #2F0A28;
 }
 
 .menu-para,
@@ -50,12 +51,21 @@ body {
 
 .btn-waiting {
   border-radius: 0.75rem;
-  width: 10rem;
-  height: 3rem;
-  background-color: purple;
+  width: 14rem;
+  height: 6rem;
+  font-size: large;
+  font-weight: bold;
+  background-color: #C94277;
   color: whitesmoke;
   box-shadow: 0.1rem 0.1rem black;
   margin-top: 3rem;
+  cursor: pointer;
+}
+
+.btn-waiting:hover {
+  background-color: #2F0A28;
+  color: #C94277;
+  box-shadow: 0.2rem 0.2rem #C94277;
 }
 
 .player-container {
@@ -132,21 +142,20 @@ body {
 .game-leaderboard {
   position: absolute;
   z-index: 102;
-  top: 25%;
+  top: 10%;
   left: 25%;
-  border: 0.25rem solid gray;
+  border: 0.25rem solid #94524A;
   border-radius: 1rem;
-  background: gray;
-  /*font-family: 'Josefin Sans', sans-serif;*/
-  color:whitesmoke;
+  background: #C94277;
+  color:#CADBC0;
   font-size: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 50%;
-  width: 40%;
+  height: 80%;
+  width: 50%;
   margin: 0.5rem;
-  filter: drop-shadow(0.625rem 0.625rem 0.25rem red);
+  filter: drop-shadow(0.625rem 0.625rem 0.25rem black);
 }
 
 .leaderboard-title {
@@ -160,7 +169,7 @@ body {
 }
 
 .game-leaderboard ul > *:not(:first-child):not(:last-child) {
-  border-bottom: 0.063rem solid red;
+  border-bottom: 0.063rem solid #2F0A28;
 }
 
 .game-leaderboard li {
@@ -175,4 +184,14 @@ body {
 .game-leaderboard img {
   width: 5rem;
   height: 5rem;
+}
+
+.leaderboard-info {
+  position: absolute;
+  top: 90%;
+  left: 10%;
+  padding-top: 1rem;
+  font-size: small;
+  font-style: italic;
+  font-weight: bold;
 }

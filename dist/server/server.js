@@ -46,10 +46,10 @@ app.get('*', (req, res) => {
 });
 const server = new http_1.default.Server(app);
 const io = new socket_io_1.Server(server);
-const WAITING_TIME = 30;
+const WAITING_TIME = 15;
 let waitingRoomTimeRemaining = WAITING_TIME;
 let startWaitingRoomTimer = false;
-const GAME_TIMER = 120;
+const GAME_TIMER = 90;
 let gameTimeRemaining = GAME_TIMER;
 let gameTimerStart = false; // when true, we have received the go-ahead that the game has started
 const GAME_END_TIMER = 10;
@@ -110,8 +110,9 @@ let movingHammerLocations = gameObjects.createMovingHammers();
 let spikeLocations = gameObjects.createStaticSpikes();
 let movingBallLocations = gameObjects.createMovingBalls();
 let movingPlatformLocations = gameObjects.createMovingPlatforms();
+let sockets = [];
 let positionX = undefined;
-let playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
+let playerXPositions = [0, 2, 4, 6];
 let playerCount = 0;
 let quadListInterval;
 function startQuadListTimer() {
@@ -133,6 +134,7 @@ function resetAll() {
         "neon rider", "orange rider", "purple rider", "red rider", "red star rider",
         "blue rider",
     ];
+    sockets = [];
     clientStartingPositions = new Map();
     gameTimeRemaining = GAME_TIMER;
     waitingRoomTimeRemaining = WAITING_TIME;
@@ -144,7 +146,7 @@ function resetAll() {
     movingBallLocations = gameObjects.createMovingBalls();
     movingPlatformLocations = gameObjects.createMovingPlatforms();
     positionX = undefined;
-    playerXPositions = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18];
+    playerXPositions = [0, 2, 4, 6];
     playerCount = 0;
     if (gameTimerInterval)
         clearInterval(gameTimerInterval);
@@ -205,17 +207,21 @@ function updateGameDataTimer() {
 }
 function createServer() {
     io.sockets.on('connection', (socket) => {
-        socket.emit('quadRacerList', quadRacerList);
-        console.log('----------------------------------------');
-        console.log('Initial quadRacerList', quadRacerList);
-        console.log('----------------------------------------');
+        console.log('Socket Length is', sockets.length);
+        if (sockets.length >= 4) {
+            socket.disconnect(true);
+            console.log(socket.id, 'disconnected as too many players in game');
+        }
+        else {
+            console.log('CONNECTED WITH', socket.id);
+            sockets.push(socket);
+        }
         socket.userData = {
             position: { x: 0, y: 0, z: 0 },
             quaternion: { isQuaternion: true, _x: 0, _y: 0, _z: 0, _w: 0 },
             action: 'idle_02',
             collided: { value: false, object: '' }
         };
-        console.log('CONNECTED WITH', socket.id);
         socket.emit('setId', { id: socket.id });
         socket.on('init', function (data) {
             socket.userData.model = data.model;

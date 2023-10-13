@@ -85,7 +85,6 @@ export default class WaitingState {
 
     for ( let index = 0; index < quadRacerItems.length; index++ ) {
       quadRacerItems[index].addEventListener("click", function() {
-        console.log( quadRacerItems[index].id );
 
         // store the chosen quadRacer
         chosenQuadRacer = quadRacerItems[index].id;
@@ -106,9 +105,10 @@ export default class WaitingState {
         // the chosen quadRacer should be disabled
         (quadRacerItems[index] as HTMLButtonElement).disabled = true;
 
-        // change the border around chosen quadRacer
+        // add border and lower opacity around chosen quadRacer
         (quadRacerItems[index] as HTMLElement).style.color ="#383838";
-        (quadRacerItems[index] as HTMLElement).style.border = "10px solid green"
+        (quadRacerItems[index] as HTMLElement).style.opacity = '0.3';
+        (quadRacerItems[index] as HTMLElement).style.border = "10px solid #94524A";
       });
     }
 
@@ -157,7 +157,8 @@ export default class WaitingState {
               quadRacerItems[index].appendChild( img );
 
               (quadRacerItems[index] as HTMLButtonElement).disabled = true;
-              (quadRacerItems[index] as HTMLElement).style.border = "10px solid red"
+              (quadRacerItems[index] as HTMLElement).style.opacity = '0.3';
+              (quadRacerItems[index] as HTMLElement).style.border = "10px solid #2F0A28"
             }
           }
         }

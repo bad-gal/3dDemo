@@ -362,6 +362,14 @@ export default class Player {
                   }
                 }
                 break;
+              case 'floor':
+                if(this.characterController?.onPlatform){
+                  this.characterController.onPlatform = false;
+                  this.characterController.platformDirection = '';
+                  this.characterController.platformBody = undefined;
+                  this.characterController.platformObject = undefined;
+                }
+                break;
             }
           }
          });

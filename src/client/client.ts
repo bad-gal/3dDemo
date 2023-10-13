@@ -95,7 +95,7 @@ class Client {
       "blue rider",
     ];
     this.gameOver = false;
-//camouflage - green rider
+
     this.socket.once('connect', () => {
       console.log(this.socket.id)
     });
@@ -161,10 +161,8 @@ class Client {
     const gameState = new ExpelledState(this);
     gameState.onExpelledState();
 
-    console.log('in expelled state')
     setTimeout(() => {
       this.socket.connect();
-      console.log('inside setTimer')
       window.location.href = '/';
     }, 5000);
   }
@@ -197,16 +195,11 @@ class Client {
       const headerList = document.createElement("li");
 
       // collect all players and their scores
-      let playerScoreData = []
+      const playerScoreData: { iconName: string; score: string; }[] = [];
 
-      if(this.player !== undefined)
-        playerScoreData.push({ iconName: `assets/icons/${this.player.model}.ico`, score: `${this.player.score ?? ""}`});
-
-      this.remoteScores.forEach((player) => {
+      this.remoteData.forEach((player: any) => {
         playerScoreData.push({ iconName: `assets/icons/${player.model}.ico`, score: `${player.score ?? ""}`})
       });
-
-      console.log('PLAYER SCORE DATA', playerScoreData);
 
       // sort playerScoreData by score in descending order
       if(playerScoreData.length > 1) {
@@ -245,14 +238,17 @@ class Client {
         uList.appendChild(list);
       });
 
+      let infoDiv = document.createElement("div")
+      infoDiv.className = ( "leaderboard-info" );
+      infoDiv.innerText = "** game will return to menu shortly";
+
       leaderBoard?.appendChild(uList);
+      leaderBoard?.appendChild(infoDiv);
 
       this.socket.on('resetGame', () => {
         console.log( "server called trying to reset game")
 
         this.resetGame();
-        // Redirect the user to the /reset page
-        console.log(window.location)
         window.location.href = '/';
       });
     }
@@ -305,8 +301,14 @@ class Client {
       this.scene = new THREE.Scene();
 
       // background and fog
-      this.scene.background = new THREE.Color( 0xb0e0e6 );
-      this.scene.fog = new THREE.Fog( 0xb0e0e6, 2, 36 );
+      this.scene.background = new THREE.Color('#2F0A28')
+      this.scene.fog = new THREE.Fog( "black", 2, 36 );
+
+      // floor grid
+      let gridHelper = new THREE.GridHelper(330,120, 0xFF0000, "red")
+      gridHelper.position.y = -3.2
+      gridHelper.name = 'grid'
+      this.scene.add(gridHelper)
 
       // lighting
       const hemiLight = new THREE.HemisphereLight( 0xffffff, 0x444444 );
@@ -425,6 +427,31 @@ class Client {
       }
     });
 
+    this.physicsWorld.addEventListener('postStep', (e: any) => {
+      if(this.player?.riderPhysicsBody !== undefined) {
+        if(this.player.characterController?.onPlatform === true) {
+          const notInContactWithPlatform = this.physicsWorld.contacts.every(contact =>
+              !((contact.bi as CustomBody) === this.player?.riderPhysicsBody && (contact.bj as CustomBody).customData?.type === "moving platform") &&
+              !((contact.bi as CustomBody).customData?.type === "moving platform" && (contact.bj as CustomBody)=== this.player?.riderPhysicsBody)
+          )
+          if(notInContactWithPlatform) {
+            this.player.characterController.onPlatform = false;
+            this.player.characterController.platformDirection = '';
+            this.player.characterController.platformBody = undefined;
+            this.player.characterController.platformObject = undefined;
+          }
+        }
+        else if(this.player.characterController?.onPlatform === false && this.player.riderPhysicsBody.position.y < -4 && !this.player.falling) {
+          this.player.falling = true;
+          this.audioManager?.playFallenPlayerSound()
+        }
+        else if(this.player.falling && this.player.riderPhysicsBody.position.y < -11.5 ) {
+            this.player.resetFallenPlayer();
+            this.audioManager?.playRevivePlayerSound();
+        }
+      }
+    });
+
     this.createScorePanel();
     this.displayTimer();
     this.animate();
@@ -482,8 +509,9 @@ class Client {
     const scorePanel = document.getElementById("score-info");
     if (!scorePanel) return;
 
-    for (const remoteScore of this.remoteScores) {
-      const remotePanel = document.getElementById(remoteScore.id);
+    for (const remoteData of this.remoteData) {
+      const remotePanel = document.getElementById(remoteData.id);
+      if(remoteData.id === this.player?.id) { continue; }
       if (!remotePanel) {
         const remotePlayerPanel = document.createElement("div");
         remotePlayerPanel.className = "score-box";
@@ -492,20 +520,21 @@ class Client {
         const remoteTitleHeader = document.createElement("p");
 
         const img = document.createElement("img");
-        img.src = `assets/icons/${remoteScore.model}.ico`;
+        img.src = `assets/icons/${remoteData.model}.ico`;
 
         remoteTitleHeader.appendChild(img);
         remoteTitle.appendChild(remoteTitleHeader);
 
         const remotePlayerScoreText = document.createElement("p");
-        remotePlayerScoreText.id = remoteScore.id;
-        remotePlayerScoreText.textContent = `${remoteScore.score}`;
+        remotePlayerScoreText.id = remoteData.id;
+        remotePlayerScoreText.textContent = `${remoteData.score}`;
 
         remoteTitle.appendChild(remotePlayerScoreText);
         remotePlayerPanel.appendChild(remoteTitle);
         scorePanel.appendChild(remotePlayerPanel);
-      } else {
-        remotePanel.textContent = `${remoteScore.score}`;
+      }
+      else {
+        remotePanel.textContent = `${remoteData.score}`;
       }
     }
   };
@@ -594,7 +623,6 @@ class Client {
       // Run the simulation independently of framerate every 1 / 60 ms
       this.physicsWorld.fixedStep();
       if(this.counter === 0) {
-        console.log('physicsWorld', this.physicsWorld)
         this.counter = 1;
       }
       this.removeStrayPhysicsBodies();
@@ -618,20 +646,6 @@ class Client {
 
     if ( this.currentState === this.GAMESTATES.PLAY ) {
       let mixerUpdateDelta = this.clock.getDelta();
-
-      if ( this.hasPlayerFallenOffTrack() ) {
-        if ( this.player !== undefined ) {
-          if ( !this.player.falling) {
-            this.player.falling = true;
-            this.audioManager?.playFallenPlayerSound()
-          }
-
-          if ( this.player.object !== undefined && this.player.object.position.y < -11.5 ) {
-            this.player.resetFallenPlayer();
-            this.audioManager?.playRevivePlayerSound();
-          }
-        }
-      }
 
       requestAnimationFrame( function(){ game.animate() } );
 
@@ -722,55 +736,6 @@ class Client {
       this.physicsWorld.removeBody( coinCull[i] );
     }
   };
-
-  hasPlayerFallenOffTrack() {
-    if( this.player !== undefined && this.player.riderPhysicsBody !== undefined) {
-      const playerBody = this.player.riderPhysicsBody;
-      console.log('PLAYER-BODY', playerBody.customData?.name, this.player.riderPhysicsBody.customData?.name)
-      if(playerBody.position.y >= 0) return false;
-
-      if( playerBody.world !== null) {
-        const playerContacts = playerBody.world.contacts;
-        for(let i = 0; i < playerContacts.length; i++ ){
-          let a = <CustomBody>playerContacts[i].bj
-          let b = <CustomBody>playerContacts[i].bi
-          console.log(a.customData?.name, "=>",b.customData?.name)
-        }
-        // console.log('PLAYER CONTACTS', playerContacts, 'for ', playerBody.customData?.name)
-        if (playerContacts.length === 0 && playerBody.position.y < -4) {
-          console.log('no contacts available and player is below -4', playerBody.customData?.name)
-          return true;
-        }
-
-        //playerContacts do not appear to just be related to this.riderPhysicsBody, it can also relate to remote player
-        //need to pull out contacts that feature this.riderPhysicsBody
-        const contactMap = playerContacts.map(function (contact) {
-          const bodyA = <CustomBody>contact.bi;
-          const bodyB = <CustomBody>contact.bj;
-          if (bodyA.customData !== undefined && bodyB.customData !== undefined) {
-            if(bodyA.customData.type === 'floor' || bodyB.customData.type === 'floor') {
-              console.log( playerBody.customData?.name, 'player is on a floor object')
-              return false;
-            }
-            if (bodyA.customData.type === 'moving platform') {
-              return bodyA;
-            } else if (bodyB.customData.type === 'moving platform') {
-              return bodyB;
-            }
-          }
-        });
-
-        //remove any elements that are undefined
-        let filteredContactMap = contactMap.filter(function(body) {
-          return body !== undefined;
-        });
-
-        // console.log('filtered contact map', filteredContactMap)
-        return filteredContactMap.length === 0 && playerBody.position.y < -4;
-      }
-    }
-    return false;
-  }
 }
 
 new Client();

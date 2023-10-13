@@ -67,20 +67,6 @@ export default class movingPlatform {
           }
         }
       });
-
-      game.physicsWorld.addEventListener('postStep', () => {
-        // we only care if there are no contacts with this platform
-        if(this.body !== undefined) {
-          if( this.body.world?.contacts.length === 0 ) {
-            if(this.player?.characterController !== undefined) {
-              this.player.characterController.onPlatform = false;
-              this.player.characterController.platformDirection = '';
-              this.player.characterController.platformBody = undefined;
-              this.player.characterController.platformObject = undefined;
-            }
-          }
-        }
-      });
     });
   };
 
